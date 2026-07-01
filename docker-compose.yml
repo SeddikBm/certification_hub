@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # 1. Base de données PostgreSQL avec pgvector inclus
+  postgres-db:
+    image: ankane/pgvector:latest # Image cruciale : contient déjà pgvector pour la Phase 3
+    container_name: certifhub_db
+    environment:
+      POSTGRES_USER: certif_user
+      POSTGRES_PASSWORD: certif_password
+      POSTGRES_DB: certifhub_db
+    ports:
+      - "5432:5432" # Expose le port pour que Spring Boot (en local) puisse s'y connecter
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # 2. Outil de visualisation web
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: certifhub_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@devoteam.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80" # Accessible sur http://localhost:5050
+    depends_on:
+      - postgres-db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

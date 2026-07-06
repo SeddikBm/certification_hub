@@ -1,0 +1,23 @@
+-- 1. Suppression des triggers et fonctions d'audit
+DROP TRIGGER IF EXISTS audit_assignments_trigger ON assignments;
+DROP FUNCTION IF EXISTS log_audit_event();
+
+-- 2. Désactivation du RLS sur toutes les tables
+ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE certification_ratings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE certificates DISABLE ROW LEVEL SECURITY;
+ALTER TABLE assignments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE training_squads DISABLE ROW LEVEL SECURITY;
+ALTER TABLE trainings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE certification_squads DISABLE ROW LEVEL SECURITY;
+ALTER TABLE certifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE squad_lead_assignments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE manager_assignments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE refresh_tokens DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE squads DISABLE ROW LEVEL SECURITY;
+
+-- 3. Suppression des fonctions utilitaires
+DROP FUNCTION IF EXISTS auth_user_role();
+DROP FUNCTION IF EXISTS auth_user_id();

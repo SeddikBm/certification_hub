@@ -1,0 +1,49 @@
+package com.example.certificationHub.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Erreur de login : Mauvais mot de passe ou email
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, String> handleBadCredentials(BadCredentialsException ex) {
+        return Map.of("error", "Non autorisé", "message", "Email ou mot de passe incorrect");
+    }
+
+    // Erreur de login : Compte suspendu ou inactif
+    @ExceptionHandler(DisabledException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleDisabledAccount(DisabledException ex) {
+        return Map.of("error", "Compte inactif", "message", "Votre compte a été désactivé par un administrateur");
+    }
+
+    // Validation des DTOs (ex: email invalide, champs vides)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors()
+                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+        return Map.of("error", "Erreur de validation", "details", errors);
+    }
+
+    // Gestion des erreurs levées manuellement via ResponseStatusException
+    @ExceptionHandler(ResponseStatusException.class)
+    public Map<String, String> handleResponseStatusException(ResponseStatusException ex,
+            jakarta.servlet.http.HttpServletResponse response) {
+        response.setStatus(ex.getStatusCode().value());
+        return Map.of("error", "Erreur", "message", ex.getReason() != null ? ex.getReason() : "Erreur interne");
+    }
+}

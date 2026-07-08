@@ -1,17 +1,18 @@
 package com.example.certificationHub.security.controller;
 
+import com.example.certificationHub.entity.User;
+import com.example.certificationHub.repository.UserRepository;
 import com.example.certificationHub.security.dto.AuthResponse;
 import com.example.certificationHub.security.dto.LoginRequest;
 import com.example.certificationHub.security.dto.RefreshRequest;
 import com.example.certificationHub.security.entity.RefreshToken;
 import com.example.certificationHub.security.jwt.JwtService;
 import com.example.certificationHub.security.repository.RefreshTokenRepository;
-// Faux import à remplacer par ta vraie entité User et ton UserRepository
-// import com.example.certificationHub.entity.User; 
-// import com.example.certificationHub.repository.UserRepository;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.UUID;
 
@@ -39,51 +41,44 @@ public class AuthController {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
+    @Value("${spring.security.jwt.refresh-token-expiration}")
+    private long refreshTokenExpirationMs;
+
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         try {
-            // 1. Vérifie email/password (Erreur 401 automatique si invalide)
             Authentication auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
-            );
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-            // 2. Récupération du User (Simulation - à remplacer par ton vrai appel DB)
-            // User user = userRepository.findByEmail(request.email()).orElseThrow();
-            UUID userId = UUID.randomUUID(); // Remplace par user.getId()
-            String role = "COLLABORATOR";    // Remplace par user.getRole().name()
-            
-            // 3. Génération des tokens
-            String accessToken = jwtService.generateAccessToken(request.email(), userId.toString(), role);
-            String refreshTokenString = jwtService.generateRefreshToken(request.email(), userId.toString());
+            User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+            String role = user.getRole().name();
 
-            // 4. Hachage et Sauvegarde du Refresh Token en BDD
-            saveRefreshToken(userId, refreshTokenString, /* expiration Instant ici */);
+            String accessToken = jwtService.generateAccessToken(request.getEmail(), user.getId().toString(), role);
+            String refreshTokenString = jwtService.generateRefreshToken(request.getEmail(), user.getId().toString());
 
-            // 5. Retour au format attendu
+            saveRefreshToken(user.getId(), refreshTokenString);
+
             return AuthResponse.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshTokenString)
                     .user(AuthResponse.UserInfo.builder()
-                            .id(userId)
-                            .email(request.email())
+                            .id(user.getId())
+                            .email(user.getEmail())
                             .role(role)
-                            .firstName("Simulation")
-                            .lastName("Utilisateur")
+                            .firstName(user.getFirstName())
+                            .lastName(user.getLastName())
                             .build())
                     .build();
-
         } catch (AuthenticationException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identifiants incorrects");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou mot de passe incorrect");
         }
     }
 
     @PostMapping("/refresh")
     public AuthResponse refresh(@Valid @RequestBody RefreshRequest request) {
         try {
-            // 1. Décodage du token (Vérifie automatiquement la signature et l'expiration)
             Jwt jwt = jwtDecoder.decode(request.getRefreshToken());
 
-            // 2. Vérification du type
             if (!"REFRESH".equals(jwt.getClaimAsString("type"))) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalide (pas un refresh token)");
             }
@@ -92,19 +87,15 @@ public class AuthController {
             String email = jwt.getSubject();
             String tokenHash = hashToken(request.getRefreshToken());
 
-            // 3. Vérification de l'existence en BDD
             RefreshToken storedToken = refreshTokenRepository.findByUserIdAndTokenHash(userId, tokenHash)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                             "Refresh token révoqué ou introuvable"));
 
-            // 4. Génération d'un NOUVEAU Access Token (On garde le même rôle en récupérant
-            // depuis la DB si besoin)
             String newAccessToken = jwtService.generateAccessToken(email, userId.toString(), "COLLABORATOR");
 
             return AuthResponse.builder()
                     .accessToken(newAccessToken)
-                    .refreshToken(request.getRefreshToken()) // On peut renvoyer le même ou en générer un nouveau
-                                                             // (rotation)
+                    .refreshToken(request.getRefreshToken())
                     .build();
 
         } catch (Exception e) {
@@ -114,16 +105,24 @@ public class AuthController {
 
     @PostMapping("/logout")
     public void logout(Authentication authentication) {
-        // La route est protégée, donc authentication contient l'utilisateur connecté
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
             UUID userId = UUID.fromString(jwt.getClaimAsString("user_id"));
-            // Suppression en BDD : invalidation de tous les refresh tokens de cet
-            // utilisateur
             refreshTokenRepository.deleteByUserId(userId);
         }
     }
 
-    // --- Utilitaire de hachage SHA-256 ---
+    private void saveRefreshToken(UUID userId, String tokenString) {
+        Instant expiresAt = Instant.now().plusMillis(refreshTokenExpirationMs);
+        
+        RefreshToken refreshToken = RefreshToken.builder()
+                .userId(userId)
+                .tokenHash(hashToken(tokenString))
+                .expiresAt(expiresAt)
+                .build();
+                
+        refreshTokenRepository.save(refreshToken);
+    }
+
     private String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -132,10 +131,5 @@ public class AuthController {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Erreur de hachage", e);
         }
-    }
-
-    private void saveRefreshToken(UUID userId, String tokenString, /* pass expiration date */) {
-         // Implémentation de la sauvegarde via refreshTokenRepository
-         // refreshTokenRepository.save(new RefreshToken(userId, hashToken(tokenString), expiresAt, null));
     }
 }

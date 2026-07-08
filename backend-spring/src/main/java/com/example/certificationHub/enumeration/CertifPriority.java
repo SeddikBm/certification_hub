@@ -1,5 +1,5 @@
 package com.example.certificationHub.enumeration;
 
 public enum CertifPriority {
-    MANDATORY, HIGH, NORMAL, ADVANCED, OPTIONAL
+    MANDATORY, HIGH, NORMAL, ADVANCED
 }

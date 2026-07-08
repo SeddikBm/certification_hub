@@ -21,7 +21,7 @@ services:
     container_name: certifhub_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@devoteam.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_PASSWORD: ADMIN
     ports:
       - "5050:80" # Accessible sur http://localhost:5050
     depends_on:

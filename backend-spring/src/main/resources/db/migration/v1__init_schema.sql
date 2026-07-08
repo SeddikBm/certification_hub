@@ -49,12 +49,8 @@ CREATE TABLE squads (
     name VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,
     color_hex VARCHAR(7),
-    created_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE users (
@@ -67,27 +63,17 @@ CREATE TABLE users (
     status user_status NOT NULL DEFAULT 'ACTIVE',
     squad_id UUID REFERENCES squads (id) ON DELETE SET NULL,
     metadata JSONB,
-    created_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        deleted_at TIMESTAMP
-    WITH
-        TIME ZONE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE refresh_tokens (
     user_id UUID REFERENCES users (id) ON DELETE CASCADE,
     token_hash VARCHAR(255) UNIQUE NOT NULL,
-    expires_at TIMESTAMP
-    WITH
-        TIME ZONE NOT NULL,
-        revoked_at TIMESTAMP
-    WITH
-        TIME ZONE,
-        PRIMARY KEY (user_id, token_hash)
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    PRIMARY KEY (user_id, token_hash)
 );
 
 -- ------------------------------------------
@@ -124,15 +110,9 @@ CREATE TABLE certifications (
     official_url TEXT,
     exam_provider_url TEXT,
     metadata JSONB,
-    created_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        deleted_at TIMESTAMP
-    WITH
-        TIME ZONE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE certification_squads (
@@ -152,15 +132,9 @@ CREATE TABLE trainings (
     cost_usd NUMERIC(10, 2),
     url TEXT,
     metadata JSONB,
-    created_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        deleted_at TIMESTAMP
-    WITH
-        TIME ZONE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE training_squads (
@@ -182,29 +156,17 @@ CREATE TABLE assignments (
     assigned_by_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
     status_certification status_certification,
     status_training status_training,
-    assigned_at TIMESTAMP
-    WITH
-        TIME ZONE,
-        completed_at TIMESTAMP
-    WITH
-        TIME ZONE,
-        exam_at TIMESTAMP
-    WITH
-        TIME ZONE,
-        training_progress_percentage SMALLINT CHECK (
-            training_progress_percentage BETWEEN 0 AND 100
-        ),
-        notes TEXT,
-        metadata JSONB,
-        created_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        deleted_at TIMESTAMP
-    WITH
-        TIME ZONE
+    assigned_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    exam_at TIMESTAMP WITH TIME ZONE,
+    training_progress_percentage SMALLINT CHECK (
+        training_progress_percentage BETWEEN 0 AND 100
+    ),
+    notes TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_assignments_polymorphic ON assignments (item_type, item_id);
@@ -241,9 +203,7 @@ CREATE TABLE notifications (
     message TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     channel VARCHAR(50),
-    created_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE audit_logs (
@@ -253,9 +213,7 @@ CREATE TABLE audit_logs (
     entity_type VARCHAR(100) NOT NULL,
     entity_id UUID NOT NULL,
     changes JSONB,
-    created_at TIMESTAMP
-    WITH
-        TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==========================================

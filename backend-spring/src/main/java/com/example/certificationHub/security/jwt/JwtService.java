@@ -1,6 +1,7 @@
 package com.example.certificationHub.security.jwt;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -18,11 +19,11 @@ public class JwtService {
 
     private final JwtEncoder jwtEncoder;
 
-    @Value("${spring.security.jwt.access-token-expiration:15}")
-    private long accessTokenValidityMinutes;
+    @Value("${spring.security.jwt.access-token-expiration}")
+    private long accessTokenExpirationMs;
 
-    @Value("${spring.security.jwt.refresh-token-expiration:7}")
-    private long refreshTokenValidityDays;
+    @Value("${spring.security.jwt.refresh-token-expiration}")
+    private long refreshTokenExpirationMs;
 
     public String generateAccessToken(String email, String userId, String role) {
         Instant now = Instant.now();
@@ -30,7 +31,7 @@ public class JwtService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("certification-hub")
                 .issuedAt(now)
-                .expiresAt(now.plus(accessTokenValidityMinutes, ChronoUnit.MINUTES))
+                .expiresAt(now.plusMillis(accessTokenExpirationMs))
                 .subject(email)
                 .claim("user_id", userId)
                 .claim("role", role)
@@ -45,7 +46,7 @@ public class JwtService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("certification-hub")
                 .issuedAt(now)
-                .expiresAt(now.plus(refreshTokenValidityDays, ChronoUnit.DAYS))
+                .expiresAt(now.plusMillis(refreshTokenExpirationMs))
                 .subject(email)
                 .claim("user_id", userId)
                 .claim("type", "REFRESH")

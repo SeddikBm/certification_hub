@@ -36,7 +36,7 @@ public class User extends BaseEntity {
     private String lastName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false) // Note: le 'ô' respecte ta BDD, mais attention aux encodages
+    @Column(name = "role", nullable = false)
     private UserRole role;
 
     @Enumerated(EnumType.STRING)

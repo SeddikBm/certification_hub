@@ -1,9 +1,7 @@
 package com.example.certificationHub.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+
 import lombok.*;
 import java.io.Serializable;
 import java.util.UUID;
@@ -45,9 +43,6 @@ public class CertificationRating {
     @JoinColumn(name = "assignment_id")
     private Assignment assignment;
 
-    @NotNull(message = "Le rating est obligatoire")
-    @Min(value = 1, message = "Le rating minimale est 1")
-    @Max(value = 5, message = "Le rating maximale est 5")
     private Short rating;
 
     @Column(columnDefinition = "TEXT")

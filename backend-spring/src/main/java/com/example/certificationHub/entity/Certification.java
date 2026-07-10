@@ -34,9 +34,11 @@ public class Certification extends BaseEntity {
     private String provider;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private CertifDifficulty difficulty;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private CertifPriority priority;
 
     @Column(name = "exam_cost_usd")

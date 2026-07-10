@@ -36,10 +36,12 @@ public class User extends BaseEntity {
     private String lastName;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "role", nullable = false)
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false)
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;

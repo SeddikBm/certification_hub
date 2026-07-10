@@ -4,16 +4,18 @@ import com.example.certificationHub.entity.Certification;
 import com.example.certificationHub.enumeration.CertifDifficulty;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface CertificationRepository extends JpaRepository<Certification, UUID> {
-    Optional<Certification> findByCode(String code);
+// JpaSpecificationExecutor permet de passer des filtres dynamiques
+public interface CertificationRepository
+        extends JpaRepository<Certification, UUID>, JpaSpecificationExecutor<Certification> {
 
-    boolean existsByCode(String code);
+    // On ignore les certifications supprimées logiciellement
+    Optional<Certification> findByIdAndDeletedAtIsNull(UUID id);
 
-    // Exemple de filtre utile pour ton MVP (Recherche avancée)
-    List<Certification> findByDifficulty(CertifDifficulty difficulty);
+    boolean existsByCodeAndDeletedAtIsNull(String code);
 }

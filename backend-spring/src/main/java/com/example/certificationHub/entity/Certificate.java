@@ -3,6 +3,8 @@ package com.example.certificationHub.entity;
 import com.example.certificationHub.enumeration.CertificateStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.util.UUID;
 
 @Entity
@@ -34,5 +36,6 @@ public class Certificate {
     private String storagePath;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private CertificateStatus status;
 }

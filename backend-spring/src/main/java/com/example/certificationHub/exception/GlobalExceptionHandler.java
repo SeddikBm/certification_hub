@@ -17,21 +17,21 @@ public class GlobalExceptionHandler {
 
     // Erreur de login : Mauvais mot de passe ou email
     @ExceptionHandler(BadCredentialsException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED) //401
     public Map<String, String> handleBadCredentials(BadCredentialsException ex) {
         return Map.of("error", "Non autorisé", "message", "Email ou mot de passe incorrect");
     }
 
     // Erreur de login : Compte suspendu ou inactif
     @ExceptionHandler(DisabledException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ResponseStatus(HttpStatus.FORBIDDEN)   //403
     public Map<String, String> handleDisabledAccount(DisabledException ex) {
         return Map.of("error", "Compte inactif", "message", "Votre compte a été désactivé par un administrateur");
     }
 
     // Validation des DTOs (ex: email invalide, champs vides)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.BAD_REQUEST) //400
     public Map<String, Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors()

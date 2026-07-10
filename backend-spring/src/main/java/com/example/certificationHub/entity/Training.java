@@ -26,12 +26,14 @@ public class Training extends BaseEntity {
     private String title;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TrainingType type;
 
     @Column(length = 100)
     private String provider;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TrainingPriority priority;
 
     @Column(name = "duration_hours")

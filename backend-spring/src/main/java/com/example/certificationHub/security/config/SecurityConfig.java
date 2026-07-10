@@ -56,7 +56,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(ar -> ar
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh", "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui/index.html")
+                        .permitAll()
                         .anyRequest().authenticated())
                 // Spring gère le token automatiquement ici
                 .oauth2ResourceServer(oa -> oa.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
@@ -96,11 +99,7 @@ public class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder() {
-        SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(), "HmacSHA256"); // HS256
-                                                                                             // est
-                                                                                             // suffisant
-                                                                                             // et
-        // standard
+        SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(), "HmacSHA256"); 
         return NimbusJwtDecoder.withSecretKey(secretKeySpec).macAlgorithm(MacAlgorithm.HS256).build();
     }
 

@@ -26,6 +26,7 @@ public class Assignment extends BaseEntity {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "item_type", nullable = false)
     private ItemType itemType;
 
@@ -41,10 +42,12 @@ public class Assignment extends BaseEntity {
     private User assignedBy;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status_certification")
     private StatusCertification statusCertification;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "status_training")
     private StatusTraining statusTraining;
 

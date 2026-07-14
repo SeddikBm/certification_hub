@@ -9,22 +9,19 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class CertificationResponse {
+public class TrainingResponse {
     private UUID id;
-    private String code;
-    private String name;
+    private String title;
+    private String type;
     private String provider;
-    private String difficulty;
     private String priority;
-    private BigDecimal examCostUsd;
-    private BigDecimal trainingCostUsd;
-    private Integer validityMonths;
-    private String officialUrl;
-    private String examProviderUrl;
+    private String description;
+    private String language;
+    private BigDecimal durationHours;
+    private BigDecimal costUsd;
+    private String url;
     private Map<String, Object> metadata;
-    
-    // Enrichissement spécifique pour le GET /:id
-    private Double averageRating; 
+
     private List<SquadShortDto> associatedSquads;
 
     @Data

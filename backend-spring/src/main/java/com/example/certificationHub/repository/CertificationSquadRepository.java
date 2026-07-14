@@ -8,4 +8,7 @@ import java.util.UUID;
 public interface CertificationSquadRepository extends JpaRepository<CertificationSquad, CertificationSquad.Id> {
     // Trouver toutes les certifications pour un Squad donné
     List<CertificationSquad> findBySquadId(UUID squadId);
+    List<CertificationSquad> findByCertificationId(UUID certificationId);
+    void deleteByCertificationId(UUID certificationId);
 }
+

@@ -12,40 +12,35 @@ import com.example.certificationHub.dto.request.CertificationRequest;
 import com.example.certificationHub.dto.response.CertificationResponse;
 import com.example.certificationHub.exception.ResourceConflictException;
 import com.example.certificationHub.exception.ResourceNotFoundException;
-import com.example.certificationHub.repository.AssignmentRepository;
-import com.example.certificationHub.repository.CertificationRepository;
-import com.example.certificationHub.repository.CertificationSquadRepository;
-import com.example.certificationHub.repository.SquadRepository;
+import com.example.certificationHub.mapper.CertificationMapper;
+import com.example.certificationHub.repository.*;
 import com.example.certificationHub.repository.specification.CertificationSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CertificationService {
 
     private final CertificationRepository certificationRepository;
-    private final CertificationSquadRepository certifSquadRepository;
+    private final CertificationSquadRepository certSquadRepository;
     private final SquadRepository squadRepository;
     private final AssignmentRepository assignmentRepository;
-    // Injecte ici le CertificationRatingRepository pour calculer la note moyenne
-    // plus tard
+    private final CertificationRatingRepository ratingRepository;
+    private final CertificationMapper certificationMapper; // Injection du nouveau Mapper
 
     @Transactional(readOnly = true)
-    public Page<CertificationResponse> getCertifications(String provider, CertifDifficulty difficulty,
-            CertifPriority priority, String search, Pageable pageable) {
-        Specification<Certification> spec = CertificationSpecification.withDynamicFilters(provider, difficulty,
-                priority, search);
-        return certificationRepository.findAll(spec, pageable).map(this::mapToResponse);
+    public Page<CertificationResponse> getCertifications(String provider, CertifDifficulty difficulty, CertifPriority priority, String search, Pageable pageable) {
+        return certificationRepository
+                .findAll(CertificationSpecification.withDynamicFilters(provider, difficulty, priority, search), pageable)
+                .map(certificationMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -53,21 +48,10 @@ public class CertificationService {
         Certification cert = certificationRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));
 
-        CertificationResponse response = mapToResponse(cert);
+        List<CertificationSquad> squads = certSquadRepository.findByCertificationId(id);
+        Double averageRating = ratingRepository.getAverageRatingByCertificationId(id);
 
-        // Enrichissement avec les squads associés
-        List<CertificationResponse.SquadShortDto> squads = certifSquadRepository.findByCertificationId(id).stream()
-                .map(cs -> CertificationResponse.SquadShortDto.builder()
-                        .id(cs.getSquad().getId())
-                        .name(cs.getSquad().getName())
-                        .priority(cs.getPriority())
-                        .build())
-                .collect(Collectors.toList());
-
-        response.setAssociatedSquads(squads);
-        // Optionnel: Calculer response.setAverageRating() avec le RatingRepository
-
-        return response;
+        return certificationMapper.toDetailedResponse(cert, squads, averageRating);
     }
 
     @Transactional
@@ -93,7 +77,7 @@ public class CertificationService {
         Certification savedCert = certificationRepository.save(cert);
         assignToSquads(savedCert, request.getSquads());
 
-        return mapToResponse(savedCert);
+        return certificationMapper.toResponse(savedCert);
     }
 
     @Transactional
@@ -101,9 +85,7 @@ public class CertificationService {
         Certification cert = certificationRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));
 
-        // Vérifier conflit de code (si on le modifie)
-        if (!cert.getCode().equals(request.getCode())
-                && certificationRepository.existsByCodeAndDeletedAtIsNull(request.getCode())) {
+        if (!cert.getCode().equals(request.getCode()) && certificationRepository.existsByCodeAndDeletedAtIsNull(request.getCode())) {
             throw new ResourceConflictException("Ce nouveau code de certification existe déjà");
         }
 
@@ -119,10 +101,10 @@ public class CertificationService {
         cert.setExamProviderUrl(request.getExamProviderUrl());
         cert.setMetadata(request.getMetadata());
 
-        certifSquadRepository.deleteByCertificationId(id); // On nettoie les anciennes liaisons
-        assignToSquads(cert, request.getSquads()); // On recrée les nouvelles
+        certSquadRepository.deleteByCertificationId(id); // Hard delete des liaisons
+        assignToSquads(cert, request.getSquads()); // Recréation
 
-        return mapToResponse(certificationRepository.save(cert));
+        return certificationMapper.toResponse(certificationRepository.save(cert));
     }
 
     @Transactional
@@ -130,58 +112,32 @@ public class CertificationService {
         Certification cert = certificationRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));
 
-        // Vérifier s'il y a des assignations actives (ex: EN COURS, PLANIFIEE)
-        List<Assignment> activeAssignments = assignmentRepository.findByItemTypeAndItemId(ItemType.CERTIFICATION, id)
-                .stream()
-                .filter(a -> List
-                        .of(StatusCertification.PENDING_APPROVAL, StatusCertification.APPROVED,
-                                StatusCertification.PLANNED, StatusCertification.IN_PROGRESS,
-                                StatusCertification.EXAM_SCHEDULED)
+        List<Assignment> activeAssignments = assignmentRepository.findByItemTypeAndItemId(ItemType.CERTIFICATION, id).stream()
+                .filter(a -> List.of(StatusCertification.PENDING_APPROVAL, StatusCertification.APPROVED, StatusCertification.PLANNED, StatusCertification.IN_PROGRESS, StatusCertification.EXAM_SCHEDULED)
                         .contains(a.getStatusCertification()))
                 .toList();
 
         if (!activeAssignments.isEmpty()) {
-            throw new ResourceConflictException(
-                    "Impossible de supprimer : des collaborateurs sont actuellement en cours sur cette certification.");
+            throw new ResourceConflictException("Impossible de supprimer : des collaborateurs sont actuellement assignés à cette certification.");
         }
 
-        // Soft Delete
-        cert.setDeletedAt(Instant.now());
+        cert.setDeletedAt(Instant.now()); // Soft delete
         certificationRepository.save(cert);
     }
-
-    // --- Méthodes utilitaires ---
 
     private void assignToSquads(Certification cert, List<CertificationRequest.SquadPriorityDto> squadDtos) {
         for (var dto : squadDtos) {
             Squad squad = squadRepository.findById(dto.getSquadId())
                     .orElseThrow(() -> new ResourceNotFoundException("Squad ID " + dto.getSquadId() + " introuvable"));
-
+            
             CertificationSquad cs = new CertificationSquad();
             cs.getId().setCertificationId(cert.getId());
             cs.getId().setSquadId(squad.getId());
             cs.setCertification(cert);
             cs.setSquad(squad);
             cs.setPriority(dto.getPriority());
-
-            certifSquadRepository.save(cs);
+            
+            certSquadRepository.save(cs);
         }
-    }
-
-    private CertificationResponse mapToResponse(Certification cert) {
-        return CertificationResponse.builder()
-                .id(cert.getId())
-                .code(cert.getCode())
-                .name(cert.getName())
-                .provider(cert.getProvider())
-                .difficulty(cert.getDifficulty() != null ? cert.getDifficulty().name() : null)
-                .priority(cert.getPriority() != null ? cert.getPriority().name() : null)
-                .examCostUsd(cert.getExamCostUsd())
-                .trainingCostUsd(cert.getTrainingCostUsd())
-                .validityMonths(cert.getValidityMonths())
-                .officialUrl(cert.getOfficialUrl())
-                .examProviderUrl(cert.getExamProviderUrl())
-                .metadata(cert.getMetadata())
-                .build();
     }
 }

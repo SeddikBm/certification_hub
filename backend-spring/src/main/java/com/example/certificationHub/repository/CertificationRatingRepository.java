@@ -2,6 +2,7 @@ package com.example.certificationHub.repository;
 
 import com.example.certificationHub.entity.CertificationRating;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,4 +14,7 @@ public interface CertificationRatingRepository extends JpaRepository<Certificati
 
     // Récupérer un avis spécifique par utilisateur et certification
     Optional<CertificationRating> findByUserIdAndCertificationId(UUID userId, UUID certificationId);
+
+    @Query("SELECT AVG(r.rating) FROM CertificationRating r WHERE r.certification.id = :certificationId")
+    Double getAverageRatingByCertificationId(UUID certificationId);
 }

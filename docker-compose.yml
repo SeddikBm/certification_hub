@@ -19,11 +19,23 @@ services:
     container_name: certifhub_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@devoteam.com
-      PGADMIN_DEFAULT_PASSWORD: ADMIN
+      PGADMIN_DEFAULT_PASSWORD: seddik
     ports:
       - "5050:80" # Accessible sur http://localhost:5050
     depends_on:
       - postgres-db
+    restart: unless-stopped
+
+  # 3. Serveur de messagerie RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: certifhub_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672" # Port de communication TCP (utilisé par Spring Boot)
+      - "15672:15672" # Port de l'interface web (accessible sur http://localhost:15672)
     restart: unless-stopped
 
 volumes:

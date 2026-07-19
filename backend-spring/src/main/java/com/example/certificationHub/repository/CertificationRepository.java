@@ -1,12 +1,10 @@
 package com.example.certificationHub.repository;
 
 import com.example.certificationHub.entity.Certification;
-import com.example.certificationHub.enumeration.CertifDifficulty;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 

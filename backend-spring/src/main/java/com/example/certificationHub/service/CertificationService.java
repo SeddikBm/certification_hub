@@ -37,9 +37,11 @@ public class CertificationService {
     private final CertificationMapper certificationMapper; // Injection du nouveau Mapper
 
     @Transactional(readOnly = true)
-    public Page<CertificationResponse> getCertifications(String provider, CertifDifficulty difficulty, CertifPriority priority, String search, Pageable pageable) {
+    public Page<CertificationResponse> getCertifications(String provider, CertifDifficulty difficulty,
+            CertifPriority priority, String search, Pageable pageable) {
         return certificationRepository
-                .findAll(CertificationSpecification.withDynamicFilters(provider, difficulty, priority, search), pageable)
+                .findAll(CertificationSpecification.withDynamicFilters(provider, difficulty, priority, search),
+                        pageable)
                 .map(certificationMapper::toResponse);
     }
 
@@ -60,19 +62,7 @@ public class CertificationService {
             throw new ResourceConflictException("Le code de certification existe déjà");
         }
 
-        Certification cert = Certification.builder()
-                .code(request.getCode())
-                .name(request.getName())
-                .provider(request.getProvider())
-                .difficulty(request.getDifficulty())
-                .priority(request.getPriority())
-                .examCostUsd(request.getExamCostUsd())
-                .trainingCostUsd(request.getTrainingCostUsd())
-                .validityMonths(request.getValidityMonths())
-                .officialUrl(request.getOfficialUrl())
-                .examProviderUrl(request.getExamProviderUrl())
-                .metadata(request.getMetadata())
-                .build();
+        Certification cert = certificationMapper.toEntity(request);
 
         Certification savedCert = certificationRepository.save(cert);
         assignToSquads(savedCert, request.getSquads());
@@ -85,21 +75,12 @@ public class CertificationService {
         Certification cert = certificationRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));
 
-        if (!cert.getCode().equals(request.getCode()) && certificationRepository.existsByCodeAndDeletedAtIsNull(request.getCode())) {
+        if (!cert.getCode().equals(request.getCode())
+                && certificationRepository.existsByCodeAndDeletedAtIsNull(request.getCode())) {
             throw new ResourceConflictException("Ce nouveau code de certification existe déjà");
         }
 
-        cert.setCode(request.getCode());
-        cert.setName(request.getName());
-        cert.setProvider(request.getProvider());
-        cert.setDifficulty(request.getDifficulty());
-        cert.setPriority(request.getPriority());
-        cert.setExamCostUsd(request.getExamCostUsd());
-        cert.setTrainingCostUsd(request.getTrainingCostUsd());
-        cert.setValidityMonths(request.getValidityMonths());
-        cert.setOfficialUrl(request.getOfficialUrl());
-        cert.setExamProviderUrl(request.getExamProviderUrl());
-        cert.setMetadata(request.getMetadata());
+        certificationMapper.updateEntity(cert, request);
 
         certSquadRepository.deleteByCertificationId(id); // Hard delete des liaisons
         assignToSquads(cert, request.getSquads()); // Recréation
@@ -112,13 +93,18 @@ public class CertificationService {
         Certification cert = certificationRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));
 
-        List<Assignment> activeAssignments = assignmentRepository.findByItemTypeAndItemId(ItemType.CERTIFICATION, id).stream()
-                .filter(a -> List.of(StatusCertification.PENDING_APPROVAL, StatusCertification.APPROVED, StatusCertification.PLANNED, StatusCertification.IN_PROGRESS, StatusCertification.EXAM_SCHEDULED)
+        List<Assignment> activeAssignments = assignmentRepository.findByItemTypeAndItemId(ItemType.CERTIFICATION, id)
+                .stream()
+                .filter(a -> List
+                        .of(StatusCertification.PENDING_APPROVAL, StatusCertification.APPROVED,
+                                StatusCertification.PLANNED, StatusCertification.IN_PROGRESS,
+                                StatusCertification.EXAM_SCHEDULED)
                         .contains(a.getStatusCertification()))
                 .toList();
 
         if (!activeAssignments.isEmpty()) {
-            throw new ResourceConflictException("Impossible de supprimer : des collaborateurs sont actuellement assignés à cette certification.");
+            throw new ResourceConflictException(
+                    "Impossible de supprimer : des collaborateurs sont actuellement assignés à cette certification.");
         }
 
         cert.setDeletedAt(Instant.now()); // Soft delete
@@ -129,14 +115,14 @@ public class CertificationService {
         for (var dto : squadDtos) {
             Squad squad = squadRepository.findById(dto.getSquadId())
                     .orElseThrow(() -> new ResourceNotFoundException("Squad ID " + dto.getSquadId() + " introuvable"));
-            
+
             CertificationSquad cs = new CertificationSquad();
             cs.getId().setCertificationId(cert.getId());
             cs.getId().setSquadId(squad.getId());
             cs.setCertification(cert);
             cs.setSquad(squad);
             cs.setPriority(dto.getPriority());
-            
+
             certSquadRepository.save(cs);
         }
     }

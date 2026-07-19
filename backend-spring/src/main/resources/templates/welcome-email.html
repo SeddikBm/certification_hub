@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenue</title>
+</head>
+
+<body style="font-family: Arial, sans-serif; color: #333;">
+    <h2 style="color: #0056b3;">Bienvenue sur CertificationHub, <span th:text="${firstName}"></span> !</h2>
+
+    <p>Ton compte a été créé avec succès.</p>
+
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+        <p>Voici tes identifiants de connexion temporaires :</p>
+        <ul>
+            <li><strong>Email :</strong> <span th:text="${email}"></span></li>
+            <li><strong>Mot de passe :</strong> <span th:text="${password}"></span></li>
+        </ul>
+    </div>
+
+    <p>Nous te conseillons de modifier ce mot de passe dès ta première connexion.</p>
+    <p>À très vite !</p>
+</body>
+
+</html>

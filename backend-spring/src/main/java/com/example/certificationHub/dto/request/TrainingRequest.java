@@ -23,6 +23,10 @@ public class TrainingRequest {
     @NotNull(message = "La priorité est obligatoire")
     private TrainingPriority priority;
 
+    // Stockés dans metadata en base
+    private String description;
+    private String language;
+
     @PositiveOrZero(message = "La durée doit être positive")
     private BigDecimal durationHours;
 

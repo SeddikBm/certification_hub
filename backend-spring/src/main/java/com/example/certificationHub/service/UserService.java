@@ -17,7 +17,6 @@ import com.example.certificationHub.messaging.NotificationProducer;
 import com.example.certificationHub.messaging.WelcomeEmailEvent;
 import com.example.certificationHub.repository.AssignmentRepository;
 import com.example.certificationHub.repository.ManagerAssignmentRepository;
-import com.example.certificationHub.repository.SquadLeadAssignmentRepository;
 import com.example.certificationHub.repository.SquadRepository;
 import com.example.certificationHub.repository.UserRepository;
 import com.example.certificationHub.security.repository.RefreshTokenRepository;

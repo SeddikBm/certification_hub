@@ -1,8 +1,10 @@
 package com.example.certificationHub.dto.response;
 
+import java.time.LocalDate;
+import java.util.UUID;
+
 import lombok.Builder;
 import lombok.Data;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -14,6 +16,7 @@ public class UserResponse {
     private String role;
     private String status;
     private String phone;
+    private LocalDate hireDate;
     private UUID squadId;
     private String squadName;
 }

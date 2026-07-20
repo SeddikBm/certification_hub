@@ -24,7 +24,8 @@ public class CertificationController {
 
     private final CertificationService certificationService;
 
-    // Protégé par défaut à tout utilisateur connecté (configuré dans SecurityConfig)
+    // Protégé par défaut à tout utilisateur connecté (configuré dans
+    // SecurityConfig)
     @GetMapping
     public Page<CertificationResponse> getAllCertifications(
             @RequestParam(required = false) String provider,
@@ -51,7 +52,8 @@ public class CertificationController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TRAINING_MANAGER')")
-    public CertificationResponse updateCertification(@PathVariable UUID id, @Valid @RequestBody CertificationRequest request) {
+    public CertificationResponse updateCertification(@PathVariable UUID id,
+            @Valid @RequestBody CertificationRequest request) {
         return certificationService.updateCertification(id, request);
     }
 

@@ -12,6 +12,8 @@ import com.example.certificationHub.dto.request.AssignmentUpdateRequest;
 import com.example.certificationHub.exception.ResourceConflictException;
 import com.example.certificationHub.exception.ResourceNotFoundException;
 import com.example.certificationHub.mapper.AssignmentMapper;
+import com.example.certificationHub.messaging.AssignmentEvent;
+import com.example.certificationHub.messaging.NotificationProducer;
 import com.example.certificationHub.repository.AssignmentRepository;
 import com.example.certificationHub.repository.CertificationRepository;
 import com.example.certificationHub.repository.ManagerAssignmentRepository;
@@ -37,6 +39,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AssignmentService {
 
+    private final NotificationProducer notificationProducer;
     private final AssignmentRepository assignmentRepository;
     private final UserRepository userRepository;
     private final CertificationRepository certificationRepository;
@@ -44,10 +47,6 @@ public class AssignmentService {
     private final ManagerAssignmentRepository managerAssignmentRepository;
     private final AssignmentMapper assignmentMapper;
     private final AssignmentWorkflowValidator workflowValidator;
-
-    // Services factices pour l'exemple (à remplacer par tes implémentations)
-    // private final AuditLogService auditLogService;
-    // private final NotificationProducer notificationProducer;
 
     @Transactional(readOnly = true)
     public Page<AssignmentResponse> getAssignments(UUID targetUserId, ItemType itemType, String status,
@@ -122,8 +121,18 @@ public class AssignmentService {
 
         Assignment savedAssignment = assignmentRepository.save(assignment);
 
-        // notificationProducer.sendAssignmentNotification(collaborator.getId(),
-        // savedAssignment.getId());
+        String itemName = request.getItemType() == ItemType.CERTIFICATION
+                ? certificationRepository.findById(request.getItemId()).map(c -> c.getName()).orElse("Certification")
+                : trainingRepository.findById(request.getItemId()).map(t -> t.getTitle()).orElse("Formation");
+
+        notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
+                .userId(collaborator.getId())
+                .userEmail(collaborator.getEmail())
+                .userFullName(collaborator.getFirstName() + " " + collaborator.getLastName())
+                .assignmentId(savedAssignment.getId())
+                .itemName(itemName)
+                .eventType("CREATED") // Déclenche le template "Nouvelle demande"
+                .build());
 
         return assignmentMapper.toResponse(savedAssignment);
     }
@@ -145,11 +154,26 @@ public class AssignmentService {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
             }
         }
+        boolean isNewlyApproved = false;
+        boolean isNewlyRejected = false;
+        boolean isNewlyScheduled = false;
 
         // Traitement Polymorphique & Machine à états
         if (assignment.getItemType() == ItemType.CERTIFICATION && request.getStatusCertification() != null) {
             workflowValidator.validateCertificationTransition(assignment.getStatusCertification(),
                     request.getStatusCertification());
+
+            if (assignment.getStatusCertification() == StatusCertification.PENDING_APPROVAL) {
+                if (request.getStatusCertification() == StatusCertification.APPROVED)
+                    isNewlyApproved = true;
+                if (request.getStatusCertification() == StatusCertification.CANCELLED)
+                    isNewlyRejected = true;
+            }
+            if (assignment.getStatusCertification() == StatusCertification.IN_PROGRESS &&
+                    request.getStatusCertification() == StatusCertification.EXAM_SCHEDULED) {
+                isNewlyScheduled = true;
+            }
+
             assignment.setStatusCertification(request.getStatusCertification());
 
             if (request.getStatusCertification() == StatusCertification.COMPLETED
@@ -158,6 +182,13 @@ public class AssignmentService {
             }
         } else if (assignment.getItemType() == ItemType.TRAINING && request.getStatusTraining() != null) {
             workflowValidator.validateTrainingTransition(assignment.getStatusTraining(), request.getStatusTraining());
+
+            if (assignment.getStatusTraining() == StatusTraining.PENDING_APPROVAL) {
+                if (request.getStatusTraining() == StatusTraining.APPROVED)
+                    isNewlyApproved = true;
+                if (request.getStatusTraining() == StatusTraining.CANCELLED)
+                    isNewlyRejected = true;
+            }
             assignment.setStatusTraining(request.getStatusTraining());
 
             if (request.getStatusTraining() == StatusTraining.COMPLETED) {
@@ -176,10 +207,21 @@ public class AssignmentService {
 
         Assignment updatedAssignment = assignmentRepository.save(assignment);
 
-        // auditLogService.logAction(currentUserId, "UPDATE_STATUS", "ASSIGNMENT",
-        // assignmentId);
-        // notificationProducer.sendStatusChangeNotification(assignment.getUser().getId(),
-        // updatedAssignment);
+        if (isNewlyApproved || isNewlyRejected) {
+            String itemName = assignment.getItemType() == ItemType.CERTIFICATION
+                    ? certificationRepository.findById(assignment.getItemId()).map(c -> c.getName())
+                            .orElse("Certification")
+                    : trainingRepository.findById(assignment.getItemId()).map(t -> t.getTitle()).orElse("Formation");
+
+            notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
+                    .userId(assignment.getUser().getId())
+                    .userEmail(assignment.getUser().getEmail())
+                    .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
+                    .assignmentId(updatedAssignment.getId())
+                    .itemName(itemName)
+                    .eventType(isNewlyApproved ? "APPROVED" : isNewlyScheduled ? "EXAM_SCHEDULED" : "REJECTED")
+                    .build());
+        }
 
         return assignmentMapper.toResponse(updatedAssignment);
     }

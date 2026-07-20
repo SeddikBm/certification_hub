@@ -2,9 +2,12 @@ package com.example.certificationHub.repository;
 
 import com.example.certificationHub.entity.Assignment;
 import com.example.certificationHub.enumeration.ItemType;
+import com.example.certificationHub.enumeration.StatusCertification;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,4 +22,6 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID>, J
     // Vérifier si un utilisateur a une assignation en cours (non complétée) pour un
     // item
     boolean existsByUserIdAndItemIdAndItemTypeAndCompletedAtIsNull(UUID userId, UUID itemId, ItemType itemType);
+
+    List<Assignment> findByStatusCertificationAndExamAtBetween(StatusCertification status, Instant start, Instant end);
 }

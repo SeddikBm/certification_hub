@@ -5,6 +5,8 @@ import com.example.certificationHub.entity.Certificate;
 import com.example.certificationHub.entity.ManagerAssignment;
 import com.example.certificationHub.enumeration.CertificateStatus;
 import com.example.certificationHub.exception.ResourceNotFoundException;
+import com.example.certificationHub.messaging.AssignmentEvent;
+import com.example.certificationHub.messaging.NotificationProducer;
 import com.example.certificationHub.repository.AssignmentRepository;
 import com.example.certificationHub.repository.CertificateRepository;
 import com.example.certificationHub.repository.ManagerAssignmentRepository;
@@ -32,6 +34,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CertificateService {
 
+    private final NotificationProducer notificationProducer;
     private final CertificateRepository certificateRepository;
     private final AssignmentRepository assignmentRepository;
     private final ManagerAssignmentRepository managerAssignmentRepository;
@@ -94,6 +97,18 @@ public class CertificateService {
                 .build();
 
         return certificateRepository.save(certificate);
+        String itemName = assignment.getItemType().name().equals("CERTIFICATION") ? "votre certification"
+                : "votre formation";
+
+        // On importe NotificationProducer
+        notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
+                .userId(assignment.getUser().getId())
+                .userEmail(assignment.getUser().getEmail())
+                .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
+                .assignmentId(assignment.getId())
+                .itemName(itemName)
+                .eventType("CERTIFICATE_UPLOADED")
+                .build());
     }
 
     @Transactional(readOnly = true)

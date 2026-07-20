@@ -5,6 +5,7 @@ import com.example.certificationHub.dto.request.AssignmentCreateRequest;
 import com.example.certificationHub.dto.response.AssignmentResponse;
 import com.example.certificationHub.dto.request.AssignmentUpdateRequest;
 import com.example.certificationHub.service.AssignmentService;
+import com.example.certificationHub.service.CertificateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -23,6 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AssignmentController {
 
+    private final CertificateService certificateService;
     private final AssignmentService assignmentService;
 
     @GetMapping
@@ -41,7 +44,7 @@ public class AssignmentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CAREER_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CAREER_MANAGER','COLLABORATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public AssignmentResponse createAssignment(
             @Valid @RequestBody AssignmentCreateRequest request,
@@ -65,5 +68,19 @@ public class AssignmentController {
         String currentUserRole = jwt.getClaimAsString("role");
 
         return assignmentService.updateAssignmentStatus(id, request, currentUserId, currentUserRole);
+    }
+
+    @PostMapping(value = "/{id}/upload-certificate", consumes = { "multipart/form-data" })
+    @PreAuthorize("hasRole('COLLABORATOR')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void uploadCertificate(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("user_id"));
+
+        certificateService.uploadCertificate(id, file, currentUserId);
     }
 }

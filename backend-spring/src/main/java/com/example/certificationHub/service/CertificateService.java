@@ -1,0 +1,133 @@
+package com.example.certificationHub.service;
+
+import com.example.certificationHub.entity.Assignment;
+import com.example.certificationHub.entity.Certificate;
+import com.example.certificationHub.entity.ManagerAssignment;
+import com.example.certificationHub.enumeration.CertificateStatus;
+import com.example.certificationHub.exception.ResourceNotFoundException;
+import com.example.certificationHub.repository.AssignmentRepository;
+import com.example.certificationHub.repository.CertificateRepository;
+import com.example.certificationHub.repository.ManagerAssignmentRepository;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class CertificateService {
+
+    private final CertificateRepository certificateRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final ManagerAssignmentRepository managerAssignmentRepository;
+
+    @Value("${app.storage.upload-dir}")
+    private String uploadDir;
+
+    private Path fileStorageLocation;
+
+    @PostConstruct
+    public void init() {
+        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
+        try {
+            Files.createDirectories(this.fileStorageLocation);
+        } catch (Exception ex) {
+            throw new RuntimeException("Impossible de créer le répertoire de stockage des certificats.", ex);
+        }
+    }
+
+    @Transactional
+    public Certificate uploadCertificate(UUID assignmentId, MultipartFile file, UUID currentUserId) {
+        // 1. Validation du type PDF
+        if (file.getContentType() == null || !file.getContentType().equals("application/pdf")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seuls les fichiers PDF sont autorisés.");
+        }
+
+        // 2. Récupération de l'assignation et validation de propriété
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignation introuvable"));
+
+        if (!assignment.getUser().getId().equals(currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Vous ne pouvez uploader un certificat que pour vos propres assignations.");
+        }
+
+        // 3. Traitement du fichier physique (Stockage Local)
+        String originalFileName = file.getOriginalFilename();
+        String fileExtension = originalFileName != null && originalFileName.contains(".")
+                ? originalFileName.substring(originalFileName.lastIndexOf("."))
+                : ".pdf";
+
+        // Sécurisation du nom de fichier pour éviter l'écrasement
+        String storedFileName = UUID.randomUUID().toString() + fileExtension;
+        Path targetLocation = this.fileStorageLocation.resolve(storedFileName);
+
+        try {
+            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            throw new RuntimeException("Erreur lors de l'enregistrement du fichier sur le disque.", ex);
+        }
+
+        // 4. Création de l'entité en base
+        Certificate certificate = Certificate.builder()
+                .assignment(assignment)
+                .user(assignment.getUser())
+                .fileName(originalFileName)
+                .fileSize((int) file.getSize())
+                .storagePath(targetLocation.toString())
+                .status(CertificateStatus.PENDING_VALIDATION)
+                .build();
+
+        return certificateRepository.save(certificate);
+    }
+
+    @Transactional(readOnly = true)
+    public Resource downloadCertificate(UUID certificateId, UUID currentUserId, String currentUserRole) {
+        Certificate certificate = certificateRepository.findById(certificateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Certificat introuvable"));
+
+        // 1. Sécurité (RLS) : Propriétaire, Manager, Admin ou Training Manager
+        boolean isAdminOrTm = List.of("ADMIN", "TRAINING_MANAGER").contains(currentUserRole);
+        boolean isOwner = certificate.getUser().getId().equals(currentUserId);
+        boolean isManager = false;
+
+        if ("CAREER_MANAGER".equals(currentUserRole)) {
+            isManager = managerAssignmentRepository.existsById(
+                    new ManagerAssignment.Id(currentUserId, certificate.getUser().getId()));
+        }
+
+        if (!isAdminOrTm && !isOwner && !isManager) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Vous n'avez pas l'autorisation de télécharger ce certificat.");
+        }
+
+        // 2. Lecture du fichier sur le disque
+        try {
+            Path filePath = Paths.get(certificate.getStoragePath()).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            } else {
+                throw new ResourceNotFoundException("Fichier introuvable sur le disque ou corrompu.");
+            }
+        } catch (MalformedURLException ex) {
+            throw new ResourceNotFoundException("Erreur de chemin d'accès au fichier.", ex);
+        }
+    }
+}

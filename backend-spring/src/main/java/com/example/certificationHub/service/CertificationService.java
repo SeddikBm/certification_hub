@@ -51,7 +51,7 @@ public class CertificationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));
 
         List<CertificationSquad> squads = certSquadRepository.findByCertificationId(id);
-        Double averageRating = ratingRepository.getAverageRatingByCertificationId(id);
+        Double averageRating = ratingRepository.getAverageRating(id);
 
         return certificationMapper.toDetailedResponse(cert, squads, averageRating);
     }

@@ -96,7 +96,6 @@ public class CertificateService {
                 .status(CertificateStatus.PENDING_VALIDATION)
                 .build();
 
-        return certificateRepository.save(certificate);
         String itemName = assignment.getItemType().name().equals("CERTIFICATION") ? "votre certification"
                 : "votre formation";
 
@@ -109,6 +108,9 @@ public class CertificateService {
                 .itemName(itemName)
                 .eventType("CERTIFICATE_UPLOADED")
                 .build());
+
+        return certificateRepository.save(certificate);
+
     }
 
     @Transactional(readOnly = true)

@@ -24,4 +24,7 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID>, J
     boolean existsByUserIdAndItemIdAndItemTypeAndCompletedAtIsNull(UUID userId, UUID itemId, ItemType itemType);
 
     List<Assignment> findByStatusCertificationAndExamAtBetween(StatusCertification status, Instant start, Instant end);
+
+    List<Assignment> findByUserIdAndItemIdAndItemTypeAndStatusCertification(
+            UUID userId, UUID itemId, ItemType itemType, StatusCertification status);
 }

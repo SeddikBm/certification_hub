@@ -91,13 +91,20 @@ public class AuthController {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                             "Refresh token révoqué ou introuvable"));
 
-            String newAccessToken = jwtService.generateAccessToken(email, userId.toString(), "COLLABORATOR");
+            // Récupération du rôle réel de l'utilisateur depuis la base
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Utilisateur introuvable"));
+            String actualRole = user.getRole().name();
+
+            String newAccessToken = jwtService.generateAccessToken(email, userId.toString(), actualRole);
 
             return AuthResponse.builder()
                     .accessToken(newAccessToken)
                     .refreshToken(request.getRefreshToken())
                     .build();
 
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalide ou expiré");
         }
@@ -113,13 +120,13 @@ public class AuthController {
 
     private void saveRefreshToken(UUID userId, String tokenString) {
         Instant expiresAt = Instant.now().plusMillis(refreshTokenExpirationMs);
-        
+
         RefreshToken refreshToken = RefreshToken.builder()
                 .userId(userId)
                 .tokenHash(hashToken(tokenString))
                 .expiresAt(expiresAt)
                 .build();
-                
+
         refreshTokenRepository.save(refreshToken);
     }
 

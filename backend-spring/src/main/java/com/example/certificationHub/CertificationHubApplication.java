@@ -12,25 +12,18 @@ public class CertificationHubApplication {
 		SpringApplication.run(CertificationHubApplication.class, args);
 	}
 
-	// @Bean
-	// public CommandLineRunner updateTestPasswords(UserRepository userRepository,
-	// PasswordEncoder passwordEncoder) {
-	// return args -> {
-	// // Mettre à jour l'admin test
-	// userRepository.findByEmail("admin@devoteam.com").ifPresent(user -> {
-	// System.out.println("Mise à jour du mot de passe Admin...");
-	// // Le nouveau mot de passe sera "Password123!"
-	// user.setPasswordHash(passwordEncoder.encode("Password123456!"));
-	// userRepository.save(user);
-	// });
-
-	// // Mettre à jour le collaborateur test
-	// userRepository.findByEmail("collab@devoteam.com").ifPresent(user -> {
-	// System.out.println("Mise à jour du mot de passe Collaborateur...");
-	// user.setPasswordHash(passwordEncoder.encode("Password123456!"));
-	// userRepository.save(user);
-	// });
-	// };
-	// }
+	@org.springframework.context.annotation.Bean
+	public org.springframework.boot.CommandLineRunner updateTestPasswords(
+			com.example.certificationHub.repository.UserRepository userRepository,
+			org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
+		return args -> {
+			String newHash = passwordEncoder.encode("Password123!");
+			userRepository.findAll().forEach(user -> {
+				user.setPasswordHash(newHash);
+				userRepository.save(user);
+			});
+			System.out.println("Mise à jour des mots de passe pour tous les utilisateurs...");
+		};
+	}
 
 }

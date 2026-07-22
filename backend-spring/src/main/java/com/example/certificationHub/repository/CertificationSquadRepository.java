@@ -10,5 +10,8 @@ public interface CertificationSquadRepository extends JpaRepository<Certificatio
     List<CertificationSquad> findBySquadId(UUID squadId);
     List<CertificationSquad> findByCertificationId(UUID certificationId);
     void deleteByCertificationId(UUID certificationId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT new com.example.certificationHub.dto.response.ChartDataResponse(cs.squad.name, COUNT(cs)) FROM CertificationSquad cs GROUP BY cs.squad.name")
+    java.util.List<com.example.certificationHub.dto.response.ChartDataResponse> countCertificationsBySquad();
 }
 

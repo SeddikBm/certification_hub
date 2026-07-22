@@ -77,20 +77,19 @@ public class NotificationConsumer {
                 type = NotificationType.WARNING;
                 break;
         }
-            }
 
-            // 1. Sauvegarde In-App (Base de données)
-            Notification notification = Notification.builder()
-                    .user(user)
-                    .title(title)
-                    .message(message)
-                    .type(type)
-                    .channel("BOTH") // On indique que ça part sur les deux canaux
-                    .build();
-            notificationRepository.save(notification);
+        // 1. Sauvegarde In-App (Base de données)
+        Notification notification = Notification.builder()
+                .user(user)
+                .title(title)
+                .message(message)
+                .type(type)
+                .channel("BOTH") // On indique que ça part sur les deux canaux
+                .build();
+        notificationRepository.save(notification);
 
-            // 2. Délégation de l'envoi d'email à ton service dédié
-            emailService.sendHtmlAssignmentEmail(event, title, message);
-        }
+        // 2. Délégation de l'envoi d'email à ton service dédié
+        emailService.sendHtmlAssignmentEmail(event, title, message);
+    }
 
 }

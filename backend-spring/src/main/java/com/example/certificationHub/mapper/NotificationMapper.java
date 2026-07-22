@@ -2,7 +2,9 @@ package com.example.certificationHub.mapper;
 
 import com.example.certificationHub.dto.response.NotificationResponse;
 import com.example.certificationHub.entity.Notification;
+import org.springframework.stereotype.Component;
 
+@Component
 public class NotificationMapper {
     public NotificationResponse toResponse(Notification n) {
         return NotificationResponse.builder()

@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Data
 public class UserUpdateRequest {
     @NotBlank(message = "Le prénom est requis")
@@ -21,6 +23,8 @@ public class UserUpdateRequest {
     private String email;
 
     private String phone;
+
+    private LocalDate hireDate;
 
     // Ces champs seront ignorés si l'utilisateur n'est pas ADMIN
     private UserRole role;

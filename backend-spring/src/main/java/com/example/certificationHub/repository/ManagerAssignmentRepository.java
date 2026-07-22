@@ -17,7 +17,7 @@ public interface ManagerAssignmentRepository extends JpaRepository<ManagerAssign
         // Trouver tous les collaborateurs gérés par un Career Manager
         List<ManagerAssignment> findByManagerId(UUID managerId);
 
-        @Query("SELECT new CareerManagerHierarchyResponse(" +
+        @Query("SELECT new com.example.certificationHub.dto.response.CareerManagerHierarchyResponse(" +
 
                         "u.id, u.firstName, u.lastName, u.email, COUNT(ma.collaborator.id)) " +
 
@@ -32,7 +32,7 @@ public interface ManagerAssignmentRepository extends JpaRepository<ManagerAssign
         // 2. Récupérer la liste détaillée des collaborateurs pour un manager spécifique
         // (pour la modale)
 
-        @Query("SELECT new AssignedCollaboratorResponse(" +
+        @Query("SELECT new com.example.certificationHub.dto.response.AssignedCollaboratorResponse(" +
 
                         "c.id, c.firstName, c.lastName, c.email, s.name) " +
 

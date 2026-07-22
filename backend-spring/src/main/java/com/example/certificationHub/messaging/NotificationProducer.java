@@ -14,4 +14,8 @@ public class NotificationProducer {
     public void sendWelcomeEmail(WelcomeEmailEvent event) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.WELCOME_EMAIL_QUEUE, event);
     }
+
+    public void sendAssignmentEvent(AssignmentEvent event) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_QUEUE, event);
+    }
 }

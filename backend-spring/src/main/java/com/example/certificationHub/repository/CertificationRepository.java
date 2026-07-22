@@ -16,4 +16,10 @@ public interface CertificationRepository
     Optional<Certification> findByIdAndDeletedAtIsNull(UUID id);
 
     boolean existsByCodeAndDeletedAtIsNull(String code);
+
+    @org.springframework.data.jpa.repository.Query("SELECT new com.example.certificationHub.dto.response.ChartDataResponse(c.provider, COUNT(c)) FROM Certification c WHERE c.deletedAt IS NULL GROUP BY c.provider")
+    java.util.List<com.example.certificationHub.dto.response.ChartDataResponse> countCertificationsByProvider();
+
+    @org.springframework.data.jpa.repository.Query("SELECT new com.example.certificationHub.dto.response.ChartDataResponse(CAST(c.difficulty AS string), COUNT(c)) FROM Certification c WHERE c.deletedAt IS NULL GROUP BY c.difficulty")
+    java.util.List<com.example.certificationHub.dto.response.ChartDataResponse> countCertificationsByDifficulty();
 }

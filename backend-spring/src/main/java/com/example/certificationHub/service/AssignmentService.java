@@ -207,11 +207,20 @@ public class AssignmentService {
 
         Assignment updatedAssignment = assignmentRepository.save(assignment);
 
-        if (isNewlyApproved || isNewlyRejected) {
+        if (isNewlyApproved || isNewlyRejected || isNewlyScheduled) {
             String itemName = assignment.getItemType() == ItemType.CERTIFICATION
                     ? certificationRepository.findById(assignment.getItemId()).map(c -> c.getName())
                             .orElse("Certification")
                     : trainingRepository.findById(assignment.getItemId()).map(t -> t.getTitle()).orElse("Formation");
+
+            String eventType;
+            if (isNewlyApproved) {
+                eventType = "APPROVED";
+            } else if (isNewlyScheduled) {
+                eventType = "EXAM_SCHEDULED";
+            } else {
+                eventType = "REJECTED";
+            }
 
             notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
                     .userId(assignment.getUser().getId())
@@ -219,7 +228,7 @@ public class AssignmentService {
                     .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
                     .assignmentId(updatedAssignment.getId())
                     .itemName(itemName)
-                    .eventType(isNewlyApproved ? "APPROVED" : isNewlyScheduled ? "EXAM_SCHEDULED" : "REJECTED")
+                    .eventType(eventType)
                     .build());
         }
 

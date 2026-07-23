@@ -1,0 +1,476 @@
+<!DOCTYPE html><html class="h-full bg-surface" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Gestion de la Hiérarchie - Devoteam Enterprise Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "primary": "#b70f30",
+                "on-tertiary-container": "#f5fff7",
+                "error": "#ba1a1a",
+                "on-secondary": "#ffffff",
+                "surface-container": "#ffe9e8",
+                "primary-fixed": "#ffdad9",
+                "tertiary-fixed": "#7cfac2",
+                "secondary": "#40627e",
+                "tertiary": "#006949",
+                "surface-dim": "#f0d3d3",
+                "surface-container-lowest": "#ffffff",
+                "on-error-container": "#93000a",
+                "on-tertiary-fixed": "#002114",
+                "surface-tint": "#bb1332",
+                "surface-container-highest": "#f9dcdb",
+                "secondary-fixed-dim": "#a8caeb",
+                "surface-container-high": "#ffe1e1",
+                "on-surface": "#271717",
+                "primary-fixed-dim": "#ffb3b3",
+                "primary-container": "#db3045",
+                "on-secondary-fixed": "#001d31",
+                "inverse-surface": "#3e2c2c",
+                "on-secondary-container": "#41627f",
+                "secondary-container": "#bcdeff",
+                "on-primary": "#ffffff",
+                "on-background": "#271717",
+                "on-tertiary-fixed-variant": "#005137",
+                "inverse-on-surface": "#ffedec",
+                "background": "#fff8f7",
+                "on-error": "#ffffff",
+                "surface-variant": "#f9dcdb",
+                "error-container": "#ffdad6",
+                "secondary-fixed": "#cce5ff",
+                "on-secondary-fixed-variant": "#274a65",
+                "on-primary-container": "#fffbff",
+                "on-primary-fixed": "#400009",
+                "surface-bright": "#fff8f7",
+                "on-tertiary": "#ffffff",
+                "on-primary-fixed-variant": "#920021",
+                "outline": "#8f6f6f",
+                "on-surface-variant": "#5b4040",
+                "tertiary-fixed-dim": "#5edda8",
+                "inverse-primary": "#ffb3b3",
+                "tertiary-container": "#00855d",
+                "surface-container-low": "#fff0ef",
+                "surface": "#fff8f7",
+                "outline-variant": "#e3bebd"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "stack-sm": "8px",
+                "stack-lg": "32px",
+                "margin-desktop": "32px",
+                "stack-md": "16px",
+                "gutter": "16px",
+                "unit": "4px",
+                "margin-mobile": "16px",
+                "container-padding": "24px"
+        },
+        "fontFamily": {
+                "headline-md": [
+                        "Hanken Grotesk"
+                ],
+                "body-sm": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg-mobile": [
+                        "Hanken Grotesk"
+                ],
+                "body-lg": [
+                        "Hanken Grotesk"
+                ],
+                "body-md": [
+                        "Hanken Grotesk"
+                ],
+                "label-md": [
+                        "Hanken Grotesk"
+                ],
+                "headline-sm": [
+                        "Hanken Grotesk"
+                ],
+                "display-lg": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg": [
+                        "Hanken Grotesk"
+                ]
+        },
+        "fontSize": {
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "36px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-md": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-sm": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "800"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .ambient-shadow { box-shadow: 0 4px 20px rgba(0, 43, 69, 0.08); }
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 43, 69, 0.12); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex">
+<!-- SideNavBar (Desktop) -->
+<nav aria-label="Sidebar Navigation" class="hidden md:flex bg-surface-container-low dark:bg-surface-dim shadow-md docked left-0 h-screen w-64 flex-col z-50 overflow-y-auto">
+<div class="p-4 flex items-center gap-3">
+<img alt="Devoteam Brand Logo" class="h-10 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhkAF5P62PNdMby8Z-9Q7pZOyUtD0q4J0TZZSfhO6lt9LMzXhAXRKkC4zbsZmXrICI0DHAEnj54J-kjzxqLpeDhstnSOkCEuUGWO0n6k4_WhaCywrBEt2YzvnV8iNagVWiiWGOCvoG3gXYTZddWkZWtnlqqitXn7vuKeuKT4xR10QGRRLbdhW9BQz6uhD4gbEbD246oUXpe7p3jg8t91VB1xfqBu9DLG1i1mGPSmZZgLB7oq0Qw1_gZY1NxylzzK-oP4o">
+</div>
+<div class="flex-1 mt-6">
+<ul class="space-y-1">
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">verified</span>
+<span class="font-label-md text-label-md">Certifications</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-label-md text-label-md">Trainings</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Users</span>
+</a>
+</li>
+<li>
+<a class="bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-lg mx-2 px-4 py-3 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-md text-label-md">Hierarchy</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">assignment_ind</span>
+<span class="font-label-md text-label-md">My Assignments</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="font-label-md text-label-md">Manage Assignments</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="p-4 border-t border-outline-variant mt-auto">
+<ul class="space-y-1">
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant px-4 py-3 mx-2 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-40 bg-surface dark:bg-surface-container-low shadow-sm border-b border-outline-variant dark:border-outline">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden md:flex items-center bg-surface-container-low rounded-full px-4 py-2 border border-outline-variant focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm font-body-sm text-on-surface w-64 placeholder-on-surface-variant" placeholder="Search..." type="text">
+</div>
+</div>
+<div class="md:hidden flex items-center">
+<span class="font-display-lg text-headline-sm text-primary">Enterprise Portal</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-full transition-colors hidden md:block">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant mx-2 hidden md:block"></div>
+<div class="flex items-center gap-3 group cursor-pointer">
+<div class="text-right hidden lg:block">
+<p class="font-label-md text-label-md text-on-surface font-semibold">Alexandre Dubois</p>
+<p class="font-body-sm text-[10px] text-on-surface-variant uppercase tracking-tighter">Senior Architect</p>
+</div>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A professional headshot of a corporate employee smiling subtly against a neutral light background, bright even lighting, high quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS0JMyjNyAI9cX2fKOBX6f-NlBK_pfE5W8ZFUmjW-9ub5j1fwe5uFJeuyS3y3KYppvi-9GWk_dYD9IL515b1pZhyv9hctkT55Vz91yC2NHyJw6DCt0PAN-WDIqCucpbN5dIHQTCJD_MEOv41zIOYOQsmJsElMD_nImQYn3LxL8uMfw7fbrdxnnD4sDGjzQ0h9ufvRCjHdLOV9F5QqQN4qiv4qwlw9JozYsgf_CD9c4pnRun6olYA8ZbQ">
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-4 md:p-margin-desktop">
+<div class="max-w-[1280px] mx-auto space-y-stack-lg">
+<!-- Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Gestion de la Hiérarchie</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage Career Managers and their respective teams.</p>
+</div>
+<button class="bg-primary text-white hover:brightness-110 px-6 py-3 rounded-lg font-label-md text-label-md flex items-center gap-2 shadow-md shadow-primary/20 transition-all duration-200 uppercase">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+                    Add Collaborator
+                </button>
+</div>
+<!-- Dashboard Stats -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="bg-surface-container-lowest rounded-xl p-container-padding ambient-shadow hover-lift border border-outline-variant/50">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-2">Total Managers</p>
+<h3 class="font-display-lg text-display-lg text-on-surface">42</h3>
+</div>
+<div class="h-12 w-12 rounded-full bg-primary-container text-white flex items-center justify-center">
+<span class="material-symbols-outlined">supervisor_account</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-container-padding ambient-shadow hover-lift border border-outline-variant/50">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-2">Total Collaborators</p>
+<h3 class="font-display-lg text-display-lg text-on-surface">356</h3>
+</div>
+<div class="h-12 w-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined">groups</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-container-padding ambient-shadow hover-lift border border-outline-variant/50">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-2">Departments</p>
+<h3 class="font-display-lg text-display-lg text-on-surface">8</h3>
+</div>
+<div class="h-12 w-12 rounded-full bg-tertiary-container text-white flex items-center justify-center">
+<span class="material-symbols-outlined">corporate_fare</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Data Table Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/50 ambient-shadow overflow-hidden">
+<div class="p-6 border-b border-outline-variant/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Career Managers List</h3>
+<div class="flex items-center gap-2 w-full sm:w-auto">
+<div class="relative flex-1 sm:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant/50 rounded-lg text-body-sm font-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder-on-surface-variant" placeholder="Search managers..." type="text">
+</div>
+<button class="p-2 text-on-surface-variant border border-outline-variant/50 rounded-lg hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest border-b border-outline-variant/50">
+<th class="p-4 font-label-md text-label-md text-on-surface-variant uppercase">Manager Name</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant uppercase">Department</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant uppercase text-center">Team Size</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant uppercase text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-secondary-container overflow-hidden">
+<img class="h-full w-full object-cover" data-alt="Professional headshot of an energetic female manager in a modern office setting, bright lighting, high quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5FXpqjYtJqfgKH4bBgg36bIuOoCGAswdZde5R37YTcl38i_YNd5Jm5BKDtDj5QVD0XPuRKO3GZZNKl15qQ9mwHiLPcw4CSL33cVHOyiDFXzLRdmkEOEqiFFsguw20mp9diBaDn2c0AKCVrtjz_s0UcZ7SORZn_raD1OSD93kM4Dt_QxdefOEcd4CnU_UfAgmddPO1giMoXXoQtNXEUUScmfVN0IBV-pk1p2yvU0DS2BcGNwFJS4Zi3A">
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Sophie Laurent</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Cloud Solutions</p>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-container text-on-secondary-container">Engineering</span>
+</td>
+<td class="p-4 text-center">
+<div class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-surface-variant text-on-surface-variant font-body-md text-body-md">
+                                        12
+                                    </div>
+</td>
+<td class="p-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-tertiary-container overflow-hidden">
+<img class="h-full w-full object-cover" data-alt="Professional headshot of a confident male manager in a modern office setting, bright lighting, high quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjKCP6apcKC96xTh4mKdUWLf0Trv042CLsrQvK1-5QT-K_Tr7g8LxkQJF2-JCSt4mx4d_z8V8V1iBXbcExXcOee4TSSCFinIDFNP15UxW1Klpao86Ras4YkiIvFdjo-4Xt2AHybwQu_IgWvKIt-_q9gg4M8WH8cM5BRIOiuEzP56HWrBaksYMQ-fIvDRpbMTpDbg-Votr77MwG73jJdmLOGttEPnZs8Wn5x6eX7EYPsm7HKl4L6JPRYg">
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Marc Dubois</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Cybersecurity</p>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e8f5e9] text-[#1b5e20]">Security</span>
+</td>
+<td class="p-4 text-center">
+<div class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-surface-variant text-on-surface-variant font-body-md text-body-md">
+                                        8
+                                    </div>
+</td>
+<td class="p-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-primary overflow-hidden text-white flex items-center justify-center font-bold text-headline-sm">
+                                            EL
+                                        </div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Elodie Moreau</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Data &amp; AI</p>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#fff3e0] text-[#e65100]">Innovation</span>
+</td>
+<td class="p-4 text-center">
+<div class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-surface-variant text-on-surface-variant font-body-md text-body-md">
+                                        15
+                                    </div>
+</td>
+<td class="p-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-outline-variant/50 flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Showing 1 to 3 of 42 entries</span>
+<div class="flex gap-1">
+<button class="p-1 rounded hover:bg-surface-container disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="px-3 py-1 rounded bg-primary text-white font-medium">1</button>
+<button class="px-3 py-1 rounded hover:bg-surface-container font-medium text-on-surface">2</button>
+<button class="px-3 py-1 rounded hover:bg-surface-container font-medium text-on-surface">3</button>
+<span class="px-2 py-1 text-on-surface">...</span>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Devoteam Enterprise Portal - Add Training</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error": "#ba1a1a",
+                      "secondary-fixed": "#cce5ff",
+                      "on-primary-fixed-variant": "#920021",
+                      "surface-bright": "#fff8f7",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed-variant": "#274a65",
+                      "primary-container": "#db3045",
+                      "primary-fixed": "#ffdad9",
+                      "on-error-container": "#93000a",
+                      "on-primary-container": "#fffbff",
+                      "on-tertiary": "#ffffff",
+                      "on-surface-variant": "#5b4040",
+                      "on-primary-fixed": "#400009",
+                      "inverse-surface": "#3e2c2c",
+                      "inverse-primary": "#ffb3b3",
+                      "on-surface": "#271717",
+                      "on-secondary-fixed": "#001d31",
+                      "primary-fixed-dim": "#ffb3b3",
+                      "on-background": "#271717",
+                      "tertiary": "#006949",
+                      "primary": "#b70f30",
+                      "surface-container": "#ffe9e8",
+                      "tertiary-fixed": "#7cfac2",
+                      "tertiary-fixed-dim": "#5edda8",
+                      "on-secondary-container": "#41627f",
+                      "surface-container-highest": "#f9dcdb",
+                      "background": "#fff8f7",
+                      "on-primary": "#ffffff",
+                      "secondary-container": "#bcdeff",
+                      "outline-variant": "#e3bebd",
+                      "surface-container-high": "#ffe1e1",
+                      "secondary": "#40627e",
+                      "surface-tint": "#bb1332",
+                      "secondary-fixed-dim": "#a8caeb",
+                      "outline": "#8f6f6f",
+                      "on-tertiary-container": "#f5fff7",
+                      "inverse-on-surface": "#ffedec",
+                      "on-secondary": "#ffffff",
+                      "surface-dim": "#f0d3d3",
+                      "on-tertiary-fixed": "#002114",
+                      "error-container": "#ffdad6",
+                      "surface-variant": "#f9dcdb",
+                      "surface-container-low": "#fff0ef",
+                      "on-tertiary-fixed-variant": "#005137",
+                      "tertiary-container": "#00855d",
+                      "surface-container-lowest": "#ffffff",
+                      "surface": "#fff8f7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "unit": "4px",
+                      "stack-md": "16px",
+                      "stack-lg": "32px",
+                      "margin-mobile": "16px",
+                      "stack-sm": "8px",
+                      "margin-desktop": "32px",
+                      "container-padding": "24px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Hanken Grotesk"],
+                      "body-sm": ["Hanken Grotesk"],
+                      "body-md": ["Hanken Grotesk"],
+                      "label-md": ["Hanken Grotesk"],
+                      "body-lg": ["Hanken Grotesk"],
+                      "headline-lg": ["Hanken Grotesk"],
+                      "headline-sm": ["Hanken Grotesk"],
+                      "display-lg": ["Hanken Grotesk"],
+                      "headline-md": ["Hanken Grotesk"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 43, 69, 0.08);
+        }
+        
+        .form-input {
+            width: 100%;
+            border-radius: 0.75rem; /* xl */
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            background-color: #ffffff;
+            transition: all 0.2s ease-in-out;
+            font-family: 'Hanken Grotesk', sans-serif;
+            font-size: 16px;
+            color: #271717; /* on-surface */
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #b70f30; /* primary */
+            box-shadow: 0 0 0 2px rgba(183, 15, 48, 0.2); /* primary glow */
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.25rem;
+            color: #5b4040; /* on-surface-variant */
+            font-family: 'Hanken Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .toast-enter {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        .toast-enter-active {
+            transform: translateX(0);
+            opacity: 1;
+            transition: all 300ms ease-out;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen relative overflow-hidden flex items-center justify-center">
+<!-- Background Elements simulating the portal state behind modal -->
+<div class="absolute inset-0 bg-surface-container pointer-events-none z-0">
+<!-- Dashboard Mockup Behind Modal -->
+<div class="h-16 bg-surface shadow-sm border-b border-outline-variant/30 flex items-center px-container-padding opacity-40">
+<img alt="Devoteam Logo" class="h-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCslehKN6Hhv-5bzE9NKG9p14q0U1tjV9fM9dAsplEc-J6iLK4xhL8BgJerd9hBJ-MHzpWAqJ9a4l5LIcJMsX6WisYCJmouGroy2yEq259QdTKXocZXvjFtM6wm8PqN9GxgQploBGd2OPbWayZPBFvopKXFsJ1-G6CxbdEamFXGXeHSieMp9JX43QxqRQUvHa8Uscj8tMRSyxSDqg4yqzAf5ChasEKors0OOBmMIzCxzK5WGByl21xWz2SySNEW5S5Tdhk"/>
+<div class="ml-auto flex gap-4">
+<div class="w-8 h-8 rounded-full bg-surface-variant"></div>
+</div>
+</div>
+<div class="p-container-padding grid grid-cols-12 gap-gutter opacity-40">
+<div class="col-span-3 h-screen bg-surface-container-low rounded-r-xl"></div>
+<div class="col-span-9 grid grid-cols-2 gap-gutter">
+<div class="h-64 bg-surface rounded-xl shadow-sm"></div>
+<div class="h-64 bg-surface rounded-xl shadow-sm"></div>
+<div class="h-64 col-span-2 bg-surface rounded-xl shadow-sm"></div>
+</div>
+</div>
+</div>
+<!-- Pinkish Overlay (SCREEN_17 style) -->
+<div class="absolute inset-0 bg-primary-fixed-dim/40 backdrop-blur-sm z-10 flex items-center justify-center p-4">
+<!-- Modal Container -->
+<div class="glass-panel w-full max-w-[800px] rounded-[24px] overflow-hidden flex flex-col max-h-[90vh]">
+<!-- Modal Header -->
+<div class="px-8 py-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface sticky top-0 z-20">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Add New Training</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Configure details for the resource center.</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-2 rounded-full hover:bg-surface-variant">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body (Scrollable) -->
+<div class="p-8 overflow-y-auto flex-1 space-y-8 bg-surface-container-lowest">
+<!-- Section 1: Basic Information -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 flex items-center gap-2 border-b border-outline-variant/20 pb-2">
+<span class="material-symbols-outlined">info</span>
+                        Basic Information
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="md:col-span-2">
+<label class="form-label" for="training-title">Training Title</label>
+<input class="form-input" id="training-title" placeholder="e.g., Advanced Cloud Architecture" type="text"/>
+</div>
+<div>
+<label class="form-label" for="training-type">Type</label>
+<div class="relative">
+<select class="form-input appearance-none pr-10" id="training-type">
+<option disabled="" selected="" value="">Select Type</option>
+<option value="udemy">Udemy</option>
+<option value="internal">Internal</option>
+<option value="external">External</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<div>
+<label class="form-label" for="training-provider">Provider</label>
+<div class="relative">
+<select class="form-input appearance-none pr-10" id="training-provider">
+<option disabled="" selected="" value="">Select Provider</option>
+<option value="aws">AWS</option>
+<option value="google">Google Cloud</option>
+<option value="microsoft">Microsoft</option>
+<option value="devoteam">Devoteam Internal</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Training Logistics -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 flex items-center gap-2 border-b border-outline-variant/20 pb-2">
+<span class="material-symbols-outlined">schedule</span>
+                        Training Logistics
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="form-label" for="duration">Duration (hours)</label>
+<div class="relative">
+<input class="form-input pl-10" id="duration" placeholder="0" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3 text-on-surface-variant">timer</span>
+</div>
+</div>
+<div>
+<label class="form-label" for="language">Language</label>
+<div class="relative">
+<select class="form-input appearance-none pr-10" id="language">
+<option value="en">English</option>
+<option value="fr">French</option>
+<option value="es">Spanish</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<div>
+<label class="form-label" for="cost">Cost (€)</label>
+<div class="relative">
+<input class="form-input pl-10" id="cost" placeholder="0.00" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3 text-on-surface-variant">euro</span>
+</div>
+</div>
+<div>
+<label class="form-label" for="platform">Platform</label>
+<input class="form-input" id="platform" placeholder="e.g., Coursera, Pluralsight" type="text"/>
+</div>
+</div>
+</section>
+<!-- Section 3: Classification & Organization -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 flex items-center gap-2 border-b border-outline-variant/20 pb-2">
+<span class="material-symbols-outlined">category</span>
+                        Classification &amp; Organization
+                    </h3>
+<div class="grid grid-cols-1 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="form-label" for="priority">Priority</label>
+<div class="relative">
+<select class="form-input appearance-none pr-10" id="priority">
+<option value="high">High (Mandatory)</option>
+<option value="medium">Medium (Recommended)</option>
+<option value="low">Low (Optional)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<div>
+<label class="form-label">Squads (Multi-select tags)</label>
+<div class="flex flex-wrap gap-2 p-2 border border-[#e2e8f0] rounded-xl bg-white min-h-[46px] items-center">
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-md text-label-md flex items-center gap-1">
+                                        Cloud Ops <button class="hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-md text-label-md flex items-center gap-1">
+                                        Data Science <button class="hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<input class="flex-1 outline-none border-none p-0 text-body-sm font-body-sm bg-transparent" placeholder="Add squad..." type="text"/>
+</div>
+</div>
+</div>
+<div>
+<label class="form-label" for="enrollment-url">Enrollment URL</label>
+<div class="relative">
+<input class="form-input pl-10" id="enrollment-url" placeholder="https://..." type="url"/>
+<span class="material-symbols-outlined absolute left-3 top-3 text-on-surface-variant">link</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Description -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-primary mb-6 flex items-center gap-2 border-b border-outline-variant/20 pb-2">
+<span class="material-symbols-outlined">description</span>
+                        Description
+                    </h3>
+<div>
+<label class="form-label" for="description">Training Details</label>
+<textarea class="form-input resize-none" id="description" placeholder="Provide a comprehensive overview of the training objectives and target audience..." rows="4"></textarea>
+</div>
+</section>
+</div>
+<!-- Modal Footer -->
+<div class="px-8 py-5 border-t border-outline-variant/30 bg-surface flex justify-end gap-4 sticky bottom-0 z-20">
+<button class="px-6 py-3 rounded-xl border border-secondary text-secondary font-label-md text-label-md hover:bg-surface-variant transition-colors">
+                    Annuler
+                </button>
+<button class="px-6 py-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-surface-tint shadow-sm transition-all hover:-translate-y-[2px]" onclick="showToast()">
+                    Enregistrer
+                </button>
+</div>
+</div>
+</div>
+<!-- Toast Notification -->
+<div class="fixed bottom-6 right-6 z-50 glass-panel bg-tertiary-container text-on-tertiary-container px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 transition-all duration-300 transform translate-x-[150%] opacity-0" id="toast">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-md text-label-md">Formation enregistrée avec succès</span>
+</div>
+<script>
+        function showToast() {
+            const toast = document.getElementById('toast');
+            // Enter animation
+            toast.classList.remove('translate-x-[150%]', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+            
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-[150%]', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body></html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Trainings - Devoteam Enterprise Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#f9dcdb",
+                        "on-secondary-fixed-variant": "#274a65",
+                        "inverse-on-surface": "#ffedec",
+                        "error": "#ba1a1a",
+                        "primary-container": "#db3045",
+                        "surface-container-highest": "#f9dcdb",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fff8f7",
+                        "on-background": "#271717",
+                        "on-tertiary-fixed": "#002114",
+                        "surface-container-high": "#ffe1e1",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#400009",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#f5fff7",
+                        "secondary": "#40627e",
+                        "outline": "#8f6f6f",
+                        "on-secondary-container": "#41627f",
+                        "inverse-surface": "#3e2c2c",
+                        "inverse-primary": "#ffb3b3",
+                        "on-primary-fixed-variant": "#920021",
+                        "tertiary-container": "#00855d",
+                        "primary-fixed-dim": "#ffb3b3",
+                        "on-surface-variant": "#5b4040",
+                        "on-tertiary-fixed-variant": "#005137",
+                        "secondary-fixed-dim": "#a8caeb",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#ffe9e8",
+                        "on-primary-container": "#fffbff",
+                        "tertiary-fixed-dim": "#5edda8",
+                        "outline-variant": "#e3bebd",
+                        "on-surface": "#271717",
+                        "secondary-container": "#bcdeff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#001d31",
+                        "tertiary-fixed": "#7cfac2",
+                        "surface-dim": "#f0d3d3",
+                        "primary": "#b70f30",
+                        "surface-tint": "#bb1332",
+                        "on-tertiary": "#ffffff",
+                        "background": "#fff8f7",
+                        "tertiary": "#006949",
+                        "on-secondary": "#ffffff",
+                        "surface": "#fff8f7",
+                        "secondary-fixed": "#cce5ff",
+                        "primary-fixed": "#ffdad9",
+                        "surface-container-low": "#fff0ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "stack-sm": "8px",
+                        "container-padding": "24px",
+                        "margin-desktop": "32px",
+                        "gutter": "16px",
+                        "margin-mobile": "16px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "label-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-sm": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Hanken Grotesk', sans-serif; }
+        .ambient-shadow { box-shadow: 0 4px 20px rgba(0, 43, 69, 0.08); }
+        .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 43, 69, 0.12); }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface shadow-sm h-screen w-72 fixed left-0 top-0 flex flex-col p-4 space-y-2 z-50 hidden md:flex border-r border-outline-variant">
+<div class="mb-8 px-4 mt-4">
+<img alt="Devoteam Brand Logo" class="h-8 object-contain mb-2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANYpYkCkBsSRw5cBc0JK28VVdjj0CYMpnT6RyEFVC8v36Z4D7-ayuYRHoaQVvpA8D3XknzGQD-rUU9U4KJfgG9uzKGoqytCe6RefIRX5Qv47NC7Vb026hIn02L-lu_CWLl7n0iyQr_5orbPhfP3O1p5JiCO_Cg-BzCWS3INPAAy8AkxLrKXcPWx3t0wGguKkaEdOfAj5ai5HUbnD_R01R9YBs2H-PG_DwL6U1_x8vHzALBAosh4eMnqfYummJ50S-JcHY">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Devoteam</h1>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase">Enterprise Portal</p>
+</div>
+<div class="flex-1 space-y-2 overflow-y-auto">
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">verified</span>
+<span class="font-body-md text-body-md">Certifications</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg bg-secondary-container text-on-secondary-container font-bold shadow-sm Active: scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 1;">school</span>
+<span class="font-body-md text-body-md">Trainings</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">group</span>
+<span class="font-body-md text-body-md">Users</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">account_tree</span>
+<span class="font-body-md text-body-md">Hierarchy</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">assignment_ind</span>
+<span class="font-body-md text-body-md">My Assignments</span>
+</a>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3">assignment_turned_in</span>
+<span class="font-body-md text-body-md">Manage Assignments</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col md:ml-72 h-screen relative w-full">
+<!-- TopNavBar -->
+<header class="bg-surface shadow-sm h-16 fixed top-0 right-0 left-0 md:left-72 z-40 flex items-center justify-between px-6 w-auto">
+<div class="flex items-center md:hidden">
+<button class="text-on-surface-variant hover:text-primary mr-4">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">Enterprise Portal</span>
+</div>
+<div class="hidden md:flex flex-1 items-center">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="Search trainings..." type="text">
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors Active: opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors Active: opacity-80 transition-opacity">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a corporate employee smiling slightly, well-lit against a neutral background. The lighting is soft and flattering, suitable for a professional corporate profile picture in a light-mode UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPopVHW1jicoO_GlkyMrTOCuEIb9GiciKgr9ybZwk0sNpKqgyY6CT_hHj6MRKxlIsTyb_-g_BRO9WcwPXJAJElRoMWlE2HHbLXli-3aaDIel6LH2yxkprOM7dOsioA0fdqCTIR7xmXvpyCzKLIbbjaU5S890k6Ui-QLWz3gd_BK2TlcTKMoYENMGeKnf6pqimDJbMBvzPZpeYPb-1r1em9WKjxCKs7-8KddSYeTog18CqM21At2C5fuQ">
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto bg-surface-container-low pt-24 px-4 md:px-8 pb-12 w-full">
+<div class="max-w-7xl mx-auto space-y-8">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background">Catalogue des Formations</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Browse and manage available training courses across platforms.</p>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-surface-tint transition-colors ambient-shadow hover-lift">
+<span class="material-symbols-outlined text-sm">add</span>
+<span>Add Training</span>
+</button>
+</div>
+<!-- Filters & Controls Bar -->
+<div class="bg-surface rounded-xl p-4 ambient-shadow flex flex-col md:flex-row gap-4 items-end border border-surface-variant">
+<div class="w-full md:w-1/4">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1 uppercase">Platform</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg px-4 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary pr-10">
+<option>All Platforms</option>
+<option>Coursera</option>
+<option>Udemy</option>
+<option>Pluralsight</option>
+<option>Internal</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="w-full md:w-1/4">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1 uppercase">Difficulty</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg px-4 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary pr-10">
+<option>All Levels</option>
+<option>Beginner</option>
+<option>Intermediate</option>
+<option>Advanced</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="w-full md:w-1/4">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1 uppercase">Search</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full pl-9 pr-4 py-2 bg-surface border border-outline-variant rounded-lg font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Course name or code..." type="text">
+</div>
+</div>
+<div class="flex-1 flex justify-end">
+<button class="text-secondary border border-outline-variant px-4 py-2 rounded-lg font-label-md text-label-md flex items-center space-x-2 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+<span>More Filters</span>
+</button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-surface rounded-xl ambient-shadow overflow-hidden border border-surface-variant">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest border-b border-outline-variant">
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Code</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Name</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Platform</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Duration</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Instructor</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Rating</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4 font-body-sm text-body-sm font-medium text-secondary">TRN-1042</td>
+<td class="px-6 py-4">
+<div class="font-body-md text-body-md font-semibold text-on-background">Advanced Cloud Architecture</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">AWS, Azure multi-cloud strategies</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-md text-[10px] bg-secondary-container text-on-secondary-container">Coursera</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-surface-variant">40h</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-background">Dr. Sarah Jenkins</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-body-sm text-body-sm font-semibold">4.8</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4 font-body-sm text-body-sm font-medium text-secondary">TRN-2015</td>
+<td class="px-6 py-4">
+<div class="font-body-md text-body-md font-semibold text-on-background">DevOps Fundamentals</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">CI/CD pipelines and containerization</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-md text-[10px] bg-[#e1bee7] text-[#4a148c]">Udemy</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-surface-variant">15h</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-background">Marcus Torres</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-body-sm text-body-sm font-semibold">4.5</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4 font-body-sm text-body-sm font-medium text-secondary">TRN-0089</td>
+<td class="px-6 py-4">
+<div class="font-body-md text-body-md font-semibold text-on-background">Devoteam Agile Methodology</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Internal onboarding and processes</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-md text-[10px] bg-primary-container text-on-primary-container">Internal</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-surface-variant">8h</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-background">Internal L&amp;D</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">horizontal_rule</span>
+<span class="font-body-sm text-body-sm">N/A</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-4 font-body-sm text-body-sm font-medium text-secondary">TRN-3301</td>
+<td class="px-6 py-4">
+<div class="font-body-md text-body-md font-semibold text-on-background">React Native for Enterprise</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Building scalable mobile applications</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-md text-[10px] bg-[#fff9c4] text-[#f57f17]">Pluralsight</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-surface-variant">22h</td>
+<td class="px-6 py-4 font-body-sm text-body-sm text-on-background">Elena Rostova</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-body-sm text-body-sm font-semibold">4.9</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-surface px-6 py-4 border-t border-outline-variant flex items-center justify-between">
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+                            Showing <span class="font-semibold text-on-background">1</span> to <span class="font-semibold text-on-background">4</span> of <span class="font-semibold text-on-background">42</span> results
+                        </div>
+<div class="flex space-x-2">
+<button class="p-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="p-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

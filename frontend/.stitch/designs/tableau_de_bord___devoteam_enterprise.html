@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface dark:bg-surface-dim" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Devoteam Enterprise Portal - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#fffbff",
+                        "on-surface-variant": "#5b4040",
+                        "surface-container": "#ffe9e8",
+                        "tertiary-fixed-dim": "#5edda8",
+                        "tertiary": "#006949",
+                        "surface": "#fff8f7",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#f0d3d3",
+                        "primary-fixed": "#ffdad9",
+                        "surface-container-low": "#fff0ef",
+                        "tertiary-fixed": "#7cfac2",
+                        "surface-variant": "#f9dcdb",
+                        "inverse-surface": "#3e2c2c",
+                        "secondary-fixed": "#cce5ff",
+                        "on-error": "#ffffff",
+                        "primary-container": "#db3045",
+                        "inverse-on-surface": "#ffedec",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#ffe1e1",
+                        "tertiary-container": "#00855d",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#b70f30",
+                        "on-primary-fixed": "#400009",
+                        "on-tertiary-container": "#f5fff7",
+                        "on-primary": "#ffffff",
+                        "secondary": "#40627e",
+                        "on-background": "#271717",
+                        "outline-variant": "#e3bebd",
+                        "secondary-container": "#bcdeff",
+                        "inverse-primary": "#ffb3b3",
+                        "surface-container-highest": "#f9dcdb",
+                        "secondary-fixed-dim": "#a8caeb",
+                        "on-secondary-fixed": "#001d31",
+                        "surface-tint": "#bb1332",
+                        "surface-bright": "#fff8f7",
+                        "on-tertiary-fixed": "#002114",
+                        "on-surface": "#271717",
+                        "on-primary-fixed-variant": "#920021",
+                        "background": "#fff8f7",
+                        "primary-fixed-dim": "#ffb3b3",
+                        "outline": "#8f6f6f",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#41627f",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#005137",
+                        "on-secondary-fixed-variant": "#274a65",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "container-padding": "24px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "stack-sm": "8px",
+                        "stack-lg": "32px",
+                        "gutter": "16px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "label-md": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom Charts using CSS for static representation */
+        .pie-chart {
+            background: conic-gradient(
+                #b70f30 0% 45%, 
+                #40627e 45% 75%, 
+                #006949 75% 90%, 
+                #e3bebd 90% 100%
+            );
+            border-radius: 50%;
+        }
+        .bar-chart-bar {
+            background-color: #b70f30;
+            border-radius: 4px 4px 0 0;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-full flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 shadow-md bg-surface flex flex-col z-50 transition-all duration-200 ease-in-out hidden md:flex">
+<div class="px-container-padding py-stack-lg border-b border-outline-variant/30 flex flex-col gap-4">
+<img alt="Devoteam Logo" class="h-10 object-contain w-auto max-w-[150px]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8P959-H660oXsHEsr0hj50FyfxDsXWtX_57a3dnlLZzAtO8cCW-Lpv2te7_LgnPGnd5xHrS5z7T6KX4mNzTf0zIis2f1dKiqgg9c95wI5CuI6yc8hvA9aCJSYr1Hy-haGkSdGayGDoiSawl0-HS_ou0ZG8Kq7v_4CO6WU4u6nl1hly16CuedfGdxvtEbpQcRRzY2VSxVqtyrX7AAO28EUKLisDgkEtqDcZo0xrPNMMNMkHCkTJwrci4cfwM8XkKXWsAQ"/>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">Devoteam</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Portal</p>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-stack-md px-container-padding flex flex-col gap-2">
+<!-- Active Tab -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary bg-surface-container-high rounded-lg font-bold group transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined icon-fill">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:icon-fill transition-all">verified</span>
+<span>Certifications</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:icon-fill transition-all">school</span>
+<span>Trainings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:icon-fill transition-all">group</span>
+<span>Users</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:icon-fill transition-all">account_tree</span>
+<span>Hierarchy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:icon-fill transition-all">assignment</span>
+<span>Assignments</span>
+</a>
+</nav>
+<div class="p-container-padding border-t border-outline-variant/30 flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-error hover:bg-error-container rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col md:pl-64 h-full relative w-full">
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] h-16 shadow-sm bg-surface flex justify-between items-center px-container-padding z-40 transition-all duration-200 border-b border-outline-variant/20 md:border-none">
+<!-- Mobile Menu Button -->
+<button class="md:hidden text-on-surface p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-4 hidden md:flex flex-1 max-w-md">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant/50 rounded-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-sm font-body-sm transition-all" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="font-headline-sm text-headline-sm font-bold text-primary md:hidden">
+                Enterprise Portal
+            </div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-all duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-all duration-200">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="ml-4 h-8 w-8 rounded-full bg-secondary-container overflow-hidden border border-outline-variant cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate employee smiling subtly, well-lit with soft natural light against a neutral grey background. The style is modern corporate, emphasizing clean aesthetics and approachability, suitable for a light-mode enterprise software application portal." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARvBI7DxBDmzb3f-dHD_BkFg2MErlVOpZmdpT6ChzyDW8EFS8m4q8nq2nTN10uXa0PCwlIg11TEeMVcE2Abr2oxOi2SrRBDTwELr4_7WmILkdsyRAwk9C6I1f_5lRkzdL-_-a__rZyLune-9XF3QQjqeJZuC9bFNnq89nuKW9iGf7QV1LWUnFd_6gsmI3JgnUXO3Xi-KRGaeXmnTFJuTp8gqbrGqh-sEgok2cj2mVc0iE1IPXFulMW7g"/>
+</div>
+</div>
+</header>
+<!-- Canvas / Dashboard Content -->
+<main class="flex-1 overflow-y-auto pt-20 pb-10 px-4 md:px-margin-desktop bg-background">
+<div class="max-w-[1200px] mx-auto flex flex-col gap-stack-lg">
+<!-- Header -->
+<div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-on-surface tracking-tight">Tableau de Bord</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Vue d'ensemble des certifications et formations de l'entreprise.</p>
+</div>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Metric 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/20 hover:-translate-y-1 hover:shadow-md transition-all duration-200">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-primary-container/20 rounded-lg text-primary">
+<span class="material-symbols-outlined icon-fill">verified</span>
+</div>
+<span class="font-label-md text-label-md text-tertiary bg-tertiary-container/10 px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> 12%
+                            </span>
+</div>
+<h3 class="font-body-sm text-body-sm text-on-surface-variant">Total Certifications</h3>
+<p class="font-headline-lg text-headline-lg font-bold text-on-surface mt-1">158</p>
+</div>
+<!-- Metric 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/20 hover:-translate-y-1 hover:shadow-md transition-all duration-200">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-secondary-container/40 rounded-lg text-secondary">
+<span class="material-symbols-outlined icon-fill">school</span>
+</div>
+</div>
+<h3 class="font-body-sm text-body-sm text-on-surface-variant">Total Trainings</h3>
+<p class="font-headline-lg text-headline-lg font-bold text-on-surface mt-1">842</p>
+</div>
+<!-- Metric 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/20 hover:-translate-y-1 hover:shadow-md transition-all duration-200">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-tertiary-container/20 rounded-lg text-tertiary">
+<span class="material-symbols-outlined icon-fill">group</span>
+</div>
+</div>
+<h3 class="font-body-sm text-body-sm text-on-surface-variant">Total Users</h3>
+<p class="font-headline-lg text-headline-lg font-bold text-on-surface mt-1">1,240</p>
+</div>
+<!-- Metric 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/20 hover:-translate-y-1 hover:shadow-md transition-all duration-200">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-outline-variant/40 rounded-lg text-on-surface-variant">
+<span class="material-symbols-outlined icon-fill">hub</span>
+</div>
+</div>
+<h3 class="font-body-sm text-body-sm text-on-surface-variant">Total Squads</h3>
+<p class="font-headline-lg text-headline-lg font-bold text-on-surface mt-1">42</p>
+</div>
+</div>
+<!-- Charts Row 1 -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Pie Chart Card -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/20">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-6 border-b border-outline-variant/20 pb-4">Certifications par Provider</h3>
+<div class="flex flex-col sm:flex-row items-center gap-8 justify-center min-h-[250px]">
+<!-- Static CSS Pie Chart -->
+<div class="w-48 h-48 pie-chart shadow-inner relative">
+<!-- Hole for donut effect if desired, left solid for pie -->
+</div>
+<!-- Legend -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant w-24">AWS</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">45%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant w-24">Azure</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">30%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant w-24">Google Cloud</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">15%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-outline-variant"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant w-24">Oracle</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">10%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bar Chart Card -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/20">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-6 border-b border-outline-variant/20 pb-4">Certifications par Squad</h3>
+<div class="flex items-end justify-between h-[200px] mt-8 gap-2 relative">
+<!-- Y-axis rough labels -->
+<div class="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-on-surface-variant font-label-md text-label-md text-xs -ml-2">
+<span>50</span>
+<span>25</span>
+<span>0</span>
+</div>
+<div class="w-full flex justify-around items-end h-full ml-6 border-b border-outline-variant/30 pb-1 relative z-10">
+<!-- Bars (Heights relative to max 50) -->
+<div class="flex flex-col items-center gap-2 group">
+<div class="bar-chart-bar w-8 sm:w-12 h-[90%] relative transition-all duration-300 hover:bg-primary-fixed-variant cursor-pointer">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-md text-[10px] px-2 py-1 rounded transition-opacity">45</div>
+</div>
+<span class="font-label-md text-[10px] sm:text-xs text-on-surface-variant truncate w-12 text-center" title="Squad Alpha">Alpha</span>
+</div>
+<div class="flex flex-col items-center gap-2 group">
+<div class="bar-chart-bar w-8 sm:w-12 h-[76%] relative transition-all duration-300 hover:bg-primary-fixed-variant cursor-pointer">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-md text-[10px] px-2 py-1 rounded transition-opacity">38</div>
+</div>
+<span class="font-label-md text-[10px] sm:text-xs text-on-surface-variant truncate w-12 text-center" title="Squad Beta">Beta</span>
+</div>
+<div class="flex flex-col items-center gap-2 group">
+<div class="bar-chart-bar w-8 sm:w-12 h-[64%] relative transition-all duration-300 hover:bg-primary-fixed-variant cursor-pointer">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-md text-[10px] px-2 py-1 rounded transition-opacity">32</div>
+</div>
+<span class="font-label-md text-[10px] sm:text-xs text-on-surface-variant truncate w-12 text-center" title="Squad Gamma">Gamma</span>
+</div>
+<div class="flex flex-col items-center gap-2 group">
+<div class="bar-chart-bar w-8 sm:w-12 h-[56%] relative transition-all duration-300 hover:bg-primary-fixed-variant cursor-pointer">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-md text-[10px] px-2 py-1 rounded transition-opacity">28</div>
+</div>
+<span class="font-label-md text-[10px] sm:text-xs text-on-surface-variant truncate w-12 text-center" title="Squad Delta">Delta</span>
+</div>
+<div class="flex flex-col items-center gap-2 group">
+<div class="bar-chart-bar w-8 sm:w-12 h-[40%] relative transition-all duration-300 hover:bg-primary-fixed-variant cursor-pointer opacity-70">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-md text-[10px] px-2 py-1 rounded transition-opacity">20</div>
+</div>
+<span class="font-label-md text-[10px] sm:text-xs text-on-surface-variant truncate w-12 text-center" title="Squad Epsilon">Epsilon</span>
+</div>
+</div>
+<!-- Background Grid Lines -->
+<div class="absolute inset-0 ml-6 pointer-events-none flex flex-col justify-between border-l border-outline-variant/30">
+<div class="border-b border-outline-variant/10 w-full h-0"></div>
+<div class="border-b border-outline-variant/10 w-full h-0"></div>
+<div class="border-b border-transparent w-full h-0"></div> <!-- Bottom border handled by container -->
+</div>
+</div>
+</div>
+</div>
+<!-- Charts Row 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/20 mb-8">
+<div class="flex justify-between items-center mb-6 border-b border-outline-variant/20 pb-4">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Répartition par Difficulté</h3>
+<button class="text-primary font-label-md text-label-md hover:bg-surface-container-low px-3 py-1.5 rounded-md transition-colors">View Details</button>
+</div>
+<div class="flex flex-col gap-6">
+<!-- Progress Bars for Distribution -->
+<div class="flex items-center gap-4">
+<span class="font-body-sm text-body-sm text-on-surface font-medium w-24">Beginner</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full w-[25%] transition-all duration-500"></div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant w-12 text-right">25%</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-sm text-body-sm text-on-surface font-medium w-24">Intermediate</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[45%] transition-all duration-500"></div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant w-12 text-right">45%</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-sm text-body-sm text-on-surface font-medium w-24">Advanced</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full w-[20%] transition-all duration-500"></div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant w-12 text-right">20%</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-body-sm text-body-sm text-on-surface font-medium w-24">Expert</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-on-surface-variant rounded-full w-[10%] transition-all duration-500"></div>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant w-12 text-right">10%</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

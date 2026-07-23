@@ -43,6 +43,21 @@ public class AssignmentController {
         return assignmentService.getAssignments(userId, itemType, status, pageable, currentUserId, currentUserRole);
     }
 
+    @GetMapping("/my")
+    public Page<AssignmentResponse> getMyAssignments(
+            @RequestParam(required = false) ItemType itemType,
+            @RequestParam(required = false) String status,
+            @PageableDefault(size = 25, sort = "assignedAt") Pageable pageable,
+            Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("user_id"));
+        String currentUserRole = jwt.getClaimAsString("role");
+
+        // Force targetUserId to currentUserId to get only their own assignments
+        return assignmentService.getAssignments(currentUserId, itemType, status, pageable, currentUserId, currentUserRole);
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CAREER_MANAGER','COLLABORATOR')")
     @ResponseStatus(HttpStatus.CREATED)

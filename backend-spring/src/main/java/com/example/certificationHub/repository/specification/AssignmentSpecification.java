@@ -22,6 +22,7 @@ public class AssignmentSpecification {
             if (!"ADMIN".equals(currentUserRole)) {
                 if ("CAREER_MANAGER".equals(currentUserRole)) {
                     List<UUID> allowedIds = new ArrayList<>(managedUserIds);
+                    allowedIds.add(currentUserId); // Allow managers to see their own assignments
                     predicates.add(root.get("user").get("id").in(allowedIds));
                 } else {
                     // Collaborateur classique

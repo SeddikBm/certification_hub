@@ -1,0 +1,395 @@
+<!DOCTYPE html><html class="h-full bg-surface" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>My Assignments - Devoteam Enterprise Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "primary": "#b70f30",
+                "on-tertiary-container": "#f5fff7",
+                "error": "#ba1a1a",
+                "on-secondary": "#ffffff",
+                "surface-container": "#ffe9e8",
+                "primary-fixed": "#ffdad9",
+                "tertiary-fixed": "#7cfac2",
+                "secondary": "#40627e",
+                "tertiary": "#006949",
+                "surface-dim": "#f0d3d3",
+                "surface-container-lowest": "#ffffff",
+                "on-error-container": "#93000a",
+                "on-tertiary-fixed": "#002114",
+                "surface-tint": "#bb1332",
+                "surface-container-highest": "#f9dcdb",
+                "secondary-fixed-dim": "#a8caeb",
+                "surface-container-high": "#ffe1e1",
+                "on-surface": "#271717",
+                "primary-fixed-dim": "#ffb3b3",
+                "primary-container": "#db3045",
+                "on-secondary-fixed": "#001d31",
+                "inverse-surface": "#3e2c2c",
+                "on-secondary-container": "#41627f",
+                "secondary-container": "#bcdeff",
+                "on-primary": "#ffffff",
+                "on-background": "#271717",
+                "on-tertiary-fixed-variant": "#005137",
+                "inverse-on-surface": "#ffedec",
+                "background": "#fff8f7",
+                "on-error": "#ffffff",
+                "surface-variant": "#f9dcdb",
+                "error-container": "#ffdad6",
+                "secondary-fixed": "#cce5ff",
+                "on-secondary-fixed-variant": "#274a65",
+                "on-primary-container": "#fffbff",
+                "on-primary-fixed": "#400009",
+                "surface-bright": "#fff8f7",
+                "on-tertiary": "#ffffff",
+                "on-primary-fixed-variant": "#920021",
+                "outline": "#8f6f6f",
+                "on-surface-variant": "#5b4040",
+                "tertiary-fixed-dim": "#5edda8",
+                "inverse-primary": "#ffb3b3",
+                "tertiary-container": "#00855d",
+                "surface-container-low": "#fff0ef",
+                "surface": "#fff8f7",
+                "outline-variant": "#e3bebd"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "stack-sm": "8px",
+                "stack-lg": "32px",
+                "margin-desktop": "32px",
+                "stack-md": "16px",
+                "gutter": "16px",
+                "unit": "4px",
+                "margin-mobile": "16px",
+                "container-padding": "24px"
+        },
+        "fontFamily": {
+                "headline-md": [
+                        "Hanken Grotesk"
+                ],
+                "body-sm": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg-mobile": [
+                        "Hanken Grotesk"
+                ],
+                "body-lg": [
+                        "Hanken Grotesk"
+                ],
+                "body-md": [
+                        "Hanken Grotesk"
+                ],
+                "label-md": [
+                        "Hanken Grotesk"
+                ],
+                "headline-sm": [
+                        "Hanken Grotesk"
+                ],
+                "display-lg": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg": [
+                        "Hanken Grotesk"
+                ]
+        },
+        "fontSize": {
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "36px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-md": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-sm": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "800"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(0, 43, 69, 0.08);
+        }
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 43, 69, 0.12);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d3e4fe; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff4b5c; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex overflow-hidden">
+<!-- SideNavBar Anchor -->
+<nav aria-label="Sidebar Navigation" class="hidden md:flex bg-surface-container-low shadow-md docked left-0 h-screen w-64 flex-col z-50 overflow-y-auto">
+<div class="px-6 py-6 flex items-center justify-center border-b border-outline-variant/30 mb-4">
+<img alt="Devoteam Logo" class="h-10 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2LCoYHQV5log_cTuW-qUEmb9kJlfLiwJbb0u6afNOHYADgaCIMUrso0TEkjr803nXlqz5WYyUsL0XVoz2de2wSchFetgguyJ8dnTXMmZYds4gX9CShPq3DxaYNWvjDhiIsXNnlEfxui-0Tu84cHw6OC5iQoa_LIGpMDrOGf3W-WSKr4YrNNbO8-0nVrXRrS7StVJ4wHDK86Ve5L620OzEd2vy6aMYY-yK6Hunv0VpNz3Ra5Hm9BBAZIcKuPdD4yISO18">
+</div>
+<div class="flex-1 mt-2">
+<ul class="space-y-1">
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">verified</span>
+<span class="font-label-md text-label-md">Certifications</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-label-md text-label-md">Trainings</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Users</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-md text-label-md">Hierarchy</span>
+</a>
+</li>
+<!-- Active: My Assignments -->
+<li>
+<a class="bg-secondary-container text-on-secondary-container rounded-lg mx-2 px-4 py-3 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment_ind</span>
+<span class="font-label-md text-label-md">My Assignments</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="font-label-md text-label-md">Manage Assignments</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="p-4 border-t border-outline-variant mt-auto">
+<ul class="space-y-1">
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 px-4 py-3 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden w-full">
+<!-- TopNavBar Anchor -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-40 bg-surface shadow-sm border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden md:flex items-center bg-surface-container-low rounded-full px-4 py-2 border border-outline-variant focus-within:border-primary transition-colors w-64 max-w-md">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm font-body-sm text-on-surface w-full placeholder-on-surface-variant" placeholder="Search resources, projects..." type="text">
+</div>
+</div>
+<div class="md:hidden flex items-center">
+<span class="font-display-lg text-headline-sm text-primary">Devoteam Enterprise</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-full transition-colors hidden md:block">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-full transition-colors hidden md:block">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant mx-2 hidden lg:block"></div>
+<div class="flex items-center gap-3 pl-2 group cursor-pointer">
+<div class="text-right hidden lg:block">
+<p class="font-label-md text-label-md text-on-surface">Alexandre Dubois</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] uppercase tracking-tighter">Senior Architect</p>
+</div>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full object-cover border border-outline-variant ml-2" data-alt="A professional headshot of a corporate employee smiling warmly in a bright modern office setting, wearing a tailored navy blazer, softly blurred background, high key lighting, crisp corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl8_mLntxaTjWL-bPXfRTVWjZygYxGo-BOlmeG1oqoRob7V3-C0F181wtAlABZwKSzz8oO4iUNj0QZ7CcDgs0TmPU4sPSHjMMJJEGKqb0vd5LfF4KtKnKTT_OQ515bGn_2OBtnaiHyIYQHGvvfHjFE4UxcvtI4JnYPTpd2XXHeGVa2JtG9uHzTqAyhB9paBKDcIIyHKs1JeLar37u23gETyCNW7jp3F1fnGYNp2EVhBVwNfNu5HkVP2w">
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<main class="flex-1 overflow-y-auto p-4 md:p-margin-desktop w-full">
+<div class="max-w-[1200px] mx-auto space-y-stack-lg">
+<div class="mb-stack-lg flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-unit">My Assignments</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Track your required trainings and certifications.</p>
+</div>
+<!-- Tabs -->
+<div class="flex p-1 bg-surface-container-low rounded-lg inline-flex border border-outline-variant">
+<button class="px-4 py-2 rounded-md bg-surface text-on-surface font-label-md text-label-md shadow-sm">Certifications</button>
+<button class="px-4 py-2 rounded-md text-on-surface-variant hover:bg-surface-variant font-label-md text-label-md transition-colors">Trainings</button>
+</div>
+</div>
+<!-- Assignments Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter">
+<!-- Card 1: Critical / In Progress -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding ambient-shadow hover-lift transition-all duration-300 flex flex-col relative overflow-hidden border border-outline-variant">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2 py-1 bg-primary-container/10 text-primary-container font-label-md text-label-md rounded border border-primary-container/20">High Priority</span>
+<span class="flex items-center gap-1 text-error font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">warning</span> Due in 3 days
+                        </span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-2 text-on-surface">AWS Certified Solutions Architect</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6 line-clamp-2 flex-grow">Cloud architecture fundamentals and advanced deployment strategies for enterprise scale.</p>
+<div class="mb-6">
+<div class="flex justify-between font-label-md text-label-md mb-2">
+<span class="text-secondary">In Progress</span>
+<span class="text-on-surface-variant">65%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-secondary h-2 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Target: Oct 15</span>
+<button class="bg-secondary text-on-secondary px-4 py-2 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">Continue</button>
+</div>
+</div>
+<!-- Card 2: To Start -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding ambient-shadow hover-lift transition-all duration-300 flex flex-col relative overflow-hidden border border-outline-variant">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-md text-label-md rounded">Medium Priority</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Due Nov 01</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-2 text-on-surface">Agile Scrum Master Certification</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6 line-clamp-2 flex-grow">Mastering agile methodologies, sprint planning, and team facilitation techniques.</p>
+<div class="mb-6">
+<div class="flex justify-between font-label-md text-label-md mb-2">
+<span class="text-on-surface-variant">To Start</span>
+<span class="text-on-surface-variant">0%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-surface-container-high h-2 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Target: Nov 01</span>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">Start Now</button>
+</div>
+</div>
+<!-- Card 3: Completed -->
+<div class="bg-surface-container-lowest rounded-xl p-container-padding ambient-shadow hover-lift transition-all duration-300 flex flex-col relative overflow-hidden border border-outline-variant opacity-80">
+<div class="absolute top-0 left-0 w-full h-1 bg-tertiary"></div>
+<div class="flex justify-between items-start mb-4">
+<span class="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-md text-label-md rounded">Low Priority</span>
+<span class="flex items-center gap-1 text-tertiary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> Completed
+                        </span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-2 text-on-surface">Information Security Basics 2024</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6 line-clamp-2 flex-grow">Annual mandatory training on data privacy, phishing prevention, and secure access.</p>
+<div class="mb-6">
+<div class="flex justify-between font-label-md text-label-md mb-2">
+<span class="text-tertiary">Done</span>
+<span class="text-tertiary">100%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-tertiary h-2 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Achieved: Sep 12</span>
+<button class="border border-secondary text-secondary px-4 py-2 rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors">View Cert</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

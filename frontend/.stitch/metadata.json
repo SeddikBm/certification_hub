@@ -1,0 +1,143 @@
+{
+  "projectId": "18186962065119455015",
+  "title": "Modern Professional App Design",
+  "deviceType": "DESKTOP",
+  "Last Sync Time": "2026-07-23T12:00:00Z",
+  "screens": {
+    "2b5790366e1d475692cecd2088ba8157": {
+      "id": "2b5790366e1d475692cecd2088ba8157",
+      "label": "Mes Assignments - Devoteam",
+      "slug": "mes_assignments___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "78e569ddd9df44f39f3fcff30c4f7a9b": {
+      "id": "78e569ddd9df44f39f3fcff30c4f7a9b",
+      "label": "Modale Cr\u00e9ation Utilisateur - Devoteam",
+      "slug": "modale_cr\u00e9ation_utilisateur___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "edbee62764a04183bd6be1311a01b192": {
+      "id": "edbee62764a04183bd6be1311a01b192",
+      "label": "Tableau de Bord - Devoteam Enterprise",
+      "slug": "tableau_de_bord___devoteam_enterprise",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "2d9d96a1f5d642af86626a224eb87c1d": {
+      "id": "2d9d96a1f5d642af86626a224eb87c1d",
+      "label": "D\u00e9tails de la Certification - Devoteam Enterprise",
+      "slug": "d\u00e9tails_de_la_certification___devoteam_enterprise",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "00d5436753c449fb9ee053fc9d0aaccb": {
+      "id": "00d5436753c449fb9ee053fc9d0aaccb",
+      "label": "Catalogue des Formations - Devoteam",
+      "slug": "catalogue_des_formations___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "11d7c532d2d041daaa1c509571af1943": {
+      "id": "11d7c532d2d041daaa1c509571af1943",
+      "label": "Ajouter / Modifier Formation - Devoteam",
+      "slug": "ajouter___modifier_formation___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "b97004b075504cd4814866b577ee6616": {
+      "id": "b97004b075504cd4814866b577ee6616",
+      "label": "Ajouter une Certification - Devoteam",
+      "slug": "ajouter_une_certification___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "8621322432825664648": {
+      "id": "8621322432825664648",
+      "label": "image.png",
+      "slug": "image_png",
+      "dimensions": {
+        "width": "791",
+        "height": "330"
+      }
+    },
+    "9aca560e340f44cbbb5fa85967722f4b": {
+      "id": "9aca560e340f44cbbb5fa85967722f4b",
+      "label": "Modale Cr\u00e9ation Assignment - Devoteam",
+      "slug": "modale_cr\u00e9ation_assignment___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "80d907b74d424d6cb5eb200a8a584826": {
+      "id": "80d907b74d424d6cb5eb200a8a584826",
+      "label": "D\u00e9tails de la Certification",
+      "slug": "d\u00e9tails_de_la_certification",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "d40fefa9dd8e421aa1dd66826c92f38a": {
+      "id": "d40fefa9dd8e421aa1dd66826c92f38a",
+      "label": "G\u00e9rer les Assignments - Devoteam",
+      "slug": "g\u00e9rer_les_assignments___devoteam",
+      "dimensions": {
+        "width": "3136",
+        "height": "2048"
+      }
+    },
+    "25d6fbb9a1304e1f80fa25b1585bdc97": {
+      "id": "25d6fbb9a1304e1f80fa25b1585bdc97",
+      "label": "Gestion des Utilisateurs - Devoteam",
+      "slug": "gestion_des_utilisateurs___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "12d25c55f4144239aaeecb35157ad377": {
+      "id": "12d25c55f4144239aaeecb35157ad377",
+      "label": "Gestion de la Hi\u00e9rarchie - Devoteam",
+      "slug": "gestion_de_la_hi\u00e9rarchie___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "8cd7ded5f97a41f7bb38daef23b045dd": {
+      "id": "8cd7ded5f97a41f7bb38daef23b045dd",
+      "label": "Catalogue des Certifications - Devoteam",
+      "slug": "catalogue_des_certifications___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    },
+    "c9475c7c14f3426dab24cc48dafa25ad": {
+      "id": "c9475c7c14f3426dab24cc48dafa25ad",
+      "label": "Connexion - Devoteam",
+      "slug": "connexion___devoteam",
+      "dimensions": {
+        "width": "2560",
+        "height": "2048"
+      }
+    }
+  }
+}

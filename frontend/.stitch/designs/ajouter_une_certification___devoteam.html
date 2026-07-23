@@ -1,0 +1,385 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Ajouter / Modifier Certification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#5edda8",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#bb1332",
+                        "on-background": "#271717",
+                        "on-primary-fixed-variant": "#920021",
+                        "on-surface-variant": "#5b4040",
+                        "on-primary-container": "#fffbff",
+                        "surface-container-highest": "#f9dcdb",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#ffe9e8",
+                        "secondary-container": "#bcdeff",
+                        "surface": "#fff8f7",
+                        "inverse-surface": "#3e2c2c",
+                        "primary-container": "#db3045",
+                        "on-secondary-container": "#41627f",
+                        "on-secondary-fixed-variant": "#274a65",
+                        "secondary-fixed": "#cce5ff",
+                        "outline": "#8f6f6f",
+                        "surface-container-high": "#ffe1e1",
+                        "on-tertiary-container": "#f5fff7",
+                        "outline-variant": "#e3bebd",
+                        "on-tertiary-fixed": "#002114",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#ffedec",
+                        "tertiary-fixed": "#7cfac2",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "background": "#fff8f7",
+                        "surface-bright": "#fff8f7",
+                        "primary": "#b70f30",
+                        "surface-dim": "#f0d3d3",
+                        "primary-fixed": "#ffdad9",
+                        "on-tertiary-fixed-variant": "#005137",
+                        "on-primary-fixed": "#400009",
+                        "secondary": "#40627e",
+                        "inverse-primary": "#ffb3b3",
+                        "surface-variant": "#f9dcdb",
+                        "secondary-fixed-dim": "#a8caeb",
+                        "tertiary": "#006949",
+                        "primary-fixed-dim": "#ffb3b3",
+                        "on-surface": "#271717",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#00855d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#001d31",
+                        "surface-container-low": "#fff0ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "stack-lg": "32px",
+                        "gutter": "16px",
+                        "container-padding": "24px",
+                        "stack-md": "16px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-sm": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "label-md": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased overflow-hidden">
+<!-- App Container -->
+<div class="flex h-screen w-full relative">
+<!-- Sidebar Background Mockup -->
+<aside class="hidden md:flex flex-col w-64 bg-surface-container-low dark:bg-surface-dim shadow-md fixed left-0 top-0 h-full z-10">
+<div class="p-6">
+<img alt="Devoteam Logo" class="h-8 w-auto mb-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2N_JTfvcFinBQXIoj6jh6A1se09iwK96Nu6brLLzQawmwYBaU6tS212Tg7SKwAWzGvMwy7JOd4kOiJEvGB-LmQcTsBjSQ6enlNKdXr0pAT-zrzWxNmwhp0zAksNoQPAsON-uBhlpEBTuuue3r4KgiO5gx2K9yRJpnBJEcVQNbKepj4u-acDfbcC52ftz5DWiM7TB-SebpRbJsJiJYBI3cwwAGd-PptDfwaTXTncMiu9Cg0V21c9rpyx-ZcIdcKeE6qhI">
+<!-- Nav Items (Mocks) -->
+<nav class="space-y-2 mt-8">
+<div class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg cursor-pointer transition-all duration-200">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</div>
+<div class="flex items-center space-x-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg cursor-pointer transition-all duration-200">
+<span class="material-symbols-outlined fill">verified</span>
+<span class="font-label-md text-label-md">Certifications</span>
+</div>
+</nav>
+</div>
+</aside>
+<!-- Main Content Canvas (Blurred/Dimmed for Modal) -->
+<main class="flex-1 ml-0 md:ml-64 flex flex-col relative bg-background">
+<!-- TopAppBar Mockup -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-10 bg-surface border-b border-outline-variant shadow-sm">
+<div class="font-headline-sm text-headline-sm text-on-surface">Certification Catalog</div>
+<div class="flex space-x-4">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</div>
+</header>
+<!-- Background Content Mockup -->
+<div class="p-container-padding opacity-40 pointer-events-none select-none blur-sm filter transition-all duration-300">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant h-64"></div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant h-64"></div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant h-64"></div>
+</div>
+</div>
+</main>
+<!-- Overlay & Modal -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#002b45]/40 backdrop-blur-sm">
+<!-- Modal Container -->
+<div class="bg-surface-container-lowest w-full max-w-4xl rounded-xl shadow-[0_8px_32px_rgba(0,43,69,0.12)] flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+<!-- Modal Header -->
+<div class="flex justify-between items-center px-6 py-5 border-b border-outline-variant bg-surface-container-lowest">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Ajouter / Modifier Certification</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Saisissez les détails de la certification ci-dessous.</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body (Scrollable Form) -->
+<div class="overflow-y-auto p-6 bg-surface-bright flex-1 custom-scrollbar">
+<form class="space-y-8">
+<!-- Section: Informations de Base -->
+<fieldset>
+<legend class="font-headline-sm text-headline-sm text-primary mb-4 flex items-center">
+<span class="material-symbols-outlined mr-2">info</span> Informations de Base
+                            </legend>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Code -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface flex items-center">
+                                        Code <span class="text-error ml-1">*</span>
+</label>
+<input class="w-full px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="Ex: AWS-SAA-C03" required="" type="text">
+</div>
+<!-- Nom -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface flex items-center">
+                                        Nom <span class="text-error ml-1">*</span>
+</label>
+<input class="w-full px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="Ex: AWS Certified Solutions Architect - Associate" required="" type="text">
+</div>
+<!-- Provider -->
+<div class="flex flex-col gap-1 md:col-span-2 lg:col-span-1">
+<label class="font-label-md text-label-md text-on-surface flex items-center">
+                                        Provider <span class="text-error ml-1">*</span>
+</label>
+<div class="relative">
+<select class="w-full px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow cursor-pointer" required="">
+<option disabled="" selected="" value="">Sélectionner un provider</option>
+<option value="aws">Amazon Web Services (AWS)</option>
+<option value="azure">Microsoft Azure</option>
+<option value="gcp">Google Cloud Platform</option>
+<option value="cisco">Cisco</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+</fieldset>
+<hr class="border-outline-variant">
+<!-- Section: Détails et Classification -->
+<fieldset>
+<legend class="font-headline-sm text-headline-sm text-primary mb-4 flex items-center">
+<span class="material-symbols-outlined mr-2">category</span> Classification &amp; Organisation
+                            </legend>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Difficulté -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Difficulté</label>
+<div class="relative">
+<select class="w-full px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow cursor-pointer">
+<option value="beginner">Beginner</option>
+<option value="intermediate">Intermediate</option>
+<option value="advanced">Advanced</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Priorité -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Priorité Interne</label>
+<div class="relative">
+<select class="w-full px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow cursor-pointer">
+<option value="low">Low</option>
+<option selected="" value="medium">Medium</option>
+<option value="high">High</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Squads (Multi-select visual mock) -->
+<div class="flex flex-col gap-1 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface">Squads Ciblées</label>
+<div class="w-full min-h-[42px] px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg flex flex-wrap gap-2 items-center focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-shadow">
+<!-- Chips -->
+<div class="flex items-center bg-surface-container-high text-on-surface px-3 py-1 rounded-full border border-outline-variant text-sm">
+<span class="font-label-md text-label-md">Cloud</span>
+<button class="ml-2 text-on-surface-variant hover:text-error focus:outline-none inline-flex items-center" type="button">
+<span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+</button>
+</div>
+<div class="flex items-center bg-surface-container-high text-on-surface px-3 py-1 rounded-full border border-outline-variant text-sm">
+<span class="font-label-md text-label-md">DevOps</span>
+<button class="ml-2 text-on-surface-variant hover:text-error focus:outline-none inline-flex items-center" type="button">
+<span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+</button>
+</div>
+<!-- Input for adding more -->
+<input class="flex-1 min-w-[150px] bg-transparent border-none text-body-md text-on-surface focus:ring-0 p-0 m-0" placeholder="Ajouter une squad..." type="text">
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Appuyez sur Entrée pour ajouter une squad.</p>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-1 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface">Description</label>
+<textarea class="w-full px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow resize-y" placeholder="Description courte de la certification..." rows="3"></textarea>
+</div>
+</div>
+</fieldset>
+<hr class="border-outline-variant">
+<!-- Section: Modalités d'Examen -->
+<fieldset>
+<legend class="font-headline-sm text-headline-sm text-primary mb-4 flex items-center">
+<span class="material-symbols-outlined mr-2">timer</span> Modalités d'Examen
+                            </legend>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Durée -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Durée (min)</label>
+<div class="relative">
+<input class="w-full pl-4 pr-10 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" min="0" placeholder="120" type="number">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">schedule</span>
+</div>
+</div>
+<!-- Score -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Score de passage</label>
+<div class="relative">
+<input class="w-full pl-4 pr-12 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" max="1000" min="0" placeholder="720" type="number">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-sm text-body-sm pointer-events-none">/1000</span>
+</div>
+</div>
+<!-- Coût -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface flex items-center">
+                                        Coût (€) <span class="text-error ml-1">*</span>
+</label>
+<div class="relative">
+<input class="w-full pl-4 pr-10 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" min="0" placeholder="150.00" required="" step="0.01" type="number">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">euro</span>
+</div>
+</div>
+<!-- Validité -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Validité (ans)</label>
+<div class="relative">
+<input class="w-full pl-4 pr-12 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" min="0" placeholder="3" step="1" type="number">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-sm text-body-sm pointer-events-none">ans</span>
+</div>
+</div>
+</div>
+</fieldset>
+<hr class="border-outline-variant">
+<!-- Section: Liens utiles -->
+<fieldset>
+<legend class="font-headline-sm text-headline-sm text-primary mb-4 flex items-center">
+<span class="material-symbols-outlined mr-2">link</span> Ressources
+                            </legend>
+<div class="flex flex-col gap-3">
+<label class="font-label-md text-label-md text-on-surface">URLs utiles (Guide d'étude, Réservation)</label>
+<div class="flex gap-2 items-center">
+<input class="flex-1 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="https://" type="url" value="https://aws.amazon.com/certification/certified-solutions-architect-associate/">
+<button class="p-2 text-on-surface-variant hover:text-error hover:bg-surface-container rounded-lg transition-colors focus:outline-none" type="button">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="flex gap-2 items-center">
+<input class="flex-1 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="https://" type="url">
+<button class="px-4 py-2 bg-secondary-container text-on-secondary-container font-label-md text-label-md rounded-lg hover:bg-secondary-fixed-dim transition-colors focus:outline-none focus:ring-2 focus:ring-secondary inline-flex items-center whitespace-nowrap" type="button">
+<span class="material-symbols-outlined mr-1" style="font-size: 18px;">add</span> Ajouter
+                                    </button>
+</div>
+</div>
+</fieldset>
+</form>
+</div>
+<!-- Modal Footer -->
+<div class="px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex justify-end gap-3 rounded-b-xl">
+<button class="px-6 py-2 bg-transparent text-secondary border border-outline-variant rounded-lg font-label-md text-label-md hover:bg-surface-container transition-colors focus:outline-none focus:ring-2 focus:ring-secondary" type="button">
+                        Annuler
+                    </button>
+<button class="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-on-primary-fixed-variant transition-colors shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface" type="button">
+                        Enregistrer
+                    </button>
+</div>
+</div>
+</div>
+<!-- Toast Notification (Fixed to bottom right) -->
+<div class="fixed bottom-6 right-6 z-[60] animate-[slideInUp_0.4s_ease-out]">
+<div class="flex items-center gap-3 bg-tertiary-container text-on-tertiary-container px-4 py-3 rounded-lg shadow-[0_4px_12px_rgba(0,105,73,0.15)] border border-tertiary-fixed border-opacity-30">
+<span class="material-symbols-outlined fill text-tertiary-fixed">check_circle</span>
+<span class="font-body-sm text-body-sm font-medium">Certification enregistrée avec succès</span>
+<button class="ml-2 text-on-tertiary-container hover:text-tertiary-fixed transition-colors focus:outline-none p-1 rounded">
+<span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+</button>
+</div>
+</div>
+</div>
+<style>
+        /* Custom Scrollbar for Modal Body */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: theme('colors.surface-bright');
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body></html>

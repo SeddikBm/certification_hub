@@ -37,6 +37,11 @@ public class CertificationController {
         return certificationService.getCertifications(provider, difficulty, priority, search, pageable);
     }
 
+    @GetMapping("/providers")
+    public java.util.List<String> getProviders() {
+        return certificationService.getProviders();
+    }
+
     @GetMapping("/{id}")
     public CertificationResponse getCertificationById(@PathVariable UUID id) {
         return certificationService.getCertificationDetails(id);

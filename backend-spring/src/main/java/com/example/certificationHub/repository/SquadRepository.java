@@ -11,4 +11,6 @@ public interface SquadRepository extends JpaRepository<Squad, UUID> {
     Optional<Squad> findByName(String name);
 
     boolean existsByName(String name);
+
+    long countByDeletedAtIsNull();
 }

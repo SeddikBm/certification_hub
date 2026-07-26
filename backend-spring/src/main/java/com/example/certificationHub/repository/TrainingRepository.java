@@ -15,4 +15,5 @@ public interface TrainingRepository extends JpaRepository<Training, UUID>, JpaSp
 
     Optional<Training> findByIdAndDeletedAtIsNull(UUID id);
 
+    long countByDeletedAtIsNull();
 }

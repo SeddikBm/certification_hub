@@ -16,7 +16,7 @@ public class CertificationRequest {
 
     @NotBlank(message = "Le nom est obligatoire")
     private String name;
-
+    @NotBlank(message = "Le provider est obligatoire")
     private String provider;
 
     @NotNull(message = "La difficulté est obligatoire")

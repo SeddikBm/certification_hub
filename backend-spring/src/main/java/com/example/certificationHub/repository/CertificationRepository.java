@@ -22,4 +22,9 @@ public interface CertificationRepository
 
     @org.springframework.data.jpa.repository.Query("SELECT new com.example.certificationHub.dto.response.ChartDataResponse(CAST(c.difficulty AS string), COUNT(c)) FROM Certification c WHERE c.deletedAt IS NULL GROUP BY c.difficulty")
     java.util.List<com.example.certificationHub.dto.response.ChartDataResponse> countCertificationsByDifficulty();
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT c.provider FROM Certification c WHERE c.deletedAt IS NULL AND c.provider IS NOT NULL")
+    java.util.List<String> findDistinctProviders();
+
+    long countByDeletedAtIsNull();
 }

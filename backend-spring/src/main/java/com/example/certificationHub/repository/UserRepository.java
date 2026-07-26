@@ -16,6 +16,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     // Essentiel pour la validation de ton DTO (vérifier si l'email est déjà pris)
     boolean existsByEmail(String email);
 
+    long countByDeletedAtIsNull();
+
     // Utile pour afficher les membres d'un squad
     List<User> findBySquadId(UUID squadId);
 }

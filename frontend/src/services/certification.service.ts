@@ -41,6 +41,7 @@ export const certificationService = {
     search?: string;
     page?: number;
     size?: number;
+    sort?: string;
   }): Promise<Page<CertificationResponse>> => {
     const response = await api.get<Page<CertificationResponse>>('/certifications', { params });
     return response.data;
@@ -63,5 +64,10 @@ export const certificationService = {
 
   deleteCertification: async (id: string): Promise<void> => {
     await api.delete(`/certifications/${id}`);
+  },
+
+  getProviders: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/certifications/providers');
+    return response.data;
   }
 };

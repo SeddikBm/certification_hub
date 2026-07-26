@@ -22,6 +22,21 @@ api.interceptors.request.use(
   }
 );
 
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 // Response interceptor to handle global errors like 401 Unauthorized
 api.interceptors.response.use(
   (response) => {
@@ -38,7 +53,19 @@ api.interceptors.response.use(
       originalRequest.url !== '/auth/login' &&
       originalRequest.url !== '/auth/refresh'
     ) {
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({resolve, reject})
+        }).then(token => {
+          originalRequest.headers.Authorization = 'Bearer ' + token;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
       const refreshToken = localStorage.getItem('refreshToken');
 
       if (refreshToken) {
@@ -56,13 +83,19 @@ api.interceptors.response.use(
           if (newRefreshToken) {
             localStorage.setItem('refreshToken', newRefreshToken);
           }
-
-          // Update header and retry
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          
+          api.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
+          originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
+          
+          processQueue(null, newAccessToken);
+          
           return api(originalRequest);
         } catch (refreshError) {
+          processQueue(refreshError, null);
           // Refresh failed (e.g., expired or revoked refresh token)
           // Fall through to logout
+        } finally {
+          isRefreshing = false;
         }
       }
     }

@@ -46,6 +46,11 @@ public class CertificationService {
     }
 
     @Transactional(readOnly = true)
+    public List<String> getProviders() {
+        return certificationRepository.findDistinctProviders();
+    }
+
+    @Transactional(readOnly = true)
     public CertificationResponse getCertificationDetails(UUID id) {
         Certification cert = certificationRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));

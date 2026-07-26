@@ -1,5 +1,6 @@
 package com.example.certificationHub.controller;
 
+import com.example.certificationHub.enumeration.UserRole;
 import com.example.certificationHub.enumeration.UserStatus;
 import com.example.certificationHub.dto.request.ChangePasswordRequest;
 import com.example.certificationHub.dto.request.UserCreateRequest;
@@ -29,7 +30,7 @@ public class UserController {
 
     @GetMapping
     public Page<UserResponse> getUsers(
-            @RequestParam(required = false) String role,
+            @RequestParam(required = false) UserRole role,
             @RequestParam(required = false) UUID squadId,
             @RequestParam(required = false) UserStatus status,
             @RequestParam(required = false) String search,

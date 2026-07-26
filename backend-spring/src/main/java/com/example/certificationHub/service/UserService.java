@@ -5,6 +5,7 @@ import com.example.certificationHub.entity.Squad;
 import com.example.certificationHub.entity.User;
 import com.example.certificationHub.enumeration.StatusCertification;
 import com.example.certificationHub.enumeration.StatusTraining;
+import com.example.certificationHub.enumeration.UserRole;
 import com.example.certificationHub.enumeration.UserStatus;
 import com.example.certificationHub.dto.request.ChangePasswordRequest;
 import com.example.certificationHub.dto.request.UserCreateRequest;
@@ -48,7 +49,7 @@ public class UserService {
     private final NotificationProducer notificationProducer;
 
     @Transactional(readOnly = true)
-    public Page<UserResponse> getUsers(String role, UUID squadId, UserStatus status, String search, Pageable pageable,
+    public Page<UserResponse> getUsers(UserRole role, UUID squadId, UserStatus status, String search, Pageable pageable,
             UUID currentUserId, String currentUserRole) {
 
         List<UUID> managedUserIds = new ArrayList<>();

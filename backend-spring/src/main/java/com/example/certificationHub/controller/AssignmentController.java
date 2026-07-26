@@ -55,7 +55,8 @@ public class AssignmentController {
         String currentUserRole = jwt.getClaimAsString("role");
 
         // Force targetUserId to currentUserId to get only their own assignments
-        return assignmentService.getAssignments(currentUserId, itemType, status, pageable, currentUserId, currentUserRole);
+        return assignmentService.getAssignments(currentUserId, itemType, status, pageable, currentUserId,
+                currentUserRole);
     }
 
     @PostMapping

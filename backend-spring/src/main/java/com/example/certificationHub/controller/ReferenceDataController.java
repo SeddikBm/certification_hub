@@ -19,7 +19,7 @@ public class ReferenceDataController {
     @GetMapping("/enums")
     public ResponseEntity<Map<String, Object[]>> getAllEnums() {
         Map<String, Object[]> enums = new HashMap<>();
-        
+
         enums.put("certifDifficulty", CertifDifficulty.values());
         enums.put("certifPriority", CertifPriority.values());
         enums.put("certificateStatus", CertificateStatus.values());
@@ -31,7 +31,7 @@ public class ReferenceDataController {
         enums.put("trainingType", TrainingType.values());
         enums.put("userRole", UserRole.values());
         enums.put("userStatus", UserStatus.values());
-        
+
         return ResponseEntity.ok(enums);
     }
 }

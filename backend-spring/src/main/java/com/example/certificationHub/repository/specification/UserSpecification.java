@@ -13,7 +13,7 @@ import java.util.UUID;
 public class UserSpecification {
 
     public static Specification<User> withSecurityAndFilters(
-            String role, UUID squadId, UserStatus status, String search,
+            UserRole role, UUID squadId, UserStatus status, String search,
             UUID currentUserId, String currentUserRole,
             List<UUID> managedUserIds, List<UUID> leadSquadIds) {
 
@@ -36,8 +36,8 @@ public class UserSpecification {
             }
 
             // --- 2. FILTRES CLASSIQUES ---
-            if (role != null && !role.isBlank()) {
-                predicates.add(cb.equal(root.get("role"), UserRole.valueOf(role)));
+            if (role != null) {
+                predicates.add(cb.equal(root.get("role"), role));
             }
             if (squadId != null) {
                 predicates.add(cb.equal(root.get("squad").get("id"), squadId));

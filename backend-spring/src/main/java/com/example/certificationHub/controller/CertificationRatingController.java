@@ -25,10 +25,9 @@ public class CertificationRatingController {
 
     // GET - Affichage des avis (Publique aux personnes authentifiées)
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
     public Page<RatingResponse> getRatings(
             @PathVariable UUID certId,
-            @PageableDefault(size = 10, sort = "rating") Pageable pageable) {
+            @PageableDefault(size = 25, sort = "rating") Pageable pageable) {
         return ratingService.getRatings(certId, pageable);
     }
 
@@ -49,7 +48,6 @@ public class CertificationRatingController {
 
     // POST - Signaler un avis (Modération)
     @PostMapping("/{authorId}/report")
-    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void reportRating(
             @PathVariable UUID certId,

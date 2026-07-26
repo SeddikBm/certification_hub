@@ -3,6 +3,9 @@ package com.example.certificationHub.dto.response;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.example.certificationHub.enumeration.UserRole;
+import com.example.certificationHub.enumeration.UserStatus;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -13,8 +16,8 @@ public class UserResponse {
     private String email;
     private String firstName;
     private String lastName;
-    private String role;
-    private String status;
+    private UserRole role;
+    private UserStatus status;
     private String phone;
     private LocalDate hireDate;
     private UUID squadId;

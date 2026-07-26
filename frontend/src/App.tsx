@@ -1,53 +1,51 @@
-import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Login } from './pages/Login';
+import { DashboardLayout } from './layouts/DashboardLayout';
+import { Dashboard } from './pages/Dashboard';
+import { Trainings } from './pages/Trainings';
+import { AddTraining } from './pages/AddTraining';
+import { Certifications } from './pages/Certifications';
+import { AddCertification } from './pages/AddCertification';
+import { CertificationDetails } from './pages/CertificationDetails';
+import { MyAssignments } from './pages/MyAssignments';
+import { ManageAssignments } from './pages/ManageAssignments';
+import { Users } from './pages/Users';
+import { Hierarchy } from './pages/Hierarchy';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-import LoginPage from './pages/LoginPage';
-import Sidebar from './components/Sidebar';
-import TopAppBar from './components/TopAppBar';
-
-import DashboardPage from './pages/DashboardPage';
-import CertificationsPage from './pages/CertificationsPage';
-import TrainingsPage from './pages/TrainingsPage';
-import MyAssignmentsPage from './pages/MyAssignmentsPage';
-import ManageAssignmentsPage from './pages/ManageAssignmentsPage';
-import { UsersPage } from './pages/UsersPage';
-import { HierarchyPage } from './pages/HierarchyPage';
-
-const Layout = () => {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
+const ProtectedRoute = () => {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-
-  return (
-    <div className="min-h-screen bg-background text-on-background flex overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col md:pl-64 h-full relative w-full">
-        <TopAppBar />
-        <main className="flex-1 overflow-y-auto pt-20 pb-10 px-4 md:px-margin-desktop bg-background">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
+  return <Outlet />;
 };
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="certifications" element={<CertificationsPage />} />
-          <Route path="certifications/:id" element={<div>Certification Details</div>} />
-          <Route path="trainings" element={<TrainingsPage />} />
-          <Route path="my-assignments" element={<MyAssignmentsPage />} />
-          <Route path="manage-assignments" element={<ManageAssignmentsPage />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="hierarchy" element={<HierarchyPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Login />} />
+          
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/trainings" element={<Trainings />} />
+              <Route path="/trainings/add" element={<AddTraining />} />
+              <Route path="/certifications" element={<Certifications />} />
+              <Route path="/certifications/add" element={<AddCertification />} />
+              <Route path="/certifications/:id" element={<CertificationDetails />} />
+              <Route path="/my-assignments" element={<MyAssignments />} />
+              <Route path="/manage-assignments" element={<ManageAssignments />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/hierarchy" element={<Hierarchy />} />
+            </Route>
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

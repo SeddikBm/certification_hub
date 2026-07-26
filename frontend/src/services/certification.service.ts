@@ -33,6 +33,16 @@ export interface CertificationResponse {
   associatedSquads: SquadShortDto[];
 }
 
+export interface RatingResponse {
+  userId: string;
+  userFullName: string;
+  certificationId: string;
+  rating: number;
+  comment?: string;
+  wouldRecommend?: boolean;
+  squadName?: string;
+}
+
 export const certificationService = {
   getAllCertifications: async (params?: {
     provider?: string;
@@ -49,6 +59,11 @@ export const certificationService = {
 
   getCertificationById: async (id: string): Promise<CertificationResponse> => {
     const response = await api.get<CertificationResponse>(`/certifications/${id}`);
+    return response.data;
+  },
+
+  getCertificationRatings: async (id: string): Promise<Page<RatingResponse>> => {
+    const response = await api.get<Page<RatingResponse>>(`/certifications/${id}/ratings`);
     return response.data;
   },
 

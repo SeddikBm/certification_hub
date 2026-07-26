@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import clsx from 'clsx';
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,31 +26,37 @@ export function DashboardLayout() {
   const visibleNavItems = navItems.filter(item => !item.roles || item.roles.includes(user?.role || 'USER'));
 
   return (
-    <div className="bg-background text-on-background font-body-md h-full flex overflow-hidden min-h-screen">
+    <div className="bg-[#fcf8f8] text-gray-900 font-sans h-full flex overflow-hidden min-h-screen">
       {/* SideNavBar */}
       <aside 
-        className={`fixed left-0 top-0 h-full shadow-md bg-surface flex flex-col z-50 transition-all duration-300 ease-in-out
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-100 flex flex-col z-50 transition-all duration-300 ease-in-out shadow-sm
           ${sidebarOpen ? 'w-64' : 'w-20'} 
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        <div className={`px-4 py-4 h-16 border-b border-outline-variant/30 flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
+        {/* Brand Header */}
+        <div className={`px-4 py-4 h-16 border-b border-gray-100 flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
           {sidebarOpen && (
-            <div className="font-headline-sm text-headline-sm font-bold text-primary truncate max-w-[150px]">
-               Devoteam
+            <div className="flex items-center justify-center flex-1">
+              <span className="text-base font-black text-gray-900 tracking-tight">
+                Certification<span className="text-[#b70f30]">Hub</span>
+              </span>
             </div>
           )}
           <button 
-            className="text-on-surface p-2 rounded-full hover:bg-surface-container-low transition-colors"
-            onClick={() => {
-               setSidebarOpen(!sidebarOpen);
-            }}
+            type="button"
+            className="text-gray-500 hover:text-gray-900 p-2 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            title={sidebarOpen ? "Réduire le menu" : "Agrandir le menu"}
           >
-            <span className="material-symbols-outlined">menu</span>
+            <span className="material-symbols-outlined text-[22px]">
+              {sidebarOpen ? 'menu_open' : 'menu'}
+            </span>
           </button>
         </div>
         
-        <nav className="flex-1 overflow-y-auto py-stack-md px-2 flex flex-col gap-2">
+        {/* Nav Links */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1.5">
           {visibleNavItems.map((item) => (
             <NavLink
               key={item.path}
@@ -61,26 +68,46 @@ export function DashboardLayout() {
                 }
               }}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ease-in-out group ${
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all duration-200 group ${
                   !sidebarOpen ? 'justify-center' : ''
                 } ${
                   isActive
-                    ? 'text-primary bg-surface-container-high font-bold'
-                    : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'
+                    ? 'bg-red-50 text-[#b70f30] font-bold border-r-4 border-[#b70f30] shadow-2xs'
+                    : 'text-gray-600 font-medium hover:text-[#b70f30] hover:bg-gray-50'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className="material-symbols-outlined transition-all" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+                  <span 
+                    className={clsx("material-symbols-outlined text-[20px] transition-transform group-hover:scale-110", isActive ? "text-[#b70f30]" : "text-gray-400 group-hover:text-[#b70f30]")}
+                    style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                  >
                     {item.icon}
                   </span>
-                  {sidebarOpen && <span className="whitespace-nowrap">{item.name}</span>}
+                  {sidebarOpen && <span className="truncate">{item.name}</span>}
                 </>
               )}
             </NavLink>
           ))}
         </nav>
+
+        {/* Sidebar Footer User Card */}
+        {sidebarOpen && user && (
+          <div className="p-3 border-t border-gray-100 bg-gray-50/50 m-3 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-[#b70f30] text-white flex items-center justify-center text-xs font-bold shadow-2xs flex-shrink-0">
+                {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-900 truncate">{user?.firstName} {user?.lastName || ''}</p>
+                <span className="inline-block text-[10px] font-semibold px-1.5 py-0.2 rounded bg-red-100 text-[#b70f30]">
+                  {user?.role}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Main Content Wrapper */}
@@ -88,46 +115,48 @@ export function DashboardLayout() {
         className={`flex-1 flex flex-col h-full relative w-full transition-all duration-300 ease-in-out ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}
       >
         {/* TopNavBar */}
-        <header className={`fixed top-0 right-0 h-16 shadow-sm bg-surface flex justify-between items-center px-container-padding z-40 transition-all duration-300 border-b border-outline-variant/20 md:border-none w-full ${sidebarOpen ? 'md:w-[calc(100%-16rem)]' : 'md:w-[calc(100%-5rem)]'}`}>
-          {/* Mobile Menu Button & Logo */}
-          <div className="flex items-center gap-4 w-full md:w-auto">
+        <header className={`fixed top-0 right-0 h-16 bg-white/90 backdrop-blur-md flex justify-between items-center px-6 z-40 transition-all duration-300 border-b border-gray-100 w-full ${sidebarOpen ? 'md:w-[calc(100%-16rem)]' : 'md:w-[calc(100%-5rem)]'}`}>
+          {/* Mobile Toggle & Brand Logo */}
+          <div className="flex items-center gap-3">
             <button 
-              className="md:hidden text-on-surface p-2 rounded-full hover:bg-surface-container-low"
+              type="button"
+              className="md:hidden text-gray-700 p-2 rounded-xl hover:bg-gray-100 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <span className="material-symbols-outlined">menu</span>
+              <span className="material-symbols-outlined text-[22px]">menu</span>
             </button>
-            <img alt="Devoteam Logo" className="h-12 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8P959-H660oXsHEsr0hj50FyfxDsXWtX_57a3dnlLZzAtO8cCW-Lpv2te7_LgnPGnd5xHrS5z7T6KX4mNzTf0zIis2f1dKiqgg9c95wI5CuI6yc8hvA9aCJSYr1Hy-haGkSdGayGDoiSawl0-HS_ou0ZG8Kq7v_4CO6WU4u6nl1hly16CuedfGdxvtEbpQcRRzY2VSxVqtyrX7AAO28EUKLisDgkEtqDcZo0xrPNMMNMkHCkTJwrci4cfwM8XkKXWsAQ"/>
-            <div className="font-headline-sm text-headline-sm font-bold text-primary md:hidden">
-              Devoteam
-            </div>
+            <img alt="Devoteam Logo" className="h-10 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8P959-H660oXsHEsr0hj50FyfxDsXWtX_57a3dnlLZzAtO8cCW-Lpv2te7_LgnPGnd5xHrS5z7T6KX4mNzTf0zIis2f1dKiqgg9c95wI5CuI6yc8hvA9aCJSYr1Hy-haGkSdGayGDoiSawl0-HS_ou0ZG8Kq7v_4CO6WU4u6nl1hly16CuedfGdxvtEbpQcRRzY2VSxVqtyrX7AAO28EUKLisDgkEtqDcZo0xrPNMMNMkHCkTJwrci4cfwM8XkKXWsAQ"/>
           </div>
           
+          {/* User Section & Actions */}
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-3">
                <div className="flex flex-col items-end hidden sm:flex">
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">{user?.firstName} {user?.lastName || user?.name || user?.email}</span>
-                  <span className="font-body-sm text-[11px] text-on-surface-variant font-medium">{user?.role}</span>
+                  <span className="text-xs font-bold text-gray-900">{user?.firstName} {user?.lastName || user?.name || user?.email}</span>
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{user?.role}</span>
                </div>
-               <div className="h-8 w-8 rounded-full bg-secondary-container overflow-hidden border border-outline-variant flex items-center justify-center text-primary font-bold">
-                 {/* Fallback avatar if no image */}
+               
+               <div className="w-8 h-8 rounded-full bg-red-50 text-[#b70f30] border border-red-100 flex items-center justify-center font-bold text-xs shadow-2xs">
                  {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
                </div>
-               <div className="h-6 border-l border-outline-variant/50 mx-1 hidden sm:block"></div>
+
+               <div className="h-5 border-l border-gray-200 mx-1 hidden sm:block"></div>
+
                <button 
+                  type="button"
                   onClick={handleLogout}
-                  className="p-2 rounded-full text-error hover:bg-error-container transition-all duration-200 flex items-center gap-1"
-                  title="Logout"
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#b70f30] hover:bg-red-50 transition-all duration-200 flex items-center gap-1.5 border border-red-100 shadow-2xs"
+                  title="Se déconnecter"
                >
-                 <span className="material-symbols-outlined">logout</span>
-                 <span className="hidden sm:block text-sm font-medium pr-1">Logout</span>
+                 <span className="material-symbols-outlined text-[16px]">logout</span>
+                 <span className="hidden sm:inline">Déconnexion</span>
                </button>
             </div>
           </div>
         </header>
 
-        {/* Canvas / Dashboard Content */}
-        <main className="flex-1 overflow-y-auto pt-20 pb-10 px-4 md:px-margin-desktop bg-background min-h-[calc(100vh-4rem)]">
+        {/* Canvas / Page Content */}
+        <main className="flex-1 overflow-y-auto pt-20 pb-10 px-4 md:px-8 bg-[#fcf8f8] min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
       </div>
@@ -135,7 +164,7 @@ export function DashboardLayout() {
       {/* Mobile Backdrop */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 z-40 md:hidden"
+          className="fixed inset-0 bg-black/20 z-40 md:hidden backdrop-blur-2xs"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}

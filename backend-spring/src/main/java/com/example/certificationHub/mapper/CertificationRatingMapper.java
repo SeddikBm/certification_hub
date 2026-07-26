@@ -20,6 +20,7 @@ public class CertificationRatingMapper {
                 .rating(rating.getRating())
                 .comment(rating.getComment())
                 .wouldRecommend(rating.getWouldRecommend())
+                .squadName(rating.getUser() != null && rating.getUser().getSquad() != null ? rating.getUser().getSquad().getName() : null)
                 .build();
     }
 

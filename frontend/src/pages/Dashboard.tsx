@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '../services/dashboard.service';
-import clsx from 'clsx';
 
 export function Dashboard() {
   const [hoveredSlice, setHoveredSlice] = useState<{ label: string; value: number; percentage: number; color: string } | null>(null);
@@ -140,7 +139,7 @@ export function Dashboard() {
           </div>
 
           {stats.certificationsByProvider.length > 0 ? (
-            <div className="flex flex-col sm:flex-row items-center gap-6 my-auto">
+            <div className="flex items-center justify-center my-auto py-4">
               
               {/* SVG Donut Chart */}
               <div className="relative flex-shrink-0 flex items-center justify-center">
@@ -151,7 +150,7 @@ export function Dashboard() {
                   </div>
                 )}
 
-                <svg className="w-44 h-44 -rotate-90 transform" viewBox="0 0 100 100">
+                <svg className="w-52 h-52 -rotate-90 transform" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" stroke="#f3f4f6" strokeWidth="12" fill="none" />
                   {stats.certificationsByProvider.map((item, i) => {
                     const percentage = Math.round((item.value / totalProviders) * 100);
@@ -172,7 +171,7 @@ export function Dashboard() {
                         strokeDasharray={strokeDasharray}
                         strokeDashoffset={strokeDashoffset}
                         fill="none"
-                        className="transition-all duration-300 cursor-pointer"
+                        className="transition-all duration-300 cursor-pointer hover:opacity-90"
                         onMouseEnter={() => setHoveredSlice({ label: item.label, value: item.value, percentage, color })}
                         onMouseLeave={() => setHoveredSlice(null)}
                       />
@@ -181,13 +180,13 @@ export function Dashboard() {
                 </svg>
 
                 {/* Donut Center Hole */}
-                <div className="absolute inset-0 m-auto w-28 h-28 bg-white rounded-full shadow-md flex flex-col items-center justify-center border border-gray-100 pointer-events-none transition-all">
+                <div className="absolute inset-0 m-auto w-32 h-32 bg-white rounded-full shadow-md flex flex-col items-center justify-center border border-gray-100 pointer-events-none transition-all">
                   {hoveredSlice ? (
                     <>
-                      <span className="text-[11px] font-bold truncate max-w-[85px] text-center" style={{ color: hoveredSlice.color }}>
+                      <span className="text-xs font-bold truncate max-w-[100px] text-center" style={{ color: hoveredSlice.color }}>
                         {hoveredSlice.label}
                       </span>
-                      <span className="text-xl font-extrabold text-[#111827]">
+                      <span className="text-2xl font-extrabold text-[#111827]">
                         {hoveredSlice.value}
                       </span>
                       <span className="text-[10px] font-semibold text-gray-400">
@@ -201,41 +200,6 @@ export function Dashboard() {
                     </>
                   )}
                 </div>
-              </div>
-
-              {/* Legend List */}
-              <div className="flex flex-col gap-2.5 w-full">
-                {stats.certificationsByProvider.map((item, i) => {
-                  const percentage = Math.round((item.value / totalProviders) * 100);
-                  const color = providerColors[i % providerColors.length];
-                  const isHovered = hoveredSlice?.label === item.label;
-
-                  return (
-                    <div 
-                      key={i} 
-                      className={clsx(
-                        "flex items-center justify-between p-2 rounded-lg transition-colors group relative cursor-pointer",
-                        isHovered ? "bg-gray-100 shadow-xs" : "hover:bg-gray-100/70"
-                      )}
-                      onMouseEnter={() => setHoveredSlice({ label: item.label, value: item.value, percentage, color })}
-                      onMouseLeave={() => setHoveredSlice(null)}
-                      title={`${item.label}: ${item.value} certification(s)`}
-                    >
-                      {/* Hover Tooltip */}
-                      <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#111827] text-white text-[10px] font-bold px-2.5 py-1 rounded shadow-lg transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
-                        {item.label}: {item.value} certif{item.value > 1 ? 's' : ''} ({percentage}%)
-                      </div>
-
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-3 h-3 rounded-full flex-shrink-0 transition-transform group-hover:scale-125" style={{ backgroundColor: color }}></span>
-                        <span className="text-xs font-semibold text-gray-700 truncate" title={item.label}>{item.label}</span>
-                      </div>
-                      <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-gray-100 text-gray-800 border border-gray-200 ml-2">
-                        {percentage}%
-                      </span>
-                    </div>
-                  );
-                })}
               </div>
 
             </div>

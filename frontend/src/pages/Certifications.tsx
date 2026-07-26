@@ -1,14 +1,65 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { certificationService } from '../services/certification.service';
 import { useAuth } from '../contexts/AuthContext';
 import { CertificationFormModal } from '../components/CertificationFormModal';
 import clsx from 'clsx';
-import { Button } from '../components/ui/Button';
+
+// Smart helper to get icon and color config for ANY provider (known or dynamic custom)
+const getProviderConfig = (providerName: string) => {
+  if (!providerName) return { icon: 'cloud', bg: 'bg-transparent', text: 'text-gray-500', border: 'border-gray-300' };
+
+  const p = providerName.toLowerCase().trim();
+
+  if (p.includes('aws') || p.includes('amazon')) return { icon: 'dns', bg: 'bg-transparent', text: 'text-[#FF9900]', border: 'border-[#FF9900]' };
+  if (p.includes('azure') || p.includes('microsoft')) return { icon: 'grid_view', bg: 'bg-transparent', text: 'text-[#00A4EF]', border: 'border-[#00A4EF]' };
+  if (p.includes('gcp') || p.includes('google')) return { icon: 'language', bg: 'bg-transparent', text: 'text-[#4285F4]', border: 'border-[#4285F4]' };
+  if (p.includes('oracle')) return { icon: 'database', bg: 'bg-transparent', text: 'text-[#C74634]', border: 'border-[#C74634]' };
+  if (p.includes('cisco')) return { icon: 'router', bg: 'bg-transparent', text: 'text-[#049FD9]', border: 'border-[#049FD9]' };
+  if (p.includes('k8s') || p.includes('kubern')) return { icon: 'layers', bg: 'bg-transparent', text: 'text-[#326CE5]', border: 'border-[#326CE5]' };
+  if (p.includes('terraform') || p.includes('hashi')) return { icon: 'token', bg: 'bg-transparent', text: 'text-[#844FBA]', border: 'border-[#844FBA]' };
+  if (p.includes('red hat') || p.includes('redhat') || p.includes('linux')) return { icon: 'terminal', bg: 'bg-transparent', text: 'text-[#EE0000]', border: 'border-[#EE0000]' };
+  if (p.includes('salesforce')) return { icon: 'cloud_queue', bg: 'bg-transparent', text: 'text-[#00A1E0]', border: 'border-[#00A1E0]' };
+  if (p.includes('comptia')) return { icon: 'verified_user', bg: 'bg-transparent', text: 'text-[#C8102E]', border: 'border-[#C8102E]' };
+  if (p.includes('docker')) return { icon: 'view_in_ar', bg: 'bg-transparent', text: 'text-[#2496ED]', border: 'border-[#2496ED]' };
+  if (p.includes('snowflake')) return { icon: 'ac_unit', bg: 'bg-transparent', text: 'text-[#29B5E8]', border: 'border-[#29B5E8]' };
+  if (p.includes('databricks')) return { icon: 'analytics', bg: 'bg-transparent', text: 'text-[#FF3621]', border: 'border-[#FF3621]' };
+
+  // Category based smart fallback
+  if (p.includes('cloud') || p.includes('host') || p.includes('net')) {
+    return { icon: 'cloud_done', bg: 'bg-transparent', text: 'text-cyan-600', border: 'border-cyan-500' };
+  }
+  if (p.includes('sec') || p.includes('guard') || p.includes('cyber')) {
+    return { icon: 'shield', bg: 'bg-transparent', text: 'text-rose-600', border: 'border-rose-500' };
+  }
+  if (p.includes('data') || p.includes('db') || p.includes('sql')) {
+    return { icon: 'database', bg: 'bg-transparent', text: 'text-indigo-600', border: 'border-indigo-500' };
+  }
+  if (p.includes('code') || p.includes('dev') || p.includes('soft')) {
+    return { icon: 'code', bg: 'bg-transparent', text: 'text-[#b70f30]', border: 'border-[#b70f30]' };
+  }
+
+  // Dynamic Hash-based Color & Icon System for ANY new provider
+  const dynamicConfigs = [
+    { bg: 'bg-transparent', text: 'text-rose-600', border: 'border-rose-500', icon: 'workspace_premium' },
+    { bg: 'bg-transparent', text: 'text-blue-600', border: 'border-blue-500', icon: 'verified' },
+    { bg: 'bg-transparent', text: 'text-emerald-600', border: 'border-emerald-500', icon: 'stars' },
+    { bg: 'bg-transparent', text: 'text-amber-600', border: 'border-amber-500', icon: 'military_tech' },
+    { bg: 'bg-transparent', text: 'text-purple-600', border: 'border-purple-500', icon: 'domain' },
+    { bg: 'bg-transparent', text: 'text-cyan-600', border: 'border-cyan-500', icon: 'hub' },
+  ];
+  
+  let hash = 0;
+  for (let i = 0; i < p.length; i++) {
+    hash = p.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return dynamicConfigs[Math.abs(hash) % dynamicConfigs.length];
+};
 
 export function Certifications() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   // State
   const [searchTerm, setSearchTerm] = useState('');
@@ -131,43 +182,59 @@ export function Certifications() {
         </div>
       )}
       {/* Page Header & Actions */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-stack-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface mb-1">Catalogue des Certifications</h1>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">Parcourez, gérez et assignez les certifications à vos équipes.</p>
+          <h1 className="text-2xl font-extrabold text-[#111827] tracking-tight">Catalogue des Certifications</h1>
         </div>
         <div className="flex items-center gap-3">
           {canAdd && (
-            <Button className="h-9 px-4 text-[13px] font-medium rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-1 bg-primary text-on-primary hover:-translate-y-0.5" onClick={() => { setCertToEdit(null); setIsModalOpen(true); }}>
+            <button 
+              type="button"
+              className="h-9 px-4 text-xs font-semibold rounded-xl shadow-2xs hover:shadow-md transition-all flex items-center gap-1.5 bg-[#b70f30] text-white hover:bg-red-800" 
+              onClick={() => { setCertToEdit(null); setIsModalOpen(true); }}
+            >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              <span>Ajouter</span>
-            </Button>
+              <span>Ajouter une Certification</span>
+            </button>
           )}
         </div>
       </div>
 
-      {/* Filter Card */}
-      <div className="bg-surface rounded-xl shadow-sm border border-outline-variant/30 p-stack-md w-full">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-gutter items-end">
-          <div className="space-y-1 relative md:col-span-2">
-            <label className="font-label-md text-label-md text-on-surface-variant block">Recherche</label>
+      {/* Modern Filter Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
+          
+          {/* Search Input */}
+          <div className="md:col-span-4 space-y-1.5">
+            <label className="text-xs font-semibold text-gray-500 block">Recherche rapide</label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
               <input 
-                className="w-full bg-surface-container-lowest text-on-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-xl pl-10 pr-4 py-3 font-body-md text-body-md transition-colors placeholder:text-on-surface-variant" 
-                placeholder="Code, nom..." 
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-10 pr-9 py-2.5 text-xs font-medium transition-all placeholder:text-gray-400 outline-none" 
+                placeholder="Rechercher par code, nom..." 
                 type="text"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
               />
+              {searchTerm && (
+                <button 
+                  type="button" 
+                  onClick={() => setSearchTerm('')} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer la recherche"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              )}
             </div>
           </div>
           
-          <div className="space-y-1">
-            <label className="font-label-md text-label-md text-on-surface-variant block">Provider</label>
+          {/* Provider Filter */}
+          <div className="md:col-span-3 space-y-1.5">
+            <label className="text-xs font-semibold text-gray-500 block">Provider</label>
             <div className="relative">
               <select 
-                className="w-full bg-surface-container-lowest text-on-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 font-body-md text-body-md transition-colors appearance-none cursor-pointer"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-medium transition-all appearance-none cursor-pointer outline-none"
                 value={providerFilter}
                 onChange={(e) => { setProviderFilter(e.target.value); setPage(0); }}
               >
@@ -176,44 +243,106 @@ export function Certifications() {
                   <option key={i} value={p}>{p}</option>
                 ))}
               </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+              {providerFilter ? (
+                <button 
+                  type="button" 
+                  onClick={() => setProviderFilter('')} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer ce filtre"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              ) : (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[18px]">expand_more</span>
+              )}
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="font-label-md text-label-md text-on-surface-variant block">Difficulté</label>
+          {/* Difficulty Filter */}
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="text-xs font-semibold text-gray-500 block">Difficulté</label>
             <div className="relative">
               <select 
-                className="w-full bg-surface-container-lowest text-on-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 font-body-md text-body-md transition-colors appearance-none cursor-pointer"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-medium transition-all appearance-none cursor-pointer outline-none"
                 value={difficultyFilter}
                 onChange={(e) => { setDifficultyFilter(e.target.value); setPage(0); }}
               >
-                <option value="">Toutes les difficultés</option>
+                <option value="">Toutes difficultés</option>
                 <option value="FOUNDATIONAL">FOUNDATIONAL</option>
                 <option value="INTERMEDIATE">INTERMEDIATE</option>
                 <option value="ADVANCED">ADVANCED</option>
                 <option value="EXPERT">EXPERT</option>
               </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+              {difficultyFilter ? (
+                <button 
+                  type="button" 
+                  onClick={() => setDifficultyFilter('')} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer ce filtre"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              ) : (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[18px]">expand_more</span>
+              )}
             </div>
           </div>
-          <div className="space-y-1">
-            <label className="font-label-md text-label-md text-on-surface-variant block">Priorité</label>
+
+          {/* Priority Filter */}
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="text-xs font-semibold text-gray-500 block">Priorité</label>
             <div className="relative">
               <select 
-                className="w-full bg-surface-container-lowest text-on-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 font-body-md text-body-md transition-colors appearance-none cursor-pointer"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-medium transition-all appearance-none cursor-pointer outline-none"
                 value={priorityFilter}
                 onChange={(e) => { setPriorityFilter(e.target.value); setPage(0); }}
               >
-                <option value="">Toutes les priorités</option>
+                <option value="">Toutes priorités</option>
                 <option value="MANDATORY">MANDATORY</option>
                 <option value="HIGH">HIGH</option>
                 <option value="NORMAL">NORMAL</option>
                 <option value="ADVANCED">ADVANCED</option>
               </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+              {priorityFilter ? (
+                <button 
+                  type="button" 
+                  onClick={() => setPriorityFilter('')} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer ce filtre"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              ) : (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[18px]">expand_more</span>
+              )}
             </div>
           </div>
+
+          {/* Dedicated Clear All Filters Button */}
+          <div className="md:col-span-1">
+            <button 
+              type="button" 
+              disabled={!(searchTerm || providerFilter || difficultyFilter || priorityFilter)}
+              onClick={() => {
+                setSearchTerm('');
+                setProviderFilter('');
+                setDifficultyFilter('');
+                setPriorityFilter('');
+                setPage(0);
+              }}
+              className={clsx(
+                "w-full h-[38px] px-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1 shadow-2xs",
+                (searchTerm || providerFilter || difficultyFilter || priorityFilter) 
+                  ? "bg-red-50 text-[#b70f30] hover:bg-red-100 border border-red-200 cursor-pointer" 
+                  : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50"
+              )}
+              title="Effacer tous les filtres"
+            >
+              <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
+              <span className="hidden xl:inline">Effacer</span>
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -250,90 +379,77 @@ export function Certifications() {
               <tbody className="text-sm divide-y divide-outline-variant/20 relative">
                 {certsPage.content.map((cert) => {
                   const totalCost = (cert.examCostUsd || 0) + (cert.trainingCostUsd || 0);
-                  
-                  const prov = (cert.provider || '').toLowerCase();
-                  let pIcon = 'cloud';
-                  let pColor = 'text-primary bg-primary-container/30';
-                  if (prov.includes('aws')) { pIcon = 'dns'; pColor = 'text-[#FF9900] bg-[#FF9900]/10 border border-[#FF9900]/20'; }
-                  else if (prov.includes('azure') || prov.includes('microsoft')) { pIcon = 'grid_view'; pColor = 'text-[#00A4EF] bg-[#00A4EF]/10 border border-[#00A4EF]/20'; }
-                  else if (prov.includes('google')) { pIcon = 'language'; pColor = 'text-[#4285F4] bg-[#4285F4]/10 border border-[#4285F4]/20'; }
-                  else if (prov.includes('oracle')) { pIcon = 'data_usage'; pColor = 'text-[#C74634] bg-[#C74634]/10 border border-[#C74634]/20'; }
+                  const pConfig = getProviderConfig(cert.provider || '');
                   
                   return (
-                    <tr key={cert.id} className="hover:bg-surface-container-highest/20 transition-colors group cursor-pointer" onClick={() => window.location.href=`/certifications/${cert.id}`}>
-                      <td className="p-3 pl-6">
-                        <div className="font-semibold text-on-surface truncate max-w-[250px]" title={cert.name}>{cert.name}</div>
-                        <div className="text-on-surface-variant text-xs mt-0.5 font-mono">{cert.code}</div>
+                    <tr key={cert.id} className="hover:bg-[#fcf8f8] transition-colors group cursor-pointer border-b border-gray-100" onClick={() => navigate(`/certifications/${cert.id}`)}>
+                      <td className="p-3.5 pl-6">
+                        <div className="font-semibold text-gray-900 truncate max-w-[260px] group-hover:text-[#b70f30] transition-colors" title={cert.name}>{cert.name}</div>
+                        <div className="text-gray-400 text-xs font-mono mt-0.5">{cert.code}</div>
                       </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-3">
-                          <div className={clsx("flex items-center justify-center w-8 h-8 rounded-full shadow-sm", pColor)}>
-                             <span className="material-symbols-outlined text-[16px]">{pIcon}</span>
-                          </div>
-                          <span className="text-on-surface font-medium">{cert.provider || '-'}</span>
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className={clsx("material-symbols-outlined text-[20px]", pConfig.text)}>{pConfig.icon}</span>
+                          <span className="text-gray-800 font-semibold text-xs">{cert.provider || '-'}</span>
                         </div>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3.5">
                         <span className={clsx(
-                          "inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border uppercase tracking-wider",
-                          cert.difficulty === 'FOUNDATIONAL' ? 'bg-secondary/10 text-secondary border-secondary/20' : 
-                          cert.difficulty === 'INTERMEDIATE' ? 'bg-primary/10 text-primary border-primary/20' : 
-                          cert.difficulty === 'ADVANCED' ? 'bg-tertiary/10 text-tertiary border-tertiary/20' : 
-                          cert.difficulty === 'EXPERT' ? 'bg-on-surface-variant/10 text-on-surface-variant border-on-surface-variant/20' :
-                          'bg-surface-container text-on-surface-variant border-outline-variant/30'
+                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border uppercase tracking-wider",
+                          cert.difficulty === 'FOUNDATIONAL' ? 'bg-emerald-50/50 text-emerald-700 border-emerald-300' : 
+                          cert.difficulty === 'INTERMEDIATE' ? 'bg-sky-50/50 text-sky-700 border-sky-300' : 
+                          cert.difficulty === 'ADVANCED' ? 'bg-purple-50/50 text-purple-700 border-purple-300' : 
+                          cert.difficulty === 'EXPERT' ? 'bg-rose-50/50 text-rose-700 border-rose-400' :
+                          'bg-gray-100 text-gray-700 border-gray-200'
                         )}>
                           {cert.difficulty}
                         </span>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3.5">
                         <div className="flex items-center gap-1.5">
                           <span className={clsx("w-2 h-2 rounded-full",
-                            cert.priority === 'MANDATORY' ? 'bg-error' : 
-                            cert.priority === 'HIGH' ? 'bg-[#FF9800]' : 
-                            cert.priority === 'NORMAL' ? 'bg-[#4CAF50]' : 
-                            'bg-primary'
+                            cert.priority === 'MANDATORY' ? 'bg-[#b70f30]' : 
+                            cert.priority === 'HIGH' ? 'bg-amber-500' : 
+                            cert.priority === 'NORMAL' ? 'bg-gray-500' : 
+                            'bg-slate-400'
                           )}></span>
-                          <span className={clsx(
-                            "text-[12px] font-bold tracking-wide",
-                            cert.priority === 'MANDATORY' ? 'text-error' : 
-                            cert.priority === 'HIGH' ? 'text-[#F57C00]' : 
-                            cert.priority === 'NORMAL' ? 'text-[#388E3C]' : 
-                            'text-primary'
-                          )}>
+                          <span className="text-[11px] font-semibold tracking-wide uppercase text-gray-700">
                             {cert.priority}
                           </span>
                         </div>
                       </td>
-                      <td className="p-3 font-mono font-medium text-on-surface">
-                        {totalCost > 0 ? `$${totalCost}` : <span className="text-on-surface-variant/50">-</span>}
+                      <td className="p-3.5 font-semibold text-gray-800 text-xs">
+                        {totalCost > 0 ? `${totalCost.toLocaleString()} MAD` : <span className="text-gray-300">-</span>}
                       </td>
-                      <td className="p-3">
+                      <td className="p-3.5">
                         {cert.averageRating ? (
-                          <div className="flex items-center gap-1 text-on-surface font-semibold bg-surface-container-low px-2.5 py-1 rounded-lg w-fit border border-outline-variant/30">
-                            <span className="material-symbols-outlined text-[16px] icon-fill text-[#fbbc04]">star</span>
+                          <div className="flex items-center gap-1 text-gray-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-md w-fit border border-amber-200 text-xs">
+                            <span className="material-symbols-outlined text-[15px] icon-fill text-amber-500">star</span>
                             {cert.averageRating.toFixed(1)}
                           </div>
                         ) : (
-                          <span className="text-on-surface-variant text-xs italic bg-surface-container-lowest px-2.5 py-1 rounded-lg w-fit border border-outline-variant/30">N/A</span>
+                          <span className="text-gray-400 text-xs italic bg-gray-50 px-2 py-0.5 rounded-md w-fit border border-gray-200">N/A</span>
                         )}
                       </td>
-                      <td className="p-3 text-center relative">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="p-3.5 text-center relative">
+                        <div className="flex items-center justify-center gap-1">
                           {canAdd && (
                             <>
                               <button 
-                                className="text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-full transition-all p-1.5 opacity-40 group-hover:opacity-100 focus:opacity-100" 
-                                title="Modifier"
+                                type="button"
+                                className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all flex items-center justify-center" 
+                                title="Éditer"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setCertToEdit(cert);
                                   setIsModalOpen(true);
                                 }}
                               >
-                                <span className="material-symbols-outlined text-[20px]">edit</span>
+                                <span className="material-symbols-outlined text-[18px]">edit</span>
                               </button>
                               <button 
-                                className="text-on-surface-variant hover:text-error hover:bg-error/10 opacity-40 group-hover:opacity-100 focus:opacity-100 rounded-full transition-all p-1.5"
+                                type="button"
+                                className="w-8 h-8 rounded-lg text-gray-400 hover:text-[#b70f30] hover:bg-red-50 transition-all flex items-center justify-center"
                                 onClick={(e) => { 
                                   e.stopPropagation(); 
                                   setDeleteError(null); 
@@ -342,7 +458,7 @@ export function Certifications() {
                                 }} 
                                 title="Supprimer"
                               >
-                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
                               </button>
                             </>
                           )}
@@ -367,11 +483,11 @@ export function Certifications() {
         
         {/* Pagination */}
         {certsPage && certsPage.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-outline-variant/30 flex items-center justify-between bg-surface-container-lowest rounded-b-xl">
-            <span className="text-sm text-on-surface-variant">
-              Affichage de <span className="font-medium text-on-surface">{certsPage.content.length}</span> sur <span className="font-medium text-on-surface">{certsPage.totalElements}</span> résultats
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-outline-variant/30 bg-surface-container-lowest">
+            <span className="text-sm font-body-sm text-on-surface-variant">
+              Page <span className="font-semibold text-on-surface">{certsPage.number + 1}</span> sur <span className="font-semibold text-on-surface">{certsPage.totalPages}</span> ({certsPage.totalElements} résultats)
             </span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button 
                 className="px-3 py-1.5 rounded-md border border-outline-variant/50 text-sm font-medium text-on-surface hover:bg-surface-container-low disabled:opacity-30 transition-colors flex items-center gap-1"
                 disabled={certsPage.number === 0} 
@@ -380,31 +496,30 @@ export function Certifications() {
                 <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                 Précédent
               </button>
-
-              <div className="flex items-center gap-1 mx-2">
-                {Array.from({ length: certsPage.totalPages }).map((_, idx) => {
-                  // Simplified ellipsis logic for pagination
-                  if (certsPage.totalPages > 7) {
-                    if (idx !== 0 && idx !== certsPage.totalPages - 1 && Math.abs(idx - certsPage.number) > 1) {
-                      if (idx === 1 && certsPage.number > 2) return <span key={idx} className="text-on-surface-variant px-1">...</span>;
-                      if (idx === certsPage.totalPages - 2 && certsPage.number < certsPage.totalPages - 3) return <span key={idx} className="text-on-surface-variant px-1">...</span>;
-                      return null;
-                    }
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: certsPage.totalPages }, (_, idx) => {
+                  if (
+                    idx === 0 || 
+                    idx === certsPage.totalPages - 1 || 
+                    (idx >= certsPage.number - 1 && idx <= certsPage.number + 1)
+                  ) {
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setPage(idx)}
+                        className={clsx(
+                          "w-8 h-8 rounded-md text-xs font-semibold transition-colors flex items-center justify-center",
+                          certsPage.number === idx 
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-on-surface-variant hover:bg-surface-container-low"
+                        )}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
                   }
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setPage(idx)}
-                      className={clsx(
-                        "min-w-[32px] h-8 px-1 flex items-center justify-center rounded-md text-sm font-medium transition-colors",
-                        certsPage.number === idx 
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-on-surface-variant hover:bg-surface-container-low"
-                      )}
-                    >
-                      {idx + 1}
-                    </button>
-                  );
+                  return null;
                 })}
               </div>
 
@@ -423,29 +538,43 @@ export function Certifications() {
 
       {/* Delete Dialog */}
       {deleteDialogOpen && certToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface w-full max-w-md rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-bold text-on-surface mb-2">Supprimer la certification</h2>
-            <p className="text-on-surface-variant mb-4">
-              Êtes-vous sûr de vouloir supprimer <span className="font-semibold text-on-surface">{certToDelete.name}</span> ? Cette action est irréversible.
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <span className="material-symbols-outlined text-3xl">warning</span>
+              <h3 className="text-lg font-bold text-gray-900">Confirmer la suppression</h3>
+            </div>
+            <p className="text-xs text-gray-600">
+              Êtes-vous sûr de vouloir supprimer la certification <strong className="text-gray-900">{certToDelete.name}</strong> ?
             </p>
             {deleteError && (
-              <div className="bg-error-container/50 text-error p-3 rounded-lg text-sm mb-4 border border-error/20">
-                {deleteError}
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2 font-medium">
+                <span className="material-symbols-outlined text-[18px] flex-shrink-0">error</span>
+                <span>{deleteError}</span>
               </div>
             )}
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setCertToDelete(null); }}>Annuler</Button>
-              <Button 
-                className={clsx(
-                  "text-white transition-colors",
-                  deleteError ? "bg-on-surface-variant/30 text-on-surface-variant cursor-not-allowed" : "bg-error hover:bg-error/90"
-                )} 
+            <div className="flex justify-end gap-2 pt-2">
+              <button 
+                type="button" 
+                onClick={() => { setDeleteDialogOpen(false); setCertToDelete(null); setDeleteError(null); }}
+                className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Fermer
+              </button>
+              <button 
+                type="button" 
                 onClick={() => deleteMutation.mutate(certToDelete.id)} 
                 disabled={deleteMutation.isPending || !!deleteError}
+                className={clsx(
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5",
+                  (deleteMutation.isPending || !!deleteError) 
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300" 
+                    : "bg-[#b70f30] text-white hover:bg-red-800 shadow-2xs"
+                )}
               >
-                {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
-              </Button>
+                {deleteMutation.isPending && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
+                Supprimer
+              </button>
             </div>
           </div>
         </div>

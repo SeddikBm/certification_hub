@@ -1,203 +1,517 @@
-import { Button } from "../components/ui/Button";
+import { useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { certificationService } from '../services/certification.service';
+import { useAuth } from '../contexts/AuthContext';
+import { CertificationFormModal } from '../components/CertificationFormModal';
+import clsx from 'clsx';
+
+// Smart helper to get icon and color config for ANY provider (known or dynamic custom)
+const getProviderConfig = (providerName: string) => {
+  if (!providerName) return { icon: 'cloud', bg: 'bg-transparent', text: 'text-gray-500', border: 'border-gray-300' };
+
+  const p = providerName.toLowerCase().trim();
+
+  if (p.includes('aws') || p.includes('amazon')) return { icon: 'dns', bg: 'bg-transparent', text: 'text-[#FF9900]', border: 'border-[#FF9900]' };
+  if (p.includes('azure') || p.includes('microsoft')) return { icon: 'grid_view', bg: 'bg-transparent', text: 'text-[#00A4EF]', border: 'border-[#00A4EF]' };
+  if (p.includes('gcp') || p.includes('google')) return { icon: 'language', bg: 'bg-transparent', text: 'text-[#4285F4]', border: 'border-[#4285F4]' };
+  if (p.includes('oracle')) return { icon: 'database', bg: 'bg-transparent', text: 'text-[#C74634]', border: 'border-[#C74634]' };
+  if (p.includes('cisco')) return { icon: 'router', bg: 'bg-transparent', text: 'text-[#049FD9]', border: 'border-[#049FD9]' };
+  if (p.includes('k8s') || p.includes('kubern')) return { icon: 'layers', bg: 'bg-transparent', text: 'text-[#326CE5]', border: 'border-[#326CE5]' };
+  if (p.includes('terraform') || p.includes('hashi')) return { icon: 'token', bg: 'bg-transparent', text: 'text-[#844FBA]', border: 'border-[#844FBA]' };
+  if (p.includes('red hat') || p.includes('redhat') || p.includes('linux')) return { icon: 'terminal', bg: 'bg-transparent', text: 'text-[#EE0000]', border: 'border-[#EE0000]' };
+  if (p.includes('salesforce')) return { icon: 'cloud_queue', bg: 'bg-transparent', text: 'text-[#00A1E0]', border: 'border-[#00A1E0]' };
+  if (p.includes('comptia')) return { icon: 'verified_user', bg: 'bg-transparent', text: 'text-[#C8102E]', border: 'border-[#C8102E]' };
+  if (p.includes('docker')) return { icon: 'view_in_ar', bg: 'bg-transparent', text: 'text-[#2496ED]', border: 'border-[#2496ED]' };
+  if (p.includes('snowflake')) return { icon: 'ac_unit', bg: 'bg-transparent', text: 'text-[#29B5E8]', border: 'border-[#29B5E8]' };
+  if (p.includes('databricks')) return { icon: 'analytics', bg: 'bg-transparent', text: 'text-[#FF3621]', border: 'border-[#FF3621]' };
+
+  // Category based smart fallback
+  if (p.includes('cloud') || p.includes('host') || p.includes('net')) {
+    return { icon: 'cloud_done', bg: 'bg-transparent', text: 'text-cyan-600', border: 'border-cyan-500' };
+  }
+  if (p.includes('sec') || p.includes('guard') || p.includes('cyber')) {
+    return { icon: 'shield', bg: 'bg-transparent', text: 'text-rose-600', border: 'border-rose-500' };
+  }
+  if (p.includes('data') || p.includes('db') || p.includes('sql')) {
+    return { icon: 'database', bg: 'bg-transparent', text: 'text-indigo-600', border: 'border-indigo-500' };
+  }
+  if (p.includes('code') || p.includes('dev') || p.includes('soft')) {
+    return { icon: 'code', bg: 'bg-transparent', text: 'text-[#b70f30]', border: 'border-[#b70f30]' };
+  }
+
+  // Dynamic Hash-based Color & Icon System for ANY new provider
+  const dynamicConfigs = [
+    { bg: 'bg-transparent', text: 'text-rose-600', border: 'border-rose-500', icon: 'workspace_premium' },
+    { bg: 'bg-transparent', text: 'text-blue-600', border: 'border-blue-500', icon: 'verified' },
+    { bg: 'bg-transparent', text: 'text-emerald-600', border: 'border-emerald-500', icon: 'stars' },
+    { bg: 'bg-transparent', text: 'text-amber-600', border: 'border-amber-500', icon: 'military_tech' },
+    { bg: 'bg-transparent', text: 'text-purple-600', border: 'border-purple-500', icon: 'domain' },
+    { bg: 'bg-transparent', text: 'text-cyan-600', border: 'border-cyan-500', icon: 'hub' },
+  ];
+  
+  let hash = 0;
+  for (let i = 0; i < p.length; i++) {
+    hash = p.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return dynamicConfigs[Math.abs(hash) % dynamicConfigs.length];
+};
 
 export function CertificationDetails() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const canManage = user?.role === 'ADMIN' || user?.role === 'TRAINING_MANAGER';
+
+  // Query Certification Details
+  const { data: cert, isLoading, error, refetch } = useQuery({
+    queryKey: ['certification', id],
+    queryFn: () => certificationService.getCertificationById(id!),
+    enabled: !!id
+  });
+
+  // Query Ratings
+  const { data: ratingsPage } = useQuery({
+    queryKey: ['certification-ratings', id],
+    queryFn: () => certificationService.getCertificationRatings(id!),
+    enabled: !!id
+  });
+
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (certId: string) => certificationService.deleteCertification(certId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certifications'] });
+      navigate('/certifications');
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || "Impossible de supprimer : des collaborateurs sont actuellement assignés à cette certification.";
+      setDeleteError(msg);
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <span className="material-symbols-outlined animate-spin text-4xl text-[#b70f30]">progress_activity</span>
+          <span className="text-gray-500 font-medium text-sm">Chargement de la certification...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !cert) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <div className="bg-red-50 border border-red-200 text-[#b70f30] px-6 py-4 rounded-xl flex items-center gap-3">
+          <span className="material-symbols-outlined">error</span>
+          <span className="font-medium text-sm">Certification introuvable ou erreur de chargement.</span>
+        </div>
+      </div>
+    );
+  }
+
+  const pConfig = getProviderConfig(cert.provider || '');
+
+  // Calculate validity label
+  const validityLabel = cert.validityMonths 
+    ? `${Math.floor(cert.validityMonths / 12)} an${cert.validityMonths >= 24 ? 's' : ''}` 
+    : 'Permanente';
+
+  const examDuration = cert.metadata?.examDuration || cert.metadata?.duration;
+  const passingScore = cert.metadata?.passingScore;
+  const description = cert.metadata?.description;
+  const ratings = ratingsPage?.content || [];
+
   return (
-    <div className="max-w-[1200px] mx-auto space-y-stack-lg">
-      {/* Header */}
+    <div className="max-w-[1280px] mx-auto space-y-6 pb-12">
+      
+      {/* Breadcrumb & Header */}
       <div>
-        <nav aria-label="Breadcrumb" className="flex text-label-md font-label-md text-on-surface-variant mb-4">
-          <ol className="inline-flex items-center space-x-1 md:space-x-3">
-            <li className="inline-flex items-center">
-              <a className="hover:text-primary transition-colors" href="/certifications">Certifications</a>
+        <nav aria-label="Breadcrumb" className="flex text-xs font-medium text-gray-500 mb-3">
+          <ol className="inline-flex items-center space-x-1 sm:space-x-2">
+            <li>
+              <Link to="/certifications" className="hover:text-[#b70f30] transition-colors">
+                Certifications
+              </Link>
             </li>
             <li>
               <div className="flex items-center">
-                <span className="material-symbols-outlined text-[16px] mx-1">chevron_right</span>
-                <span className="text-on-surface">AWS Certified Developer Associate</span>
+                <span className="material-symbols-outlined text-[16px] text-gray-400">chevron_right</span>
+                <span className="text-gray-900 font-semibold truncate max-w-[200px] sm:max-w-[400px]">{cert.name}</span>
               </div>
             </li>
           </ol>
         </nav>
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-surface-container-high rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-[32px] text-secondary">cloud</span>
-            </div>
+
+        {/* Title Header with Action Buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <span className={clsx("material-symbols-outlined text-[34px] flex-shrink-0", pConfig.text)}>{pConfig.icon}</span>
             <div>
-              <h1 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Advanced React for Enterprise</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-1">TR-REACT-01 • Udemy</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider">{cert.code}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                <span className="text-xs font-semibold text-gray-600">{cert.provider || 'Sans Provider'}</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#111827] mt-0.5 tracking-tight">{cert.name}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button>Enroll Now</Button>
-            <Button variant="outline">Edit</Button>
-          </div>
+
+          {/* Buttons: Small reduced size */}
+          {canManage && (
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              <button 
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="h-8 px-3 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <span className="material-symbols-outlined text-[15px]">edit</span>
+                <span>Éditer</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => { setDeleteError(null); setDeleteDialogOpen(true); }}
+                className="h-8 px-3 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <span className="material-symbols-outlined text-[15px]">delete</span>
+                <span>Supprimer</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Bento Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-        {/* General Info */}
-        <div className="md:col-span-8 bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/30 hover:-translate-y-0.5 transition-transform duration-200">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface border-b border-outline-variant/30 pb-3 mb-4">Détails de la Formation</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack-md">
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Section 1: Infos Générales */}
+        <div className="lg:col-span-8 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-5">
+            <span className="material-symbols-outlined text-[#b70f30] text-[20px]">info</span>
+            <h2 className="text-base font-bold text-[#111827]">Informations Générales</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <span className="font-label-md text-label-md text-on-surface-variant block mb-1">Type</span>
-              <span className="font-body-md text-body-md text-on-surface">External</span>
+              <span className="text-xs font-medium text-gray-400 block mb-1">Code Certification</span>
+              <span className="text-sm font-mono font-semibold text-gray-800">{cert.code}</span>
             </div>
             <div>
-              <span className="font-label-md text-label-md text-on-surface-variant block mb-1">Provider</span>
-              <span className="font-body-md text-body-md text-on-surface">Udemy</span>
+              <span className="text-xs font-medium text-gray-400 block mb-1">Provider</span>
+              <div className="flex items-center gap-2">
+                <span className={clsx("w-2 h-2 rounded-full", pConfig.text)}></span>
+                <span className="text-sm font-semibold text-gray-800">{cert.provider || '-'}</span>
+              </div>
             </div>
             <div>
-              <span className="font-label-md text-label-md text-on-surface-variant block mb-1">Level</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-container text-on-secondary-container">Advanced</span>
+              <span className="text-xs font-medium text-gray-400 block mb-1">Difficulté</span>
+              <span className={clsx(
+                "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border uppercase tracking-wider",
+                cert.difficulty === 'FOUNDATIONAL' ? 'bg-emerald-50/50 text-emerald-700 border-emerald-300' : 
+                cert.difficulty === 'INTERMEDIATE' ? 'bg-sky-50/50 text-sky-700 border-sky-300' : 
+                cert.difficulty === 'ADVANCED' ? 'bg-purple-50/50 text-purple-700 border-purple-300' : 
+                cert.difficulty === 'EXPERT' ? 'bg-rose-50/50 text-rose-700 border-rose-400' :
+                'bg-gray-100 text-gray-700 border-gray-200'
+              )}>
+                {cert.difficulty}
+              </span>
             </div>
             <div>
-              <span className="font-label-md text-label-md text-on-surface-variant block mb-1">Priority</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-on-primary">High</span>
+              <span className="text-xs font-medium text-gray-400 block mb-1">Priorité Interne</span>
+              <div className="flex items-center gap-1.5">
+                <span className={clsx("w-2 h-2 rounded-full",
+                  cert.priority === 'MANDATORY' ? 'bg-red-600' : 
+                  cert.priority === 'HIGH' ? 'bg-amber-500' : 
+                  cert.priority === 'NORMAL' ? 'bg-emerald-500' : 
+                  'bg-blue-600'
+                )}></span>
+                <span className={clsx(
+                  "text-xs font-bold uppercase",
+                  cert.priority === 'MANDATORY' ? 'text-red-600' : 
+                  cert.priority === 'HIGH' ? 'text-amber-600' : 
+                  cert.priority === 'NORMAL' ? 'text-emerald-600' : 
+                  'text-blue-600'
+                )}>
+                  {cert.priority}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="mt-6">
-            <span className="font-label-md text-label-md text-on-surface-variant block mb-2">Description</span>
-            <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-              Validates technical expertise in developing, deploying, and debugging cloud-based applications using AWS. Designed for individuals with one or more years of hands-on experience developing and maintaining an AWS-based application.
-            </p>
-          </div>
+
+          {description && (
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <span className="text-xs font-medium text-gray-400 block mb-1.5">Description</span>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-line">{description}</p>
+            </div>
+          )}
         </div>
 
-        {/* Exam Details */}
-        <div className="md:col-span-4 bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/30 hover:-translate-y-0.5 transition-transform duration-200">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface border-b border-outline-variant/30 pb-3 mb-4">Training Logistics</h2>
+        {/* Section 2: Détails d'Examen */}
+        <div className="lg:col-span-4 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-5">
+            <span className="material-symbols-outlined text-[#b70f30] text-[20px]">timer</span>
+            <h2 className="text-base font-bold text-[#111827]">Détails d'Examen</h2>
+          </div>
+
           <ul className="space-y-4">
             <li className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[18px]">timer</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600">
+                  <span className="material-symbols-outlined text-[18px]">schedule</span>
                 </div>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">Duration</span>
+                <span className="text-xs font-medium text-gray-600">Durée d'examen</span>
               </div>
-              <span className="font-body-md text-body-md text-on-surface font-semibold">32.5 Hours</span>
+              <span className="text-xs font-extrabold text-gray-900">{examDuration ? `${examDuration} min` : '-'}</span>
             </li>
+
             <li className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[18px]">devices</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600">
+                  <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
                 </div>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">Platform</span>
+                <span className="text-xs font-medium text-gray-600">Note de passage</span>
               </div>
-              <span className="font-body-md text-body-md text-on-surface font-semibold">Web / Mobile App</span>
+              <span className="text-xs font-extrabold text-gray-900">{passingScore ? `${passingScore}%` : '-'}</span>
             </li>
+
             <li className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[18px]">person</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600">
+                  <span className="material-symbols-outlined text-[18px]">payments</span>
                 </div>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">Instructor</span>
+                <span className="text-xs font-medium text-gray-600">Coût Examen</span>
               </div>
-              <span className="font-body-md text-body-md text-on-surface font-semibold">Stephen Grider</span>
+              <span className="text-xs font-extrabold text-gray-900">{cert.examCostUsd ? `${cert.examCostUsd.toLocaleString()} MAD` : '-'}</span>
+            </li>
+
+            <li className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600">
+                  <span className="material-symbols-outlined text-[18px]">school</span>
+                </div>
+                <span className="text-xs font-medium text-gray-600">Coût Formation</span>
+              </div>
+              <span className="text-xs font-extrabold text-gray-900">{cert.trainingCostUsd ? `${cert.trainingCostUsd.toLocaleString()} MAD` : '-'}</span>
+            </li>
+
+            <li className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600">
+                  <span className="material-symbols-outlined text-[18px]">history</span>
+                </div>
+                <span className="text-xs font-medium text-gray-600">Durée de Validité</span>
+              </div>
+              <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                {validityLabel}
+              </span>
             </li>
           </ul>
         </div>
 
-        {/* Training Resources */}
-        <div className="md:col-span-6 bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/30 hover:-translate-y-0.5 transition-transform duration-200">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface border-b border-outline-variant/30 pb-3 mb-4">Certification Resources</h2>
+        {/* Section 3: URLs & Liens */}
+        <div className="lg:col-span-6 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-4">
+            <span className="material-symbols-outlined text-[#b70f30] text-[20px]">link</span>
+            <h2 className="text-base font-bold text-[#111827]">Liens & Ressources</h2>
+          </div>
+
           <div className="space-y-3">
-            <a className="block p-3 rounded-lg border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-colors group" href="#">
-              <div className="flex items-center justify-between">
+            {cert.officialUrl ? (
+              <a 
+                href={cert.officialUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-red-200 hover:bg-red-50/30 transition-all group"
+              >
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-secondary">link</span>
-                  <span className="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Official Exam URL</span>
+                  <span className="material-symbols-outlined text-[#b70f30] text-[20px]">language</span>
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-[#b70f30] transition-colors">Site Officiel</span>
                 </div>
-                <span className="material-symbols-outlined text-on-surface-variant text-[18px]">open_in_new</span>
-              </div>
-            </a>
-            <a className="block p-3 rounded-lg border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-colors group" href="#">
-              <div className="flex items-center justify-between">
+                <span className="material-symbols-outlined text-gray-400 group-hover:text-[#b70f30] text-[18px]">open_in_new</span>
+              </a>
+            ) : (
+              <div className="p-3 rounded-xl border border-gray-100 text-xs text-gray-400 italic">Aucune URL officielle spécifiée</div>
+            )}
+
+            {cert.examProviderUrl ? (
+              <a 
+                href={cert.examProviderUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-red-200 hover:bg-red-50/30 transition-all group"
+              >
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-secondary">link</span>
-                  <span className="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Official Certification Link</span>
+                  <span className="material-symbols-outlined text-[#b70f30] text-[20px]">cast_for_education</span>
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-[#b70f30] transition-colors">Centre d'Examen (Provider)</span>
                 </div>
-                <span className="material-symbols-outlined text-on-surface-variant text-[18px]">open_in_new</span>
-              </div>
-            </a>
+                <span className="material-symbols-outlined text-gray-400 group-hover:text-[#b70f30] text-[18px]">open_in_new</span>
+              </a>
+            ) : (
+              <div className="p-3 rounded-xl border border-gray-100 text-xs text-gray-400 italic">Aucune URL d'examen spécifiée</div>
+            )}
           </div>
         </div>
 
-        {/* Concerned Squads */}
-        <div className="md:col-span-6 bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/30 hover:-translate-y-0.5 transition-transform duration-200">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface border-b border-outline-variant/30 pb-3 mb-4">Concerned Squads</h2>
-          <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1.5 bg-surface-container border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-tertiary-container"></span> Cloud Native
-            </span>
-            <span className="px-3 py-1.5 bg-surface-container border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-secondary"></span> DevOps Engineering
-            </span>
-            <span className="px-3 py-1.5 bg-surface-container border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary"></span> Serverless Team
-            </span>
-            <span className="px-3 py-1.5 bg-surface-container border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-outline"></span> Architecture
-            </span>
+        {/* Section 4: Squads Concernées avec Priorité */}
+        <div className="lg:col-span-6 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-4">
+            <span className="material-symbols-outlined text-[#b70f30] text-[20px]">groups</span>
+            <h2 className="text-base font-bold text-[#111827]">Squads Concernées</h2>
           </div>
+
+          {cert.associatedSquads && cert.associatedSquads.length > 0 ? (
+            <div className="flex flex-wrap gap-2.5">
+              {cert.associatedSquads.map((sq, idx) => (
+                <div 
+                  key={idx} 
+                  className="px-3 py-1.5 bg-red-50/60 border border-red-100 rounded-xl flex items-center gap-2 text-xs font-medium text-[#b70f30]"
+                >
+                  <span>{sq.name}</span>
+                  {sq.priority && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#b70f30] text-white text-[10px] font-bold">
+                      P{sq.priority}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-4 text-xs text-gray-400 italic">Aucune squad associée à cette certification.</div>
+          )}
         </div>
 
-        {/* Reviews */}
-        <div className="md:col-span-12 bg-surface-container-lowest rounded-xl p-container-padding shadow-sm border border-outline-variant/30 hover:-translate-y-0.5 transition-transform duration-200">
-          <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
-            <h2 className="font-headline-sm text-headline-sm text-on-surface">Colleague Reviews</h2>
-            <div className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[20px] text-tertiary-container" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-              <span className="font-body-md text-body-md font-semibold text-on-surface">4.5</span>
-              <span className="font-body-sm text-body-sm text-on-surface-variant ml-1">(24 reviews)</span>
+        {/* Section 5: Note Globale & Avis (Ratings with Star Ratings, Comment, Author, Squad) */}
+        <div className="lg:col-span-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#b70f30] text-[20px]">star</span>
+              <h2 className="text-base font-bold text-[#111827]">Avis & Commentaires</h2>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
-            {/* Review 1 */}
-            <div className="p-4 bg-surface-container-low rounded-lg border border-outline-variant/50">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-md">SJ</div>
-                  <div>
-                    <p className="font-label-md text-label-md text-on-surface">Sarah Jenkins</p>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant text-[11px]">Cloud Architect</p>
-                  </div>
-                </div>
-                <div className="flex text-tertiary-container">
-                  {[1,2,3,4,5].map((_, i) => (
-                    <span key={i} className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  ))}
-                </div>
+            
+            {cert.averageRating ? (
+              <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                <span className="material-symbols-outlined text-[18px] text-amber-500" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                <span className="text-xs font-extrabold text-amber-900">{cert.averageRating.toFixed(1)} / 5</span>
+                <span className="text-[11px] text-amber-700 ml-1">({ratings.length} avis)</span>
               </div>
-              <p className="font-body-sm text-body-sm text-on-surface mt-2 line-clamp-3">
-                Heavy focus on DynamoDB, API Gateway, and Lambda. Make sure you understand the pricing models and read capacity units calculations. The Stephane Maarek course was spot on for this.
-              </p>
-            </div>
-            {/* Review 2 */}
-            <div className="p-4 bg-surface-container-low rounded-lg border border-outline-variant/50">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md">MK</div>
-                  <div>
-                    <p className="font-label-md text-label-md text-on-surface">Mike Kowalski</p>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant text-[11px]">DevOps Engineer</p>
-                  </div>
-                </div>
-                <div className="flex text-tertiary-container">
-                  {[1,2,3].map((_, i) => (
-                    <span key={i} className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  ))}
-                </div>
-              </div>
-              <p className="font-body-sm text-body-sm text-on-surface mt-2 line-clamp-3">
-                Good concepts but could be more practical. I'd recommend doing some hands-on labs before taking the exam.
-              </p>
-            </div>
+            ) : (
+              <span className="text-xs text-gray-400 italic">Pas encore de note</span>
+            )}
           </div>
+
+          {ratings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ratings.map((r, idx) => (
+                <div key={idx} className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:border-gray-200 transition-all flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="text-xs font-bold text-gray-900">{r.userFullName || 'Utilisateur Anonyme'}</p>
+                        {r.squadName && (
+                          <p className="text-[11px] font-medium text-gray-500 mt-0.5">Squad: {r.squadName}</p>
+                        )}
+                      </div>
+                      <div className="flex text-amber-400">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span 
+                            key={star} 
+                            className="material-symbols-outlined text-[16px]"
+                            style={{ fontVariationSettings: star <= (r.rating || 0) ? "'FILL' 1" : "'FILL' 0" }}
+                          >
+                            star
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {r.comment && (
+                      <p className="text-xs text-gray-600 mt-2 leading-relaxed whitespace-pre-line">{r.comment}</p>
+                    )}
+                  </div>
+
+                  {r.wouldRecommend !== undefined && (
+                    <div className="mt-3 pt-2 border-t border-gray-100 flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+                      <span className="material-symbols-outlined text-[15px] text-emerald-600">thumb_up</span>
+                      <span>Recommande cette certification</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-gray-400 text-xs italic">
+              Aucun commentaire publié pour cette certification.
+            </div>
+          )}
         </div>
+
       </div>
+
+      {/* Edit Form Modal */}
+      {isEditModalOpen && (
+        <CertificationFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          certificationToEdit={cert}
+          onSuccess={() => {
+            setIsEditModalOpen(false);
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <span className="material-symbols-outlined text-3xl">warning</span>
+              <h3 className="text-lg font-bold text-gray-900">Confirmer la suppression</h3>
+            </div>
+            <p className="text-xs text-gray-600">
+              Êtes-vous sûr de vouloir supprimer la certification <strong className="text-gray-900">{cert.name}</strong> ?
+            </p>
+            {deleteError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2 font-medium">
+                <span className="material-symbols-outlined text-[18px] flex-shrink-0">error</span>
+                <span>{deleteError}</span>
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button 
+                type="button" 
+                onClick={() => { setDeleteDialogOpen(false); setDeleteError(null); }}
+                className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Fermer
+              </button>
+              <button 
+                type="button" 
+                onClick={() => deleteMutation.mutate(cert.id)}
+                disabled={deleteMutation.isPending || !!deleteError}
+                className={clsx(
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5",
+                  (deleteMutation.isPending || !!deleteError) 
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300" 
+                    : "bg-[#b70f30] text-white hover:bg-red-800 shadow-2xs"
+                )}
+              >
+                {deleteMutation.isPending && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

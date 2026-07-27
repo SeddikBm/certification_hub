@@ -21,6 +21,7 @@ public class AssignmentResponse {
     private UUID assignedById;
     private String statusCertification;
     private String statusTraining;
+    private String priority;
     private Instant assignedAt;
     private Instant completedAt;
     private Instant examAt;

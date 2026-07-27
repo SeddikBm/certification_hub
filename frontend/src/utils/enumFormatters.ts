@@ -72,3 +72,21 @@ export function formatTrainingType(type: string | undefined): string {
   if (!type) return '-';
   return TRAINING_TYPE_LABELS[type] || type;
 }
+
+export function getAssignmentProgressPercentage(ass: { itemType: string; statusCertification?: string; statusTraining?: string; trainingProgressPercentage?: number }): number {
+  if (ass.itemType === 'TRAINING') {
+    return ass.trainingProgressPercentage || 0;
+  }
+  const status = ass.statusCertification;
+  switch (status) {
+    case 'PENDING_APPROVAL': return 10;
+    case 'APPROVED': return 25;
+    case 'PLANNED': return 40;
+    case 'IN_PROGRESS': return 60;
+    case 'EXAM_SCHEDULED': return 80;
+    case 'COMPLETED': return 100;
+    case 'FAILED': return 50;
+    case 'EXPIRED': return 50;
+    case 'CANCELLED': default: return 0;
+  }
+}

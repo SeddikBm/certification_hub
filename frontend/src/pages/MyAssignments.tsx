@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService, type AssignmentResponse } from '../services/assignment.service';
 import { RequestAssignmentModal } from '../components/RequestAssignmentModal';
+import { ScheduleExamModal } from '../components/ScheduleExamModal';
 import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
@@ -14,6 +15,15 @@ export function MyAssignments() {
   const pageSize = 25;
 
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [scheduleModalState, setScheduleModalState] = useState<{
+    isOpen: boolean;
+    assignmentId: string | null;
+    itemName?: string;
+  }>({
+    isOpen: false,
+    assignmentId: null,
+    itemName: undefined
+  });
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -73,23 +83,25 @@ export function MyAssignments() {
   };
 
   // Check if Exam / Target Date is Close (< 7 Days)
-  const renderDateWarning = (examAt: string | undefined) => {
+  const renderDateWarning = (examAt: string | undefined, currentStatus?: string) => {
     if (!examAt) return null;
+    if (currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED') return null;
+
     const examDate = new Date(examAt);
     const now = new Date();
     const diffDays = Math.ceil((examDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
 
     if (diffDays <= 7 && diffDays >= 0) {
       return (
-        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
-          <span className="material-symbols-outlined text-[14px]">warning</span>
-          <span>Date proche ({diffDays} j restant{diffDays > 1 ? 's' : ''})</span>
+        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+          <span className="material-symbols-outlined text-[13px]">warning</span>
+          <span>Date proche ({diffDays} j)</span>
         </div>
       );
     } else if (diffDays < 0) {
       return (
-        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-red-100 text-red-800 border border-red-300">
-          <span className="material-symbols-outlined text-[14px]">error</span>
+        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+          <span className="material-symbols-outlined text-[13px]">error</span>
           <span>Date dépassée</span>
         </div>
       );
@@ -227,21 +239,20 @@ export function MyAssignments() {
         )}
 
         <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
+          <table className="w-full text-left border-collapse min-w-[950px]">
             <thead>
               <tr className="bg-[#fdf4f5] border-b border-red-100 text-[#7c2d37] text-xs font-bold">
-                <th className="p-3.5 pl-6">Intitulé de l'Item</th>
-                <th className="p-3.5">Provider / Organisme</th>
-                <th className="p-3.5">Date d'Assignation</th>
-                <th className="p-3.5">Statut</th>
-                <th className="p-3.5">Avancement / Date Examen</th>
-                <th className="p-3.5 text-center">Actions</th>
+                <th className="p-3.5 pl-6 w-[28%]">Intitulé de l'Item</th>
+                <th className="p-3.5 w-[18%]">Provider / Organisme</th>
+                <th className="p-3.5 w-[14%]">Date d'Assignation</th>
+                <th className="p-3.5 w-[20%]">Statut & Date Examen / Cible</th>
+                <th className="p-3.5 text-center w-[20%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {!assignmentsPage?.content || assignmentsPage.content.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-gray-400 text-xs">
+                  <td colSpan={5} className="p-12 text-center text-gray-400 text-xs">
                     Aucune assignation trouvée pour le filtre sélectionné.
                   </td>
                 </tr>
@@ -274,30 +285,15 @@ export function MyAssignments() {
                         {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}
                       </td>
 
-                      {/* Status */}
-                      <td className="p-3.5">
-                        {renderStatusBadge(status)}
-                      </td>
-
-                      {/* Progress / Exam Date */}
+                      {/* Status & Date Examen/Cible */}
                       <td className="p-3.5">
                         <div className="space-y-1">
-                          {ass.itemType === 'TRAINING' && (
-                            <div className="flex items-center gap-2">
-                              <div className="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                <div className="bg-[#b70f30] h-2 rounded-full transition-all" style={{ width: `${ass.trainingProgressPercentage || 0}%` }}></div>
-                              </div>
-                              <span className="text-xs font-bold text-gray-700">{ass.trainingProgressPercentage || 0}%</span>
-                            </div>
-                          )}
-
+                          <div>{renderStatusBadge(status)}</div>
                           {ass.examAt && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-700 font-semibold flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[14px] text-gray-400">calendar_today</span>
-                                {new Date(ass.examAt).toLocaleDateString('fr-FR')}
-                              </span>
-                              {renderDateWarning(ass.examAt)}
+                            <div className="flex items-center gap-1.5 pt-0.5 text-xs text-gray-600 font-medium">
+                              <span className="material-symbols-outlined text-[14px] text-gray-400">calendar_today</span>
+                              <span>{new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                              {renderDateWarning(ass.examAt, status)}
                             </div>
                           )}
                         </div>
@@ -305,7 +301,7 @@ export function MyAssignments() {
 
                       {/* Actions */}
                       <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
                           
                           {/* Commencer (Transition to IN_PROGRESS) */}
                           {(status === 'APPROVED' || status === 'PLANNED') && (
@@ -317,50 +313,85 @@ export function MyAssignments() {
                                   ? { statusCertification: 'IN_PROGRESS' }
                                   : { statusTraining: 'IN_PROGRESS' }
                               })}
-                              className="px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] font-semibold text-[#006949] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                             >
-                              <span className="material-symbols-outlined text-[15px]">play_arrow</span>
+                              <span className="material-symbols-outlined text-[14px]">play_arrow</span>
                               <span>Commencer</span>
                             </button>
                           )}
 
-                          {/* Planifier Examen (Certification) */}
+                          {/* Certification in IN_PROGRESS: Opens ScheduleExamModal */}
                           {ass.itemType === 'CERTIFICATION' && status === 'IN_PROGRESS' && (
                             <button
                               type="button"
-                              onClick={() => {
-                                const dateStr = prompt("Entrez la date d'examen (AAAA-MM-JJ) :");
-                                if (dateStr) {
-                                  updateStatusMutation.mutate({
-                                    id: ass.id,
-                                    data: {
-                                      statusCertification: 'EXAM_SCHEDULED',
-                                      examAt: new Date(dateStr).toISOString()
-                                    }
-                                  });
-                                }
-                              }}
-                              className="px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                              onClick={() => setScheduleModalState({
+                                isOpen: true,
+                                assignmentId: ass.id,
+                                itemName: ass.itemName
+                              })}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                             >
-                              <span className="material-symbols-outlined text-[15px]">edit_calendar</span>
+                              <span className="material-symbols-outlined text-[14px]">edit_calendar</span>
                               <span>Planifier Examen</span>
                             </button>
                           )}
 
-                          {/* Marquer Terminé */}
-                          {(status === 'IN_PROGRESS' || status === 'EXAM_SCHEDULED') && (
+                          {/* Certification in EXAM_SCHEDULED: Can declare COMPLETED (Obtenu) or FAILED */}
+                          {ass.itemType === 'CERTIFICATION' && status === 'EXAM_SCHEDULED' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => updateStatusMutation.mutate({
+                                  id: ass.id,
+                                  data: { statusCertification: 'COMPLETED' }
+                                })}
+                                className="px-2.5 py-1 text-[11px] font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                <span>Déclarer Réussite</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => updateStatusMutation.mutate({
+                                  id: ass.id,
+                                  data: { statusCertification: 'FAILED' }
+                                })}
+                                className="px-2.5 py-1 text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-red-200"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">close</span>
+                                <span>Déclarer Échec</span>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Training in IN_PROGRESS: Can mark COMPLETED */}
+                          {ass.itemType === 'TRAINING' && status === 'IN_PROGRESS' && (
                             <button
                               type="button"
                               onClick={() => updateStatusMutation.mutate({
                                 id: ass.id,
-                                data: ass.itemType === 'CERTIFICATION'
-                                  ? { statusCertification: 'COMPLETED' }
-                                  : { statusTraining: 'COMPLETED', trainingProgressPercentage: 100 }
+                                data: { statusTraining: 'COMPLETED', trainingProgressPercentage: 100 }
                               })}
-                              className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                             >
-                              <span className="material-symbols-outlined text-[15px]">check_circle</span>
-                              <span>Marquer Obtenu/Terminé</span>
+                              <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                              <span>Marquer Terminé</span>
+                            </button>
+                          )}
+
+                          {/* Replanifier si FAILED ou EXPIRED */}
+                          {(status === 'FAILED' || status === 'EXPIRED') && (
+                            <button
+                              type="button"
+                              onClick={() => updateStatusMutation.mutate({
+                                id: ass.id,
+                                data: { statusCertification: 'IN_PROGRESS' }
+                              })}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">autorenew</span>
+                              <span>Replanifier</span>
                             </button>
                           )}
 
@@ -399,6 +430,27 @@ export function MyAssignments() {
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
         onSuccessNotification={showNotification}
+      />
+
+      {/* Schedule Exam Modal */}
+      <ScheduleExamModal
+        isOpen={scheduleModalState.isOpen}
+        itemName={scheduleModalState.itemName}
+        onClose={() => setScheduleModalState({ isOpen: false, assignmentId: null })}
+        onConfirm={(examDateStr) => {
+          if (scheduleModalState.assignmentId) {
+            updateStatusMutation.mutate({
+              id: scheduleModalState.assignmentId,
+              data: {
+                statusCertification: 'EXAM_SCHEDULED',
+                examAt: new Date(examDateStr).toISOString()
+              }
+            });
+            setScheduleModalState({ isOpen: false, assignmentId: null });
+            showNotification('success', 'Date d\'examen enregistrée avec succès !');
+          }
+        }}
+        isPending={updateStatusMutation.isPending}
       />
 
     </div>

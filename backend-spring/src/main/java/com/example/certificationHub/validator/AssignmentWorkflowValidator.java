@@ -20,12 +20,16 @@ public class AssignmentWorkflowValidator {
             case APPROVED -> 
                 List.of(StatusCertification.PLANNED, StatusCertification.IN_PROGRESS, StatusCertification.CANCELLED).contains(next);
             case PLANNED -> 
-                List.of(StatusCertification.IN_PROGRESS, StatusCertification.CANCELLED).contains(next);
+                List.of(StatusCertification.IN_PROGRESS, StatusCertification.EXAM_SCHEDULED, StatusCertification.CANCELLED).contains(next);
             case IN_PROGRESS ->
-                List.of(StatusCertification.EXAM_SCHEDULED, StatusCertification.COMPLETED, StatusCertification.CANCELLED).contains(next);
+                List.of(StatusCertification.EXAM_SCHEDULED, StatusCertification.FAILED, StatusCertification.CANCELLED).contains(next);
             case EXAM_SCHEDULED ->
                 List.of(StatusCertification.COMPLETED, StatusCertification.FAILED, StatusCertification.CANCELLED).contains(next);
-            case COMPLETED, FAILED, CANCELLED, EXPIRED -> false; // États terminaux
+            case FAILED ->
+                List.of(StatusCertification.APPROVED, StatusCertification.IN_PROGRESS, StatusCertification.PLANNED, StatusCertification.CANCELLED).contains(next);
+            case EXPIRED ->
+                List.of(StatusCertification.APPROVED, StatusCertification.IN_PROGRESS, StatusCertification.PLANNED, StatusCertification.CANCELLED).contains(next);
+            case COMPLETED, CANCELLED -> false; // États terminaux
         };
 
         if (!isValid) {
@@ -44,7 +48,7 @@ public class AssignmentWorkflowValidator {
             case APPROVED -> 
                 List.of(StatusTraining.PLANNED, StatusTraining.IN_PROGRESS, StatusTraining.CANCELLED).contains(next);
             case PLANNED -> 
-                List.of(StatusTraining.IN_PROGRESS, StatusTraining.CANCELLED).contains(next);
+                List.of(StatusTraining.IN_PROGRESS, StatusTraining.COMPLETED, StatusTraining.CANCELLED).contains(next);
             case IN_PROGRESS -> 
                 List.of(StatusTraining.COMPLETED, StatusTraining.CANCELLED).contains(next);
             case COMPLETED, CANCELLED -> false; // États terminaux

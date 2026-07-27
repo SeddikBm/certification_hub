@@ -55,6 +55,14 @@ public class AssignmentMapper {
             }
         }
 
+        String priority = null;
+        if (assignment.getMetadata() != null && assignment.getMetadata().containsKey("priority")) {
+            Object pObj = assignment.getMetadata().get("priority");
+            if (pObj != null) {
+                priority = pObj.toString();
+            }
+        }
+
         return AssignmentResponse.builder()
                 .id(assignment.getId())
                 .itemType(assignment.getItemType() != null ? assignment.getItemType().name() : null)
@@ -71,6 +79,7 @@ public class AssignmentMapper {
                         ? assignment.getStatusCertification().name() : null)
                 .statusTraining(assignment.getStatusTraining() != null
                         ? assignment.getStatusTraining().name() : null)
+                .priority(priority)
                 .assignedAt(assignment.getAssignedAt())
                 .completedAt(assignment.getCompletedAt())
                 .examAt(assignment.getExamAt())

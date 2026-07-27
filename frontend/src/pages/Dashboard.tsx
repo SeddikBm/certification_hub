@@ -8,6 +8,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [hoveredSlice, setHoveredSlice] = useState<{ label: string; value: number; percentage: number; color: string } | null>(null);
+  const [hoveredProgressItem, setHoveredProgressItem] = useState<{ label: string; count: number; percentage: number; color: string } | null>(null);
 
   useEffect(() => {
     if (user?.role === 'COLLABORATOR' || user?.role === 'USER') {
@@ -287,7 +288,7 @@ export function Dashboard() {
             </>
           ) : (
             <>
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
                 <div>
                   <h2 className="text-base font-bold text-[#111827]">Avancement & Statut des Parcours</h2>
                   <p className="text-xs text-gray-500 mt-0.5">Répartition des assignations de votre équipe</p>
@@ -297,50 +298,93 @@ export function Dashboard() {
                 </div>
               </div>
 
+              {/* Hover Tooltip display banner */}
+              <div className="h-6 flex items-center justify-center">
+                {hoveredProgressItem ? (
+                  <div className="text-xs font-bold px-3 py-1 rounded-lg bg-gray-900 text-white shadow-md flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: hoveredProgressItem.color }}></span>
+                    <span>{hoveredProgressItem.label}:</span>
+                    <span className="text-amber-300 font-extrabold">{hoveredProgressItem.count} ({hoveredProgressItem.percentage}%)</span>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-gray-400 font-medium italic">Survolez un statut pour plus de détails</span>
+                )}
+              </div>
+
               <div className="space-y-4 my-auto py-2">
-                <div>
+                {/* Completed / Obtained */}
+                <div 
+                  className="group cursor-pointer p-2 rounded-xl hover:bg-emerald-50/50 transition-all"
+                  onMouseEnter={() => {
+                    const count = stats.completedAssignments || 0;
+                    const total = stats.totalAssignments || 1;
+                    const pct = Math.round((count / total) * 100);
+                    setHoveredProgressItem({ label: 'Obtenus / Terminés', count, percentage: pct, color: '#059669' });
+                  }}
+                  onMouseLeave={() => setHoveredProgressItem(null)}
+                >
                   <div className="flex justify-between text-xs font-semibold text-gray-700 mb-1.5">
-                    <span className="flex items-center gap-1.5 text-emerald-700">
+                    <span className="flex items-center gap-1.5 text-emerald-700 group-hover:font-bold transition-all">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
                       Parcours Obtenus / Terminés
                     </span>
-                    <span>{stats.completedAssignments || 0}</span>
+                    <span className="font-extrabold">{stats.completedAssignments || 0}</span>
                   </div>
-                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden p-0.5 border border-gray-200/60">
                     <div 
-                      className="bg-emerald-600 h-full rounded-full transition-all duration-500" 
+                      className="bg-emerald-600 h-full rounded-full transition-all duration-500 group-hover:brightness-110" 
                       style={{ width: `${(stats.totalAssignments ? ((stats.completedAssignments || 0) / stats.totalAssignments) * 100 : 0)}%` }}
                     ></div>
                   </div>
                 </div>
 
-                <div>
+                {/* Pending Approval */}
+                <div 
+                  className="group cursor-pointer p-2 rounded-xl hover:bg-amber-50/50 transition-all"
+                  onMouseEnter={() => {
+                    const count = stats.pendingAssignments || 0;
+                    const total = stats.totalAssignments || 1;
+                    const pct = Math.round((count / total) * 100);
+                    setHoveredProgressItem({ label: 'En Attente de Validation', count, percentage: pct, color: '#f59e0b' });
+                  }}
+                  onMouseLeave={() => setHoveredProgressItem(null)}
+                >
                   <div className="flex justify-between text-xs font-semibold text-gray-700 mb-1.5">
-                    <span className="flex items-center gap-1.5 text-amber-700">
+                    <span className="flex items-center gap-1.5 text-amber-700 group-hover:font-bold transition-all">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                       En Attente de Validation
                     </span>
-                    <span>{stats.pendingAssignments || 0}</span>
+                    <span className="font-extrabold">{stats.pendingAssignments || 0}</span>
                   </div>
-                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden p-0.5 border border-gray-200/60">
                     <div 
-                      className="bg-amber-500 h-full rounded-full transition-all duration-500" 
+                      className="bg-amber-500 h-full rounded-full transition-all duration-500 group-hover:brightness-110" 
                       style={{ width: `${(stats.totalAssignments ? ((stats.pendingAssignments || 0) / stats.totalAssignments) * 100 : 0)}%` }}
                     ></div>
                   </div>
                 </div>
 
-                <div>
+                {/* In Progress */}
+                <div 
+                  className="group cursor-pointer p-2 rounded-xl hover:bg-blue-50/50 transition-all"
+                  onMouseEnter={() => {
+                    const count = Math.max((stats.totalAssignments || 0) - (stats.completedAssignments || 0) - (stats.pendingAssignments || 0), 0);
+                    const total = stats.totalAssignments || 1;
+                    const pct = Math.round((count / total) * 100);
+                    setHoveredProgressItem({ label: 'En Cours d\'Apprentissage', count, percentage: pct, color: '#2563eb' });
+                  }}
+                  onMouseLeave={() => setHoveredProgressItem(null)}
+                >
                   <div className="flex justify-between text-xs font-semibold text-gray-700 mb-1.5">
-                    <span className="flex items-center gap-1.5 text-blue-700">
+                    <span className="flex items-center gap-1.5 text-blue-700 group-hover:font-bold transition-all">
                       <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                       En Cours d'Apprentissage
                     </span>
-                    <span>{Math.max((stats.totalAssignments || 0) - (stats.completedAssignments || 0) - (stats.pendingAssignments || 0), 0)}</span>
+                    <span className="font-extrabold">{Math.max((stats.totalAssignments || 0) - (stats.completedAssignments || 0) - (stats.pendingAssignments || 0), 0)}</span>
                   </div>
-                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden p-0.5 border border-gray-200/60">
                     <div 
-                      className="bg-blue-600 h-full rounded-full transition-all duration-500" 
+                      className="bg-blue-600 h-full rounded-full transition-all duration-500 group-hover:brightness-110" 
                       style={{ width: `${(stats.totalAssignments ? (Math.max((stats.totalAssignments || 0) - (stats.completedAssignments || 0) - (stats.pendingAssignments || 0), 0) / stats.totalAssignments) * 100 : 0)}%` }}
                     ></div>
                   </div>

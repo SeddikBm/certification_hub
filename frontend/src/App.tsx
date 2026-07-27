@@ -63,7 +63,7 @@ function App() {
                 <Route path="/certifications/add" element={<AddCertification />} />
               </Route>
 
-              <Route element={<RoleGuard allowedRoles={['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'MANAGER']} />}>
+              <Route element={<RoleGuard allowedRoles={['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'MANAGER']} />}>
                 <Route path="/manage-assignments" element={<ManageAssignments />} />
               </Route>
 

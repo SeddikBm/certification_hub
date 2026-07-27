@@ -52,16 +52,27 @@ public class AssignmentService {
     public Page<AssignmentResponse> getAssignments(UUID targetUserId, ItemType itemType, String status,
             Pageable pageable, UUID currentUserId, String currentUserRole) {
         List<UUID> managedUserIds = new ArrayList<>();
+        String role = currentUserRole != null ? currentUserRole.replace("ROLE_", "") : "";
 
-        if ("CAREER_MANAGER".equals(currentUserRole)) {
+        if ("CAREER_MANAGER".equals(role)) {
             managedUserIds = managerAssignmentRepository.findByManagerId(currentUserId).stream()
+                    .filter(ma -> ma.getCollaborator() != null)
                     .map(ma -> ma.getCollaborator().getId())
                     .toList();
+        } else if ("SQUAD_LEAD".equals(role)) {
+            User squadLead = userRepository.findById(currentUserId).orElse(null);
+            if (squadLead != null && squadLead.getSquad() != null) {
+                UUID squadId = squadLead.getSquad().getId();
+                managedUserIds = userRepository.findAll().stream()
+                        .filter(u -> u.getSquad() != null && squadId.equals(u.getSquad().getId()))
+                        .map(User::getId)
+                        .toList();
+            }
         }
 
         return assignmentRepository.findAll(
                 AssignmentSpecification.withSecurityAndFilters(targetUserId, itemType, status, currentUserId,
-                        currentUserRole, managedUserIds),
+                        role, managedUserIds),
                 pageable).map(assignmentMapper::toResponse);
     }
 
@@ -103,20 +114,49 @@ public class AssignmentService {
 
         User assignedBy = userRepository.findById(currentUserId).orElseThrow();
 
+        Instant examAt = null;
+        if (request.getTargetDate() != null && !request.getTargetDate().isBlank()) {
+            try {
+                examAt = Instant.parse(request.getTargetDate());
+            } catch (Exception ignored) {
+                try {
+                    examAt = java.time.LocalDate.parse(request.getTargetDate()).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+                } catch (Exception ignored2) {}
+            }
+        }
+
+        java.util.Map<String, Object> metadata = new java.util.HashMap<>();
+        if (request.getPriority() != null && !request.getPriority().isBlank()) {
+            metadata.put("priority", request.getPriority());
+        }
+
         Assignment assignment = Assignment.builder()
                 .itemType(request.getItemType())
                 .itemId(request.getItemId())
                 .user(collaborator)
                 .assignedBy(assignedBy)
                 .assignedAt(Instant.now())
+                .examAt(examAt)
                 .notes(request.getNotes())
+                .metadata(metadata.isEmpty() ? null : metadata)
                 .build();
 
-        // Gestion du polymorphisme des statuts
+        // Management assignments: if targetDate/examAt is provided, set to PLANNED; else APPROVED. Collaborator self-requests start as PENDING_APPROVAL.
+        boolean isDirectManagementAssignment = !currentUserId.equals(collaborator.getId());
+        boolean hasTargetDate = examAt != null;
+
         if (request.getItemType() == ItemType.CERTIFICATION) {
-            assignment.setStatusCertification(StatusCertification.PENDING_APPROVAL);
+            if (isDirectManagementAssignment) {
+                assignment.setStatusCertification(hasTargetDate ? StatusCertification.PLANNED : StatusCertification.APPROVED);
+            } else {
+                assignment.setStatusCertification(StatusCertification.PENDING_APPROVAL);
+            }
         } else {
-            assignment.setStatusTraining(StatusTraining.PENDING_APPROVAL);
+            if (isDirectManagementAssignment) {
+                assignment.setStatusTraining(hasTargetDate ? StatusTraining.PLANNED : StatusTraining.APPROVED);
+            } else {
+                assignment.setStatusTraining(StatusTraining.PENDING_APPROVAL);
+            }
         }
 
         Assignment savedAssignment = assignmentRepository.save(assignment);

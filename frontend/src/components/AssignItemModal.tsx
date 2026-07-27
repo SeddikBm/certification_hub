@@ -31,12 +31,16 @@ export function AssignItemModal({
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [userSearch, setUserSearch] = useState<string>('');
   const [itemSearch, setItemSearch] = useState<string>('');
+  const [priority, setPriority] = useState<string>('NORMAL');
+  const [targetDate, setTargetDate] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
       setSelectedUserId(preselectedUserId || '');
       setItemType(defaultItemType);
+      setPriority('NORMAL');
+      setTargetDate('');
     }
   }, [isOpen, preselectedUserId, defaultItemType]);
 
@@ -126,6 +130,8 @@ export function AssignItemModal({
       itemType,
       itemId: selectedItemId,
       userId: selectedUserId,
+      priority: priority || undefined,
+      targetDate: targetDate || undefined,
       notes: notes || undefined
     }),
     onSuccess: () => {
@@ -151,6 +157,8 @@ export function AssignItemModal({
     setSelectedItemId('');
     setUserSearch('');
     setItemSearch('');
+    setPriority('NORMAL');
+    setTargetDate('');
     setNotes('');
   };
 
@@ -403,6 +411,35 @@ export function AssignItemModal({
               </div>
             </div>
           )}
+
+          {/* Priority & Target Date */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-700">Priorité d'Assignation</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full p-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
+              >
+                <option value="MANDATORY">Obligatoire</option>
+                <option value="HIGH">Haute</option>
+                <option value="NORMAL">Normale</option>
+                <option value="OPTIONAL">Optionnelle</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-700">
+                {itemType === 'CERTIFICATION' ? 'Date d\'Examen Prévue' : 'Date Cible de Fin'}
+              </label>
+              <input
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                className="w-full p-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
+              />
+            </div>
+          </div>
 
           {/* Notes */}
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-2">

@@ -4,17 +4,18 @@ import { assignmentService, type AssignmentResponse } from '../services/assignme
 import { AssignItemModal } from '../components/AssignItemModal';
 import { Pagination } from '../components/ui/Pagination';
 import { useAuth } from '../contexts/AuthContext';
-import { formatStatus } from '../utils/enumFormatters';
+import { formatStatus, formatPriority, getAssignmentProgressPercentage } from '../utils/enumFormatters';
 import clsx from 'clsx';
 
 export function ManageAssignments() {
   const { user } = useAuth();
-  const isCareerManager = user?.role === 'CAREER_MANAGER';
+  const isDirectView = user?.role === 'CAREER_MANAGER' || user?.role === 'SQUAD_LEAD';
   const queryClient = useQueryClient();
 
   const [collabSearch, setCollabSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [page, setPage] = useState(0);
   const pageSize = 25;
 
@@ -77,6 +78,10 @@ export function ManageAssignments() {
         return;
       }
 
+      if (priorityFilter && ass.priority !== priorityFilter) {
+        return;
+      }
+
       if (!managerMap.has(mName)) {
         managerMap.set(mName, {
           managerName: mName,
@@ -101,7 +106,7 @@ export function ManageAssignments() {
       managerName: mGroup.managerName,
       collaborators: Array.from(mGroup.collaboratorsMap.values())
     }));
-  }, [allAssignments, collabSearch]);
+  }, [allAssignments, collabSearch, priorityFilter]);
 
   // Update Status Mutation (Approuver / Refuser)
   const updateStatusMutation = useMutation({
@@ -152,34 +157,46 @@ export function ManageAssignments() {
     showNotification('success', 'Exportation des assignations réussie.');
   };
 
-  // Helper Badge Color
-  const renderBadge = (status: string | undefined) => {
-    if (!status) return null;
-    const isPending = status === 'PENDING_APPROVAL';
-    const isApproved = status === 'APPROVED' || status === 'COMPLETED';
-    const isCancelled = status === 'CANCELLED' || status === 'FAILED';
-
-    const statusFrenchMap: Record<string, string> = {
-      PENDING_APPROVAL: 'En attente de validation',
-      APPROVED: 'Approuvé',
-      PLANNED: 'Planifié',
-      IN_PROGRESS: 'En cours',
-      EXAM_SCHEDULED: 'Examen programmé',
-      COMPLETED: 'Obtenu / Terminé',
-      FAILED: 'Échoué',
-      CANCELLED: 'Refusé / Annulé',
-      EXPIRED: 'Expiré'
-    };
-
+  const renderPriorityBadge = (priorityStr: string | undefined, isTraining?: boolean) => {
+    if (!priorityStr) return null;
+    const label = formatPriority(priorityStr, isTraining);
+    const isHigh = priorityStr === 'MANDATORY' || priorityStr === 'HIGH';
     return (
       <span className={clsx(
-        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-        isPending ? "bg-amber-50 text-amber-700 border-amber-200" :
-        isApproved ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-        isCancelled ? "bg-red-50 text-red-700 border-red-200" :
-        "bg-blue-50 text-blue-700 border-blue-200"
+        "px-2 py-0.5 rounded-full text-[10px] font-extrabold border",
+        isHigh ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"
       )}>
-        <span>{statusFrenchMap[status] || status}</span>
+        {label}
+      </span>
+    );
+  };
+
+  const renderDateWarning = (dateStr: string | undefined, isTraining?: boolean) => {
+    if (!dateStr) return null;
+    const targetDate = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+    const label = isTraining ? 'Date cible' : 'Examen';
+
+    if (diffDays <= 7 && diffDays >= 0) {
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+          <span className="material-symbols-outlined text-[12px]">warning</span>
+          <span>{label} proche ({diffDays} j)</span>
+        </span>
+      );
+    } else if (diffDays < 0) {
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 flex items-center gap-1">
+          <span className="material-symbols-outlined text-[12px]">alarm_off</span>
+          <span>{label} dépassé(e)</span>
+        </span>
+      );
+    }
+    return (
+      <span className="text-[11px] text-gray-500 font-semibold flex items-center gap-1">
+        <span className="material-symbols-outlined text-[13px]">calendar_today</span>
+        <span>{label} : {targetDate.toLocaleDateString('fr-FR')}</span>
       </span>
     );
   };
@@ -249,7 +266,7 @@ export function ManageAssignments() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
           
           {/* Collaborator Search */}
-          <div className="md:col-span-4 space-y-1.5">
+          <div className="md:col-span-3 space-y-1.5">
             <label className="text-xs font-semibold text-gray-500 block">Collaborateur</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
@@ -264,7 +281,7 @@ export function ManageAssignments() {
           </div>
 
           {/* Type Filter */}
-          <div className="md:col-span-4 space-y-1.5">
+          <div className="md:col-span-3 space-y-1.5">
             <label className="text-xs font-semibold text-gray-500 block">Type d'Item</label>
             <select
               value={typeFilter}
@@ -277,8 +294,8 @@ export function ManageAssignments() {
             </select>
           </div>
 
-          {/* Status Filter */}
-          <div className="md:col-span-4 space-y-1.5">
+          {/* Dynamic Status Filter */}
+          <div className="md:col-span-3 space-y-1.5">
             <label className="text-xs font-semibold text-gray-500 block">Statut</label>
             <select
               value={statusFilter}
@@ -290,10 +307,27 @@ export function ManageAssignments() {
               <option value="APPROVED">Approuvé</option>
               <option value="PLANNED">Planifié</option>
               <option value="IN_PROGRESS">En cours</option>
-              <option value="EXAM_SCHEDULED">Examen programmé</option>
-              <option value="COMPLETED">Obtenu / Terminé</option>
-              <option value="FAILED">Échoué</option>
+              {typeFilter !== 'TRAINING' && <option value="EXAM_SCHEDULED">Examen programmé</option>}
+              <option value="COMPLETED">{typeFilter === 'CERTIFICATION' ? 'Obtenu' : typeFilter === 'TRAINING' ? 'Terminé' : 'Obtenu / Terminé'}</option>
+              {typeFilter !== 'TRAINING' && <option value="FAILED">Échoué</option>}
               <option value="CANCELLED">Refusé / Annulé</option>
+              {typeFilter !== 'TRAINING' && <option value="EXPIRED">Expiré</option>}
+            </select>
+          </div>
+
+          {/* Priority Filter */}
+          <div className="md:col-span-3 space-y-1.5">
+            <label className="text-xs font-semibold text-gray-500 block">Priorité</label>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 outline-none focus:border-[#b70f30]"
+            >
+              <option value="">Toutes les priorités</option>
+              <option value="MANDATORY">Obligatoire</option>
+              <option value="HIGH">Haute</option>
+              <option value="NORMAL">Normale</option>
+              <option value="OPTIONAL">Optionnelle</option>
             </select>
           </div>
 
@@ -316,7 +350,7 @@ export function ManageAssignments() {
         </div>
       ) : (
         <div className="space-y-6">
-          {isCareerManager ? (
+          {isDirectView ? (
             /* Direct Collaborator Cards View for Career Manager */
             <div className="space-y-5">
               {groupedManagers.flatMap(m => m.collaborators).map(group => {
@@ -369,12 +403,15 @@ export function ManageAssignments() {
                         return (
                           <div key={ass.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50/40 hover:border-gray-200 transition-all flex flex-col justify-between space-y-3">
                             <div className="flex items-start justify-between gap-2">
-                              <span className={clsx(
-                                "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border",
-                                ass.itemType === 'CERTIFICATION' ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-blue-50 text-blue-800 border-blue-200"
-                              )}>
-                                {ass.itemType === 'CERTIFICATION' ? 'Certification' : 'Formation'}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={clsx(
+                                  "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border",
+                                  ass.itemType === 'CERTIFICATION' ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-blue-50 text-blue-800 border-blue-200"
+                                )}>
+                                  {ass.itemType === 'CERTIFICATION' ? 'Certification' : 'Formation'}
+                                </span>
+                                {renderPriorityBadge(ass.priority, ass.itemType === 'TRAINING')}
+                              </div>
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
                                 {formatStatus(status, ass.itemType)}
                               </span>
@@ -382,11 +419,30 @@ export function ManageAssignments() {
 
                             <div>
                               <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{ass.itemName}</h4>
-                              <p className="text-[11px] text-gray-500 mt-0.5">Provider: {ass.provider || '-'}</p>
+                              <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1">
+                                <span>Provider: {ass.provider || '-'}</span>
+                                {renderDateWarning(ass.examAt, ass.itemType === 'TRAINING')}
+                              </div>
                             </div>
 
+                            {/* Progress Bar (ONLY for Formations) */}
+                            {ass.itemType === 'TRAINING' && (
+                              <div className="space-y-1 bg-white p-2 rounded-lg border border-gray-100">
+                                <div className="flex justify-between text-[10px] font-bold text-gray-600">
+                                  <span>Progression Formation</span>
+                                  <span>{ass.trainingProgressPercentage || 0}%</span>
+                                </div>
+                                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                  <div 
+                                    className="bg-[#b70f30] h-full rounded-full transition-all duration-300"
+                                    style={{ width: `${ass.trainingProgressPercentage || 0}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            )}
+
                             {isPending ? (
-                              <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-2">
+                              <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => updateStatusMutation.mutate({
@@ -395,9 +451,9 @@ export function ManageAssignments() {
                                       ? { statusCertification: 'CANCELLED' }
                                       : { statusTraining: 'CANCELLED' }
                                   })}
-                                  className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                                  className="px-2.5 py-1 text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                                 >
-                                  <span className="material-symbols-outlined text-[15px]">close</span>
+                                  <span className="material-symbols-outlined text-[14px]">close</span>
                                   <span>Refuser</span>
                                 </button>
 
@@ -409,9 +465,9 @@ export function ManageAssignments() {
                                       ? { statusCertification: 'APPROVED' }
                                       : { statusTraining: 'APPROVED' }
                                   })}
-                                  className="px-3 py-1.5 text-xs font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                                  className="px-2.5 py-1 text-[11px] font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
                                 >
-                                  <span className="material-symbols-outlined text-[15px]">check</span>
+                                  <span className="material-symbols-outlined text-[14px]">check</span>
                                   <span>Approuver</span>
                                 </button>
                               </div>

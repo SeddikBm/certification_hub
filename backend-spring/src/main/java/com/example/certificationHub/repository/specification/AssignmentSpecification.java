@@ -21,10 +21,14 @@ public class AssignmentSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             // --- 1. SÉCURITÉ (RLS) ---
-            if (!"ADMIN".equals(currentUserRole)) {
-                if ("CAREER_MANAGER".equals(currentUserRole)) {
+            String role = currentUserRole != null ? currentUserRole.replace("ROLE_", "") : "";
+
+            if (!"ADMIN".equals(role) && !"DIRECTOR".equals(role) && !"TRAINING_MANAGER".equals(role)) {
+                if ("CAREER_MANAGER".equals(role) || "SQUAD_LEAD".equals(role)) {
                     List<UUID> allowedIds = new ArrayList<>(managedUserIds);
-                    allowedIds.add(currentUserId); // Allow managers to see their own assignments
+                    if (!allowedIds.contains(currentUserId)) {
+                        allowedIds.add(currentUserId); // Allow managers / squad leads to see their own assignments
+                    }
                     predicates.add(root.get("user").get("id").in(allowedIds));
                 } else {
                     // Collaborateur classique

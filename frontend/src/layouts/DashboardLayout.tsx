@@ -20,7 +20,7 @@ export function DashboardLayout() {
     { name: 'Formations', icon: 'school', path: '/trainings', roles: ['ADMIN', 'CAREER_MANAGER', 'COLLABORATOR', 'MANAGER', 'USER'] },
     { name: 'Mes Assignations', icon: 'task_alt', path: '/my-assignments', roles: ['COLLABORATOR', 'USER'] },
     { name: 'Hiérarchie', icon: 'account_tree', path: '/hierarchy', roles: ['ADMIN'] },
-    { name: 'Gestion des Assignations', icon: 'assignment', path: '/manage-assignments', roles: ['ADMIN', 'CAREER_MANAGER', 'MANAGER'] },
+    { name: 'Gestion des Assignations', icon: 'assignment', path: '/manage-assignments', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'MANAGER'] },
     { name: 'Utilisateurs', icon: 'group', path: '/users', roles: ['ADMIN'] },
   ];
 

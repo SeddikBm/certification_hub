@@ -15,6 +15,7 @@ export interface AssignmentResponse {
   assignedById?: string;
   statusCertification?: string;
   statusTraining?: string;
+  priority?: string;
   assignedAt?: string;
   completedAt?: string;
   examAt?: string;
@@ -26,6 +27,8 @@ export interface AssignmentCreateRequest {
   itemType: 'CERTIFICATION' | 'TRAINING';
   itemId: string;
   userId: string;
+  priority?: string;
+  targetDate?: string;
   notes?: string;
 }
 

@@ -66,6 +66,12 @@ export function CertificationDetails() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
 
   const canManage = user?.role === 'ADMIN' || user?.role === 'TRAINING_MANAGER';
 
@@ -88,7 +94,7 @@ export function CertificationDetails() {
     mutationFn: (certId: string) => certificationService.deleteCertification(certId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['certifications'] });
-      navigate('/certifications');
+      navigate('/certifications', { state: { notification: { type: 'success', message: 'Certification supprimée avec succès.' } } });
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || "Impossible de supprimer : des collaborateurs sont actuellement assignés à cette certification.";
@@ -131,7 +137,27 @@ export function CertificationDetails() {
   const ratings = ratingsPage?.content || [];
 
   return (
-    <div className="max-w-[1280px] mx-auto space-y-6 pb-12">
+    <div className="max-w-[1400px] mx-auto space-y-6 pb-12 relative">
+      
+      {/* Centered Top Floating Toast Notification */}
+      {notification && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] max-w-lg w-[90vw] animate-in slide-in-from-top-4 fade-in duration-300">
+          <div className={clsx(
+            "px-5 py-3 rounded-2xl shadow-xl border flex items-center justify-between gap-3 text-xs font-semibold text-white",
+            notification.type === 'success' ? "bg-emerald-600 border-emerald-500" : "bg-[#b70f30] border-red-700"
+          )}>
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-[20px]">
+                {notification.type === 'success' ? 'check_circle' : 'error'}
+              </span>
+              <span>{notification.message}</span>
+            </div>
+            <button type="button" onClick={() => setNotification(null)} className="hover:opacity-80 cursor-pointer">
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Breadcrumb & Header */}
       <div>
@@ -462,6 +488,7 @@ export function CertificationDetails() {
           certificationToEdit={cert}
           onSuccess={() => {
             setIsEditModalOpen(false);
+            showNotification('success', 'Certification modifiée avec succès.');
             refetch();
           }}
         />

@@ -56,6 +56,7 @@ export const trainingService = {
     search?: string;
     page?: number;
     size?: number;
+    sort?: string;
   }): Promise<Page<TrainingResponse>> => {
     const response = await api.get<Page<TrainingResponse>>('/trainings', { params });
     return response.data;

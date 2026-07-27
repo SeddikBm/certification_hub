@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { certificationService } from '../services/certification.service';
 import { useAuth } from '../contexts/AuthContext';
@@ -60,6 +60,7 @@ const getProviderConfig = (providerName: string) => {
 export function Certifications() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // State
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,8 +88,15 @@ export function Certifications() {
 
   const showNotification = (type: 'success'|'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
+    setTimeout(() => setNotification(null), 4000);
   };
+
+  useEffect(() => {
+    if (location.state?.notification) {
+      showNotification(location.state.notification.type, location.state.notification.message);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const { data: certsPage, isLoading, error, refetch } = useQuery({
     queryKey: ['certifications', { 
@@ -150,12 +158,12 @@ export function Certifications() {
 
   const renderSortableHeader = (label: string, field: string) => (
     <th 
-      className="p-3 text-sm text-on-surface-variant font-semibold cursor-pointer hover:bg-surface-container-low transition-colors group select-none"
+      className="p-3.5 text-xs text-[#7c2d37] font-bold cursor-pointer hover:bg-red-100/40 transition-colors group select-none"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-1">
-        {label}
-        <span className={clsx("material-symbols-outlined text-[16px] transition-colors", sortField === field ? "text-primary" : "text-on-surface-variant opacity-0 group-hover:opacity-100")}>
+        <span>{label}</span>
+        <span className={clsx("material-symbols-outlined text-[16px] transition-all", sortField === field ? "text-[#b70f30] opacity-100" : "text-[#7c2d37] opacity-0 group-hover:opacity-100")}>
           {getSortIcon(field)}
         </span>
       </div>
@@ -164,21 +172,23 @@ export function Certifications() {
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-stack-md pb-12 relative">
-      {/* Toast Notification */}
+      {/* Centered Top Floating Toast Notification */}
       {notification && (
-        <div className={clsx(
-          "fixed bottom-6 right-6 z-[300] px-4 py-3 rounded-md shadow-xl animate-in slide-in-from-bottom-4 duration-300 flex items-center gap-3 min-w-[300px] justify-between",
-          notification.type === 'success' ? "bg-[#059669] text-white" : "bg-[#DC2626] text-white"
-        )}>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[20px]">
-              {notification.type === 'success' ? 'check_circle' : 'error'}
-            </span>
-            <span className="text-[14px] font-medium">{notification.message}</span>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] max-w-lg w-[90vw] animate-in slide-in-from-top-4 fade-in duration-300">
+          <div className={clsx(
+            "px-5 py-3 rounded-2xl shadow-xl border flex items-center justify-between gap-3 text-xs font-semibold text-white",
+            notification.type === 'success' ? "bg-emerald-600 border-emerald-500" : "bg-[#b70f30] border-red-700"
+          )}>
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-[20px]">
+                {notification.type === 'success' ? 'check_circle' : 'error'}
+              </span>
+              <span>{notification.message}</span>
+            </div>
+            <button type="button" onClick={() => setNotification(null)} className="hover:opacity-80 cursor-pointer">
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
           </div>
-          <button onClick={() => setNotification(null)} className="text-white hover:opacity-80 transition-opacity">
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
         </div>
       )}
       {/* Page Header & Actions */}
@@ -365,14 +375,14 @@ export function Certifications() {
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[950px]">
             <thead>
-              <tr className="bg-surface-container-low/50 border-b border-outline-variant/30">
+              <tr className="bg-[#fdf4f5] border-b border-red-100">
                 {renderSortableHeader("Code & Nom", "name")}
                 {renderSortableHeader("Provider", "provider")}
                 {renderSortableHeader("Difficulté", "difficulty")}
                 {renderSortableHeader("Priorité", "priority")}
                 {renderSortableHeader("Coût", "examCostUsd")}
-                <th className="p-3 text-sm text-on-surface-variant font-semibold">Note</th>
-                <th className="p-3 text-sm text-on-surface-variant font-semibold text-center">Actions</th>
+                <th className="p-3.5 text-xs text-[#7c2d37] font-bold">Note</th>
+                <th className="p-3.5 text-xs text-[#7c2d37] font-bold text-center">Actions</th>
               </tr>
             </thead>
             {certsPage?.content && certsPage.content.length > 0 && (

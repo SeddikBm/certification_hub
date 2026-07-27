@@ -94,14 +94,14 @@ export function DashboardLayout() {
 
         {/* Sidebar Footer User Card */}
         {sidebarOpen && user && (
-          <div className="p-3 border-t border-gray-100 bg-gray-50/50 m-3 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-[#b70f30] text-white flex items-center justify-center text-xs font-bold shadow-2xs flex-shrink-0">
+          <div className="py-2 px-2.5 border-t border-gray-100 bg-gray-50/50 mx-2.5 my-2 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-full bg-[#b70f30] text-white flex items-center justify-center text-[11px] font-bold shadow-2xs flex-shrink-0">
                 {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-gray-900 truncate">{user?.firstName} {user?.lastName || ''}</p>
-                <span className="inline-block text-[10px] font-semibold px-1.5 py-0.2 rounded bg-red-100 text-[#b70f30]">
+                <p className="text-[11px] font-bold text-gray-900 truncate leading-tight">{user?.firstName} {user?.lastName || ''}</p>
+                <span className="inline-block text-[9px] font-semibold px-1.5 py-0 rounded bg-red-100 text-[#b70f30] leading-tight">
                   {user?.role}
                 </span>
               </div>

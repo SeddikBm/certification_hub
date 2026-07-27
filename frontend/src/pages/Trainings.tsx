@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { trainingService, type TrainingResponse } from '../services/training.service';
 import { useAuth } from '../contexts/AuthContext';
 import { TrainingFormModal } from '../components/TrainingFormModal';
+import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
 // Smart helper to get icon and color config for ANY provider
@@ -48,7 +49,7 @@ export function Trainings() {
   const [sortField, setSortField] = useState<string>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState<number>(0);
-  const pageSize = 10;
+  const pageSize = 25;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [trainingToEdit, setTrainingToEdit] = useState<TrainingResponse | null>(null);
@@ -468,33 +469,15 @@ export function Trainings() {
         </div>
 
         {/* Pagination Footer */}
-        {trainingsPage && trainingsPage.totalPages > 1 && (
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between text-xs text-gray-500">
-            <div>
-              Affichage de {trainingsPage.number * pageSize + 1} à {Math.min((trainingsPage.number + 1) * pageSize, trainingsPage.totalElements)} sur {trainingsPage.totalElements} formations
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={trainingsPage.number === 0}
-                onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-semibold cursor-pointer"
-              >
-                Précédent
-              </button>
-              <span className="px-2 font-semibold text-gray-700">
-                Page {trainingsPage.number + 1} sur {trainingsPage.totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={trainingsPage.number >= trainingsPage.totalPages - 1}
-                onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-semibold cursor-pointer"
-              >
-                Suivant
-              </button>
-            </div>
-          </div>
+        {trainingsPage && (
+          <Pagination
+            currentPage={trainingsPage.number}
+            totalPages={trainingsPage.totalPages}
+            totalElements={trainingsPage.totalElements}
+            pageSize={pageSize}
+            onPageChange={(newPage) => setPage(newPage)}
+            itemName="formations"
+          />
         )}
 
       </div>

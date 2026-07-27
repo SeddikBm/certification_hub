@@ -163,9 +163,9 @@ export function ManagerCollaboratorsModal({ isOpen, onClose, manager, onSuccessN
                         type="button"
                         disabled={addMutation.isPending}
                         onClick={() => addMutation.mutate(c.id)}
-                        className="px-3 py-1 text-xs font-semibold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        className="h-7 px-2.5 text-[11px] font-semibold text-white bg-[#b70f30] hover:bg-red-800 rounded-md transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-2xs"
                       >
-                        <span className="material-symbols-outlined text-[15px]">person_add</span>
+                        <span className="material-symbols-outlined text-[14px]">person_add</span>
                         <span>Ajouter</span>
                       </button>
                     </div>

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { managerAssignmentService, type CareerManagerHierarchyResponse } from '../services/managerAssignment.service';
 import { ManagerCollaboratorsModal } from '../components/ManagerCollaboratorsModal';
+import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
 export function Hierarchy() {
@@ -155,7 +156,7 @@ export function Hierarchy() {
               <tr className="bg-[#fdf4f5] border-b border-red-100">
                 {renderSortableHeader("Career Manager", "firstName")}
                 {renderSortableHeader("Email", "email")}
-                {renderSortableHeader("Collaborateurs Gérés", "collaboratorCount")}
+                <th className="p-3.5 text-xs text-[#7c2d37] font-bold">Collaborateurs Gérés</th>
                 <th className="p-3.5 text-xs text-[#7c2d37] font-bold text-center">Actions</th>
               </tr>
             </thead>
@@ -196,7 +197,7 @@ export function Hierarchy() {
                         </span>
                       </td>
 
-                      {/* Actions */}
+                      {/* Action Button */}
                       <td className="p-3.5 text-center">
                         <button
                           type="button"
@@ -215,34 +216,16 @@ export function Hierarchy() {
           </table>
         </div>
 
-        {/* Pagination Footer */}
-        {hierarchyPage && hierarchyPage.totalPages > 1 && (
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between text-xs text-gray-500">
-            <div>
-              Affichage de {hierarchyPage.number * pageSize + 1} à {Math.min((hierarchyPage.number + 1) * pageSize, hierarchyPage.totalElements)} sur {hierarchyPage.totalElements} managers
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={hierarchyPage.number === 0}
-                onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-semibold cursor-pointer"
-              >
-                Précédent
-              </button>
-              <span className="px-2 font-semibold text-gray-700">
-                Page {hierarchyPage.number + 1} sur {hierarchyPage.totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={hierarchyPage.number >= hierarchyPage.totalPages - 1}
-                onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-semibold cursor-pointer"
-              >
-                Suivant
-              </button>
-            </div>
-          </div>
+        {/* Unified Modern Pagination (only displays if > 25 elements) */}
+        {hierarchyPage && (
+          <Pagination
+            currentPage={hierarchyPage.number}
+            totalPages={hierarchyPage.totalPages}
+            totalElements={hierarchyPage.totalElements}
+            pageSize={pageSize}
+            onPageChange={(newPage) => setPage(newPage)}
+            itemName="managers"
+          />
         )}
 
       </div>

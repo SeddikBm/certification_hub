@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService, type UserResponse } from '../services/user.service';
 import { squadService } from '../services/squad.service';
 import { UserFormModal } from '../components/UserFormModal';
+import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -473,33 +474,15 @@ export function Users() {
         </div>
 
         {/* Pagination Footer */}
-        {usersPage && usersPage.totalPages > 1 && (
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between text-xs text-gray-500">
-            <div>
-              Affichage de {usersPage.number * pageSize + 1} à {Math.min((usersPage.number + 1) * pageSize, usersPage.totalElements)} sur {usersPage.totalElements} utilisateurs
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={usersPage.number === 0}
-                onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-semibold cursor-pointer"
-              >
-                Précédent
-              </button>
-              <span className="px-2 font-semibold text-gray-700">
-                Page {usersPage.number + 1} sur {usersPage.totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={usersPage.number >= usersPage.totalPages - 1}
-                onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-semibold cursor-pointer"
-              >
-                Suivant
-              </button>
-            </div>
-          </div>
+        {usersPage && (
+          <Pagination
+            currentPage={usersPage.number}
+            totalPages={usersPage.totalPages}
+            totalElements={usersPage.totalElements}
+            pageSize={pageSize}
+            onPageChange={(newPage) => setPage(newPage)}
+            itemName="utilisateurs"
+          />
         )}
 
       </div>

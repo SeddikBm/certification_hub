@@ -18,32 +18,18 @@ public interface ManagerAssignmentRepository extends JpaRepository<ManagerAssign
         List<ManagerAssignment> findByManagerId(UUID managerId);
 
         @Query("SELECT new com.example.certificationHub.dto.response.CareerManagerHierarchyResponse(" +
-
                         "u.id, u.firstName, u.lastName, u.email, COUNT(ma.collaborator.id)) " +
-
                         "FROM User u LEFT JOIN ManagerAssignment ma ON u.id = ma.manager.id " +
-
                         "WHERE u.role = 'CAREER_MANAGER' AND u.status = 'ACTIVE' " +
-
                         "GROUP BY u.id, u.firstName, u.lastName, u.email")
-
         Page<CareerManagerHierarchyResponse> getHierarchyOverview(Pageable pageable);
 
-        // 2. Récupérer la liste détaillée des collaborateurs pour un manager spécifique
-        // (pour la modale)
-
+        // 2. Récupérer la liste détaillée des collaborateurs pour un manager spécifique (pour la modale)
         @Query("SELECT new com.example.certificationHub.dto.response.AssignedCollaboratorResponse(" +
-
                         "c.id, c.firstName, c.lastName, c.email, s.name) " +
-
                         "FROM ManagerAssignment ma " +
-
                         "JOIN ma.collaborator c " +
-
                         "LEFT JOIN c.squad s " +
-
                         "WHERE ma.manager.id = :managerId")
-
         List<AssignedCollaboratorResponse> getCollaboratorsByManagerId(@Param("managerId") UUID managerId);
-
 }

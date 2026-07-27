@@ -34,14 +34,12 @@ public class ManagerAssignmentController {
             @Valid @RequestBody ManagerAssignmentRequest request,
             Authentication authentication) {
 
-        // On récupère l'ID de l'admin connecté pour la traçabilité
         Jwt jwt = (Jwt) authentication.getPrincipal();
         UUID adminId = UUID.fromString(jwt.getClaimAsString("user_id"));
 
         return managerAssignmentService.assignManager(request, adminId);
     }
 
-    // On utilise l'URL avec les deux IDs en raison de la clé primaire composite
     @DeleteMapping("/{managerId}/{collaboratorId}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -52,7 +50,6 @@ public class ManagerAssignmentController {
         managerAssignmentService.removeAssignment(managerId, collaboratorId);
     }
 
-    // 1. Pour la page principale (/hierarchy)
     @GetMapping("/hierarchy")
     @PreAuthorize("hasRole('ADMIN')")
     public Page<CareerManagerHierarchyResponse> getHierarchyOverview(
@@ -60,7 +57,6 @@ public class ManagerAssignmentController {
         return managerAssignmentService.getHierarchyOverview(pageable);
     }
 
-    // 2. Pour charger le contenu de la modale d'un manager cliqué
     @GetMapping("/{managerId}/collaborators")
     @PreAuthorize("hasRole('ADMIN')")
     public List<AssignedCollaboratorResponse> getAssignedCollaborators(@PathVariable UUID managerId) {

@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { certificationService } from '../services/certification.service';
 import { useAuth } from '../contexts/AuthContext';
 import { CertificationFormModal } from '../components/CertificationFormModal';
+import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
 // Smart helper to get icon and color config for ANY provider (known or dynamic custom)
@@ -492,57 +493,15 @@ export function Certifications() {
         </div>
         
         {/* Pagination */}
-        {certsPage && certsPage.totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-outline-variant/30 bg-surface-container-lowest">
-            <span className="text-sm font-body-sm text-on-surface-variant">
-              Page <span className="font-semibold text-on-surface">{certsPage.number + 1}</span> sur <span className="font-semibold text-on-surface">{certsPage.totalPages}</span> ({certsPage.totalElements} résultats)
-            </span>
-            <div className="flex items-center gap-2">
-              <button 
-                className="px-3 py-1.5 rounded-md border border-outline-variant/50 text-sm font-medium text-on-surface hover:bg-surface-container-low disabled:opacity-30 transition-colors flex items-center gap-1"
-                disabled={certsPage.number === 0} 
-                onClick={() => setPage(page - 1)}
-              >
-                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                Précédent
-              </button>
-              
-              <div className="flex items-center gap-1">
-                {Array.from({ length: certsPage.totalPages }, (_, idx) => {
-                  if (
-                    idx === 0 || 
-                    idx === certsPage.totalPages - 1 || 
-                    (idx >= certsPage.number - 1 && idx <= certsPage.number + 1)
-                  ) {
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setPage(idx)}
-                        className={clsx(
-                          "w-8 h-8 rounded-md text-xs font-semibold transition-colors flex items-center justify-center",
-                          certsPage.number === idx 
-                            ? "bg-primary text-white shadow-sm"
-                            : "text-on-surface-variant hover:bg-surface-container-low"
-                        )}
-                      >
-                        {idx + 1}
-                      </button>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-
-              <button 
-                className="px-3 py-1.5 rounded-md border border-outline-variant/50 text-sm font-medium text-on-surface hover:bg-surface-container-low disabled:opacity-30 transition-colors flex items-center gap-1"
-                disabled={certsPage.number >= certsPage.totalPages - 1} 
-                onClick={() => setPage(page + 1)}
-              >
-                Suivant
-                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-              </button>
-            </div>
-          </div>
+        {certsPage && (
+          <Pagination
+            currentPage={certsPage.number}
+            totalPages={certsPage.totalPages}
+            totalElements={certsPage.totalElements}
+            pageSize={size}
+            onPageChange={(newPage) => setPage(newPage)}
+            itemName="certifications"
+          />
         )}
       </div>
 

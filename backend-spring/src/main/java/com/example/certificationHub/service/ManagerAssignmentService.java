@@ -27,7 +27,7 @@ public class ManagerAssignmentService {
 
     private final ManagerAssignmentRepository managerAssignmentRepository;
     private final UserRepository userRepository;
-    private final ManagerAssignmentMapper mapper; // Injection du mapper
+    private final ManagerAssignmentMapper mapper;
 
     @Transactional(readOnly = true)
     public Page<CareerManagerHierarchyResponse> getHierarchyOverview(Pageable pageable) {
@@ -77,7 +77,6 @@ public class ManagerAssignmentService {
 
         ManagerAssignment savedAssignment = managerAssignmentRepository.save(assignment);
 
-        // Appel propre au mapper
         return mapper.toResponse(savedAssignment);
     }
 

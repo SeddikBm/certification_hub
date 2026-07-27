@@ -11,6 +11,7 @@ export interface AssignmentResponse {
   userName?: string;
   userEmail?: string;
   squadName?: string;
+  managerName?: string;
   assignedById?: string;
   statusCertification?: string;
   statusTraining?: string;

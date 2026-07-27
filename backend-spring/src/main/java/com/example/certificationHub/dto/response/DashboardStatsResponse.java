@@ -16,6 +16,10 @@ public class DashboardStatsResponse {
     private long totalTrainings;
     private long totalUsers;
     private long totalSquads;
+    private long totalAssignments;
+    private long completedAssignments;
+    private long pendingAssignments;
+    private String scopeName;
     
     private List<ChartDataResponse> certificationsByProvider;
     private List<ChartDataResponse> certificationsBySquad;

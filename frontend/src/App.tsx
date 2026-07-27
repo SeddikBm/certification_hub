@@ -24,19 +24,31 @@ const ProtectedRoute = () => {
   return <Outlet />;
 };
 
+const HomeRedirect = () => {
+  const { user } = useAuth();
+  if (user?.role === 'COLLABORATOR' || user?.role === 'USER') {
+    return <Navigate to="/my-assignments" replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
+};
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
               
+              {/* Dashboard only accessible to Management & Leadership roles */}
+              <Route element={<RoleGuard allowedRoles={['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'MANAGER']} />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+              </Route>
+
               <Route path="/trainings" element={<Trainings />} />
               <Route path="/trainings/:id" element={<TrainingDetails />} />
               
@@ -51,19 +63,22 @@ function App() {
                 <Route path="/certifications/add" element={<AddCertification />} />
               </Route>
 
-              <Route element={<RoleGuard allowedRoles={['ADMIN', 'TRAINING_MANAGER', 'MANAGER']} />}>
+              <Route element={<RoleGuard allowedRoles={['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'MANAGER']} />}>
                 <Route path="/manage-assignments" element={<ManageAssignments />} />
               </Route>
 
               <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
-                <Route path="/users" element={<Users />} />
                 <Route path="/hierarchy" element={<Hierarchy />} />
+              </Route>
+
+              <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
+                <Route path="/users" element={<Users />} />
               </Route>
 
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<HomeRedirect />} />
         </Routes>
       </Router>
     </AuthProvider>

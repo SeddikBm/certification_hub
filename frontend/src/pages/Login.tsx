@@ -34,7 +34,11 @@ export function Login() {
     mutationFn: (data: LoginFormValues) => authService.login(data),
     onSuccess: (data) => {
       login(data.accessToken, data.refreshToken, data.user);
-      navigate('/dashboard');
+      if (data.user?.role === 'COLLABORATOR' || data.user?.role === 'USER') {
+        navigate('/my-assignments');
+      } else {
+        navigate('/dashboard');
+      }
     },
     onError: (error: any) => {
       setErrorMsg(error.response?.data?.message || 'Login failed. Please check your credentials.');

@@ -3,9 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService, type AssignmentResponse } from '../services/assignment.service';
 import { AssignItemModal } from '../components/AssignItemModal';
 import { Pagination } from '../components/ui/Pagination';
+import { useAuth } from '../contexts/AuthContext';
+import { formatStatus } from '../utils/enumFormatters';
 import clsx from 'clsx';
 
 export function ManageAssignments() {
+  const { user } = useAuth();
+  const isCareerManager = user?.role === 'CAREER_MANAGER';
   const queryClient = useQueryClient();
 
   const [collabSearch, setCollabSearch] = useState('');
@@ -17,6 +21,15 @@ export function ManageAssignments() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [modalPreselectedUser, setModalPreselectedUser] = useState<string | undefined>(undefined);
   const [modalDefaultItemType, setModalDefaultItemType] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
+
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (sectionName: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionName]: !prev[sectionName]
+    }));
+  };
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -41,27 +54,39 @@ export function ManageAssignments() {
 
   const allAssignments = assignmentsPage?.content || [];
 
-  // Client-side grouping by Collaborator
-  const groupedCollaborators = useMemo(() => {
+  // Client-side grouping by Career Manager -> Collaborators
+  const groupedManagers = useMemo(() => {
     const term = collabSearch.toLowerCase().trim();
-    const map = new Map<string, {
-      userId: string;
-      userName: string;
-      userEmail?: string;
-      squadName?: string;
-      assignments: AssignmentResponse[];
+    const managerMap = new Map<string, {
+      managerName: string;
+      collaboratorsMap: Map<string, {
+        userId: string;
+        userName: string;
+        userEmail?: string;
+        squadName?: string;
+        assignments: AssignmentResponse[];
+      }>;
     }>();
 
     allAssignments.forEach(ass => {
       const uName = ass.userName || 'Inconnu';
       const uEmail = ass.userEmail || '';
+      const mName = ass.managerName || 'Sans Career Manager';
 
-      if (term && !uName.toLowerCase().includes(term) && !uEmail.toLowerCase().includes(term)) {
+      if (term && !uName.toLowerCase().includes(term) && !uEmail.toLowerCase().includes(term) && !mName.toLowerCase().includes(term)) {
         return;
       }
 
-      if (!map.has(ass.userId)) {
-        map.set(ass.userId, {
+      if (!managerMap.has(mName)) {
+        managerMap.set(mName, {
+          managerName: mName,
+          collaboratorsMap: new Map()
+        });
+      }
+
+      const collabMap = managerMap.get(mName)!.collaboratorsMap;
+      if (!collabMap.has(ass.userId)) {
+        collabMap.set(ass.userId, {
           userId: ass.userId,
           userName: uName,
           userEmail: uEmail,
@@ -69,10 +94,13 @@ export function ManageAssignments() {
           assignments: []
         });
       }
-      map.get(ass.userId)!.assignments.push(ass);
+      collabMap.get(ass.userId)!.assignments.push(ass);
     });
 
-    return Array.from(map.values());
+    return Array.from(managerMap.values()).map(mGroup => ({
+      managerName: mGroup.managerName,
+      collaborators: Array.from(mGroup.collaboratorsMap.values())
+    }));
   }, [allAssignments, collabSearch]);
 
   // Update Status Mutation (Approuver / Refuser)
@@ -131,6 +159,18 @@ export function ManageAssignments() {
     const isApproved = status === 'APPROVED' || status === 'COMPLETED';
     const isCancelled = status === 'CANCELLED' || status === 'FAILED';
 
+    const statusFrenchMap: Record<string, string> = {
+      PENDING_APPROVAL: 'En attente de validation',
+      APPROVED: 'Approuvé',
+      PLANNED: 'Planifié',
+      IN_PROGRESS: 'En cours',
+      EXAM_SCHEDULED: 'Examen programmé',
+      COMPLETED: 'Obtenu / Terminé',
+      FAILED: 'Échoué',
+      CANCELLED: 'Refusé / Annulé',
+      EXPIRED: 'Expiré'
+    };
+
     return (
       <span className={clsx(
         "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
@@ -139,7 +179,7 @@ export function ManageAssignments() {
         isCancelled ? "bg-red-50 text-red-700 border-red-200" :
         "bg-blue-50 text-blue-700 border-blue-200"
       )}>
-        <span>{status}</span>
+        <span>{statusFrenchMap[status] || status}</span>
       </span>
     );
   };
@@ -246,21 +286,21 @@ export function ManageAssignments() {
               className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 outline-none focus:border-[#b70f30]"
             >
               <option value="">Tous les statuts</option>
-              <option value="PENDING_APPROVAL">En attente (PENDING_APPROVAL)</option>
-              <option value="APPROVED">Approuvé (APPROVED)</option>
-              <option value="PLANNED">Planifié (PLANNED)</option>
-              <option value="IN_PROGRESS">En cours (IN_PROGRESS)</option>
-              <option value="EXAM_SCHEDULED">Examen Programmé (EXAM_SCHEDULED)</option>
-              <option value="COMPLETED">Terminé (COMPLETED)</option>
-              <option value="FAILED">Échoué (FAILED)</option>
-              <option value="CANCELLED">Annulé (CANCELLED)</option>
+              <option value="PENDING_APPROVAL">En attente de validation</option>
+              <option value="APPROVED">Approuvé</option>
+              <option value="PLANNED">Planifié</option>
+              <option value="IN_PROGRESS">En cours</option>
+              <option value="EXAM_SCHEDULED">Examen programmé</option>
+              <option value="COMPLETED">Obtenu / Terminé</option>
+              <option value="FAILED">Échoué</option>
+              <option value="CANCELLED">Refusé / Annulé</option>
             </select>
           </div>
 
         </div>
       </div>
 
-      {/* Grouped Collaborators View */}
+      {/* Grouped Career Managers & Collaborators View */}
       {isLoading ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
           <div className="w-10 h-10 border-4 border-red-200 border-t-[#b70f30] rounded-full animate-spin mb-3"></div>
@@ -270,134 +310,291 @@ export function ManageAssignments() {
         <div className="bg-white p-12 text-center text-red-600 rounded-2xl border border-gray-100 shadow-sm">
           Échec du chargement des assignations.
         </div>
-      ) : groupedCollaborators.length === 0 ? (
+      ) : groupedManagers.length === 0 ? (
         <div className="bg-white p-12 text-center text-gray-400 text-xs rounded-2xl border border-gray-100 shadow-sm">
           Aucune assignation trouvée.
         </div>
       ) : (
         <div className="space-y-6">
-          {groupedCollaborators.map(group => {
-            const pendingCount = group.assignments.filter(a => (a.statusCertification === 'PENDING_APPROVAL' || a.statusTraining === 'PENDING_APPROVAL')).length;
-            const activeCount = group.assignments.length - pendingCount;
+          {isCareerManager ? (
+            /* Direct Collaborator Cards View for Career Manager */
+            <div className="space-y-5">
+              {groupedManagers.flatMap(m => m.collaborators).map(group => {
+                const pendingCount = group.assignments.filter(a => (a.statusCertification === 'PENDING_APPROVAL' || a.statusTraining === 'PENDING_APPROVAL')).length;
+                const activeCount = group.assignments.length - pendingCount;
 
-            return (
-              <div key={group.userId} className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
-                
-                {/* Collaborator Header */}
-                <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100">
-                      {group.userName?.[0]}
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-gray-900">{group.userName}</h3>
-                      <p className="text-xs text-gray-500">{group.userEmail} {group.squadName ? `• Squad: ${group.squadName}` : ''}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      {pendingCount > 0 && (
-                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                          {pendingCount} Demande(s) en attente
-                        </span>
-                      )}
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                        {activeCount} Parcours actif(s)
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => { setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
-                      className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">add</span>
-                      <span>Assigner</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Assignment Cards Grid */}
-                <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {group.assignments.map(ass => {
-                    const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
-                    const isPending = status === 'PENDING_APPROVAL';
-
-                    return (
-                      <div key={ass.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative">
+                return (
+                  <div key={group.userId} className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+                    {/* Collaborator Header */}
+                    <div className="bg-gray-50/80 px-6 py-3.5 border-b border-gray-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100">
+                          {group.userName?.[0]}
+                        </div>
                         <div>
-                          <div className="flex items-center justify-between mb-2.5">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                              <span className="material-symbols-outlined text-[13px]">
-                                {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
-                              </span>
-                              {ass.itemType}
+                          <h3 className="text-sm font-bold text-gray-900">{group.userName}</h3>
+                          <p className="text-xs text-gray-500">{group.userEmail} {group.squadName ? `• Squad: ${group.squadName}` : ''}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          {pendingCount > 0 && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              {pendingCount} Demande(s) en attente
                             </span>
-                            {renderBadge(status)}
-                          </div>
-
-                          <h4 className="text-xs font-bold text-gray-900 leading-snug mb-1">
-                            {ass.itemName || `Item ID: ${ass.itemId}`}
-                          </h4>
-
-                          <p className="text-[11px] text-gray-500 mb-3">
-                            Provider: <strong className="text-gray-700">{ass.provider || 'N/A'}</strong>
-                          </p>
-
-                          {ass.notes && (
-                            <div className="text-[11px] text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100 mb-3 italic">
-                              "{ass.notes}"
-                            </div>
                           )}
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            {activeCount} Parcours actif(s)
+                          </span>
                         </div>
 
-                        {/* Actions for Pending Requests */}
-                        {isPending ? (
-                          <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => updateStatusMutation.mutate({
-                                id: ass.id,
-                                data: ass.itemType === 'CERTIFICATION'
-                                  ? { statusCertification: 'CANCELLED' }
-                                  : { statusTraining: 'CANCELLED' }
-                              })}
-                              className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
-                            >
-                              <span className="material-symbols-outlined text-[15px]">close</span>
-                              <span>Refuser</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => updateStatusMutation.mutate({
-                                id: ass.id,
-                                data: ass.itemType === 'CERTIFICATION'
-                                  ? { statusCertification: 'APPROVED' }
-                                  : { statusTraining: 'APPROVED' }
-                              })}
-                              className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
-                            >
-                              <span className="material-symbols-outlined text-[15px]">check</span>
-                              <span>Approuver</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                            <span>Assigné le : {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}</span>
-                            {ass.itemType === 'TRAINING' && <span>Avancement : <strong>{ass.trainingProgressPercentage || 0}%</strong></span>}
-                          </div>
-                        )}
-
+                        <button
+                          type="button"
+                          onClick={() => { setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
+                          className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">add</span>
+                          <span>Assigner</span>
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
 
-              </div>
-            );
-          })}
+                    {/* Assignment Cards Grid */}
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
+                      {group.assignments.map((ass) => {
+                        const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
+                        const isPending = status === 'PENDING_APPROVAL';
+
+                        return (
+                          <div key={ass.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50/40 hover:border-gray-200 transition-all flex flex-col justify-between space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className={clsx(
+                                "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border",
+                                ass.itemType === 'CERTIFICATION' ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-blue-50 text-blue-800 border-blue-200"
+                              )}>
+                                {ass.itemType === 'CERTIFICATION' ? 'Certification' : 'Formation'}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
+                                {formatStatus(status, ass.itemType)}
+                              </span>
+                            </div>
+
+                            <div>
+                              <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{ass.itemName}</h4>
+                              <p className="text-[11px] text-gray-500 mt-0.5">Provider: {ass.provider || '-'}</p>
+                            </div>
+
+                            {isPending ? (
+                              <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => updateStatusMutation.mutate({
+                                    id: ass.id,
+                                    data: ass.itemType === 'CERTIFICATION'
+                                      ? { statusCertification: 'CANCELLED' }
+                                      : { statusTraining: 'CANCELLED' }
+                                  })}
+                                  className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-[15px]">close</span>
+                                  <span>Refuser</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => updateStatusMutation.mutate({
+                                    id: ass.id,
+                                    data: ass.itemType === 'CERTIFICATION'
+                                      ? { statusCertification: 'APPROVED' }
+                                      : { statusTraining: 'APPROVED' }
+                                  })}
+                                  className="px-3 py-1.5 text-xs font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                                >
+                                  <span className="material-symbols-outlined text-[15px]">check</span>
+                                  <span>Approuver</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                                <span>Attribué le: {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            groupedManagers.map(mGroup => {
+              const isCollapsed = collapsedSections[mGroup.managerName] || false;
+
+              return (
+                <div key={mGroup.managerName} className="space-y-4">
+                  {/* Career Manager Banner Header (Collapsible Accordion) */}
+                  <div 
+                    onClick={() => toggleSection(mGroup.managerName)}
+                    className="flex items-center justify-between bg-gradient-to-r from-red-50/80 via-gray-50 to-white px-5 py-3.5 rounded-2xl border border-red-100/90 shadow-2xs cursor-pointer hover:border-red-200 transition-all select-none group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#b70f30] text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                        <span className="material-symbols-outlined text-[18px]">badge</span>
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                          <span>Équipe :</span>
+                          <span className="text-[#b70f30]">{mGroup.managerName}</span>
+                        </h2>
+                        <p className="text-[11px] text-gray-500">
+                          {mGroup.collaborators.length} collaborateur(s) sous cette responsabilité
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-gray-500 group-hover:text-[#b70f30] transition-colors">
+                        {isCollapsed ? 'Afficher' : 'Masquer'}
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 group-hover:text-[#b70f30] group-hover:border-red-200 transition-all">
+                        <span className="material-symbols-outlined text-[18px]">
+                          {isCollapsed ? 'expand_more' : 'expand_less'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Collaborators Under this Manager */}
+                  {!isCollapsed && (
+                    <div className="space-y-5 pl-2 sm:pl-4 border-l-2 border-red-100">
+                      {mGroup.collaborators.map(group => {
+                        const pendingCount = group.assignments.filter(a => (a.statusCertification === 'PENDING_APPROVAL' || a.statusTraining === 'PENDING_APPROVAL')).length;
+                        const activeCount = group.assignments.length - pendingCount;
+
+                        return (
+                          <div key={group.userId} className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+                            {/* Collaborator Header */}
+                            <div className="bg-gray-50/80 px-6 py-3.5 border-b border-gray-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                              <div className="flex items-center gap-3.5">
+                                <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100">
+                                  {group.userName?.[0]}
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-bold text-gray-900">{group.userName}</h3>
+                                  <p className="text-xs text-gray-500">{group.userEmail} {group.squadName ? `• Squad: ${group.squadName}` : ''}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                  {pendingCount > 0 && (
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                      {pendingCount} Demande(s) en attente
+                                    </span>
+                                  )}
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    {activeCount} Parcours actif(s)
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => { setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
+                                  className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">add</span>
+                                  <span>Assigner</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Assignment Cards Grid */}
+                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
+                              {group.assignments.map(ass => {
+                                const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
+                                const isPending = status === 'PENDING_APPROVAL';
+
+                                return (
+                                  <div key={ass.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative">
+                                    <div>
+                                      <div className="flex items-center justify-between mb-2.5">
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                          <span className="material-symbols-outlined text-[13px]">
+                                            {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
+                                          </span>
+                                          {ass.itemType === 'CERTIFICATION' ? 'Certification' : 'Formation'}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
+                                          {formatStatus(status, ass.itemType)}
+                                        </span>
+                                      </div>
+
+                                      <h4 className="text-xs font-bold text-gray-900 leading-snug mb-1">
+                                        {ass.itemName || `Item ID: ${ass.itemId}`}
+                                      </h4>
+
+                                      <p className="text-[11px] text-gray-500 mb-3">
+                                        Provider: <strong className="text-gray-700">{ass.provider || 'N/A'}</strong>
+                                      </p>
+
+                                      {ass.notes && (
+                                        <div className="text-[11px] text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100 mb-3 italic">
+                                          "{ass.notes}"
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Actions for Pending Requests */}
+                                    {isPending ? (
+                                      <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => updateStatusMutation.mutate({
+                                            id: ass.id,
+                                            data: ass.itemType === 'CERTIFICATION'
+                                              ? { statusCertification: 'CANCELLED' }
+                                              : { statusTraining: 'CANCELLED' }
+                                          })}
+                                          className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                                        >
+                                          <span className="material-symbols-outlined text-[15px]">close</span>
+                                          <span>Refuser</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => updateStatusMutation.mutate({
+                                            id: ass.id,
+                                            data: ass.itemType === 'CERTIFICATION'
+                                              ? { statusCertification: 'APPROVED' }
+                                              : { statusTraining: 'APPROVED' }
+                                          })}
+                                          className="px-3 py-1.5 text-xs font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        >
+                                          <span className="material-symbols-outlined text-[15px]">check</span>
+                                          <span>Approuver</span>
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                                        <span>Attribué le: {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 

@@ -10,6 +10,10 @@ export interface DashboardStatsResponse {
   totalTrainings: number;
   totalUsers: number;
   totalSquads: number;
+  totalAssignments?: number;
+  completedAssignments?: number;
+  pendingAssignments?: number;
+  scopeName?: string;
   
   certificationsByProvider: ChartDataResponse[];
   certificationsBySquad: ChartDataResponse[];

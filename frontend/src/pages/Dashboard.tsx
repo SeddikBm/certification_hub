@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '../services/dashboard.service';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Dashboard() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [hoveredSlice, setHoveredSlice] = useState<{ label: string; value: number; percentage: number; color: string } | null>(null);
+
+  useEffect(() => {
+    if (user?.role === 'COLLABORATOR' || user?.role === 'USER') {
+      navigate('/my-assignments', { replace: true });
+    }
+  }, [user, navigate]);
 
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: () => dashboardService.getStats()
+    queryFn: () => dashboardService.getStats(),
+    enabled: user?.role !== 'COLLABORATOR' && user?.role !== 'USER'
   });
 
   if (isLoading) {
@@ -34,11 +45,15 @@ export function Dashboard() {
 
   // Provider colors palette
   const providerColors = ['#b70f30', '#40627e', '#006949', '#f39c12', '#8e44ad', '#3498db'];
-  const totalProviders = stats.certificationsByProvider.reduce((sum, item) => sum + item.value, 0) || 1;
+  const providerData = stats?.certificationsByProvider || [];
+  const squadList = stats?.certificationsBySquad || [];
+  const difficultyList = stats?.certificationsByDifficulty || [];
+
+  const totalProviders = providerData.reduce((sum, item) => sum + item.value, 0) || 1;
   const CIRCUMFERENCE = 2 * Math.PI * 40; // ~251.327
 
   // Calculate max for bar chart
-  const rawMax = Math.max(...stats.certificationsBySquad.map(s => s.value), 0);
+  const rawMax = Math.max(...squadList.map(s => s.value), 0);
   const maxSquadVal = rawMax > 0 ? Math.max(Math.ceil(rawMax * 1.2), 5) : 5;
 
   const difficultyMap: Record<string, string> = {
@@ -48,10 +63,10 @@ export function Dashboard() {
     'EXPERT': 'Expert'
   };
 
-  const totalDiff = stats.certificationsByDifficulty.reduce((sum, item) => sum + item.value, 0) || 1;
+  const totalDiff = difficultyList.reduce((sum, item) => sum + item.value, 0) || 1;
 
-  const squadData = stats.certificationsBySquad.length > 0 
-    ? stats.certificationsBySquad 
+  const squadData = squadList.length > 0 
+    ? squadList 
     : [
         { label: 'Alpha', value: 0 },
         { label: 'Beta', value: 0 },
@@ -59,6 +74,10 @@ export function Dashboard() {
         { label: 'Delta', value: 0 },
         { label: 'Epsilon', value: 0 }
       ];
+
+  const isManagementGlobal = user?.role === 'ADMIN' || user?.role === 'DIRECTOR' || user?.role === 'TRAINING_MANAGER';
+  const isCareerManager = user?.role === 'CAREER_MANAGER';
+  const isSquadLead = user?.role === 'SQUAD_LEAD';
 
   const metrics = [
     {
@@ -76,7 +95,7 @@ export function Dashboard() {
       cardBg: 'bg-white border-gray-100 hover:bg-gradient-to-br hover:from-[#f4f8fa] hover:to-white hover:border-blue-200 hover:shadow-blue-500/10'
     },
     {
-      title: 'Total Utilisateurs',
+      title: isCareerManager ? 'Collaborateurs Gérés' : isSquadLead ? 'Membres du Squad' : 'Total Utilisateurs',
       value: stats.totalUsers,
       icon: 'group',
       iconBg: 'bg-[#006949] text-white shadow-sm shadow-emerald-900/20',
@@ -98,8 +117,15 @@ export function Dashboard() {
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">Tableau de Bord</h1>
-        <p className="text-xs text-gray-500 mt-1">Vue d'ensemble des certifications, formations et squads de l'entreprise.</p>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">Tableau de Bord</h1>
+          {stats.scopeName && (
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-[#b70f30] border border-red-100">
+              {stats.scopeName}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-1">Analyse des indicateurs de performance des parcours et équipes.</p>
       </div>
 
       {/* Metrics Grid */}
@@ -208,58 +234,120 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* Bar Chart: Squads */}
+        {/* Chart 2: Squad Bar Chart for Admin/TM/Director OR Team Progress Breakdown for CM/SquadLead */}
         <div className="lg:col-span-7 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-200 hover:bg-gradient-to-br hover:from-[#f8fbfd] hover:to-white hover:-translate-y-1 transition-all duration-300 flex flex-col">
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
-            <div>
-              <h2 className="text-base font-bold text-[#111827]">Certifications par Squad</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Engagement par équipe</p>
-            </div>
-            <div className="p-2 bg-gray-50 rounded-lg text-[#40627e]">
-              <span className="material-symbols-outlined text-[18px]">bar_chart</span>
-            </div>
-          </div>
-
-          <div className="relative h-[220px] mt-2 flex flex-col justify-end">
-            
-            {/* Grid Y-Axis Lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6">
-              {[maxSquadVal, Math.round(maxSquadVal / 2), 0].map((val, idx) => (
-                <div key={idx} className="flex items-center gap-2 w-full">
-                  <span className="text-[10px] font-medium text-gray-400 w-5 text-right">{val}</span>
-                  <div className="h-[1px] bg-gray-100 flex-1"></div>
+          {isManagementGlobal ? (
+            <>
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
+                <div>
+                  <h2 className="text-base font-bold text-[#111827]">Certifications par Squad</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Engagement par équipe</p>
                 </div>
-              ))}
-            </div>
+                <div className="p-2 bg-gray-50 rounded-lg text-[#40627e]">
+                  <span className="material-symbols-outlined text-[18px]">bar_chart</span>
+                </div>
+              </div>
 
-            {/* Bars */}
-            <div className="flex justify-around items-end h-[170px] ml-7 z-10 border-b border-gray-200 pb-0.5">
-              {squadData.map((item, i) => {
-                const heightPercent = Math.max((item.value / maxSquadVal) * 100, item.value > 0 ? 8 : 2);
-                return (
-                  <div key={i} className="flex flex-col items-center justify-end h-full group flex-1 max-w-[56px]">
-                    <div 
-                      className="w-8 sm:w-10 bg-gradient-to-t from-[#40627e] to-[#5a82a6] rounded-t-lg relative transition-all duration-300 group-hover:from-[#b70f30] group-hover:to-[#d92348] group-hover:shadow-lg cursor-pointer flex items-start justify-center"
-                      style={{ 
-                        height: `${heightPercent}%`,
-                        opacity: item.value === 0 ? 0.2 : 1 
-                      }}
-                    >
-                      {item.value > 0 && (
-                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-[#111827] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
-                          {item.value} certif{item.value > 1 ? 's' : ''}
-                        </div>
-                      )}
+              <div className="relative h-[220px] mt-2 flex flex-col justify-end">
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6">
+                  {[maxSquadVal, Math.round(maxSquadVal / 2), 0].map((val, idx) => (
+                    <div key={idx} className="flex items-center gap-2 w-full">
+                      <span className="text-[10px] font-medium text-gray-400 w-5 text-right">{val}</span>
+                      <div className="h-[1px] bg-gray-100 flex-1"></div>
                     </div>
-                    <span className="text-[11px] font-medium text-gray-600 truncate w-full text-center mt-2 group-hover:text-gray-900 transition-colors" title={item.label}>
-                      {item.label.split(' ')[0]}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
 
-          </div>
+                <div className="flex justify-around items-end h-[170px] ml-7 z-10 border-b border-gray-200 pb-0.5">
+                  {squadData.map((item, i) => {
+                    const heightPercent = Math.max((item.value / maxSquadVal) * 100, item.value > 0 ? 8 : 2);
+                    return (
+                      <div key={i} className="flex flex-col items-center justify-end h-full group flex-1 max-w-[56px]">
+                        <div 
+                          className="w-8 sm:w-10 bg-gradient-to-t from-[#40627e] to-[#5a82a6] rounded-t-lg relative transition-all duration-300 group-hover:from-[#b70f30] group-hover:to-[#d92348] group-hover:shadow-lg cursor-pointer flex items-start justify-center"
+                          style={{ 
+                            height: `${heightPercent}%`,
+                            opacity: item.value === 0 ? 0.2 : 1 
+                          }}
+                        >
+                          {item.value > 0 && (
+                            <div className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-[#111827] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
+                              {item.value} certif{item.value > 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-medium text-gray-600 truncate w-full text-center mt-2 group-hover:text-gray-900 transition-colors" title={item.label}>
+                          {item.label.split(' ')[0]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
+                <div>
+                  <h2 className="text-base font-bold text-[#111827]">Avancement & Statut des Parcours</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Répartition des assignations de votre équipe</p>
+                </div>
+                <div className="p-2 bg-gray-50 rounded-lg text-[#006949]">
+                  <span className="material-symbols-outlined text-[18px]">fact_check</span>
+                </div>
+              </div>
+
+              <div className="space-y-4 my-auto py-2">
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-gray-700 mb-1.5">
+                    <span className="flex items-center gap-1.5 text-emerald-700">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                      Parcours Obtenus / Terminés
+                    </span>
+                    <span>{stats.completedAssignments || 0}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-emerald-600 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${(stats.totalAssignments ? ((stats.completedAssignments || 0) / stats.totalAssignments) * 100 : 0)}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-gray-700 mb-1.5">
+                    <span className="flex items-center gap-1.5 text-amber-700">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                      En Attente de Validation
+                    </span>
+                    <span>{stats.pendingAssignments || 0}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-amber-500 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${(stats.totalAssignments ? ((stats.pendingAssignments || 0) / stats.totalAssignments) * 100 : 0)}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-gray-700 mb-1.5">
+                    <span className="flex items-center gap-1.5 text-blue-700">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                      En Cours d'Apprentissage
+                    </span>
+                    <span>{Math.max((stats.totalAssignments || 0) - (stats.completedAssignments || 0) - (stats.pendingAssignments || 0), 0)}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-blue-600 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${(stats.totalAssignments ? (Math.max((stats.totalAssignments || 0) - (stats.completedAssignments || 0) - (stats.pendingAssignments || 0), 0) / stats.totalAssignments) * 100 : 0)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
       </div>

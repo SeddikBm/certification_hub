@@ -17,6 +17,7 @@ public class AssignmentResponse {
     private String userName;
     private String userEmail;
     private String squadName;
+    private String managerName;
     private UUID assignedById;
     private String statusCertification;
     private String statusTraining;

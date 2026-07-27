@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService } from '../services/assignment.service';
 import { managerAssignmentService } from '../services/managerAssignment.service';
@@ -32,6 +32,13 @@ export function AssignItemModal({
   const [userSearch, setUserSearch] = useState<string>('');
   const [itemSearch, setItemSearch] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedUserId(preselectedUserId || '');
+      setItemType(defaultItemType);
+    }
+  }, [isOpen, preselectedUserId, defaultItemType]);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -77,6 +84,10 @@ export function AssignItemModal({
       squadName: c.squadName
     }));
   }, [isAdmin, adminCollabsPage?.content, managedCollabs, userSearch]);
+
+  const selectedCollabInfo = useMemo(() => {
+    return collaboratorsList.find(c => c.id === selectedUserId);
+  }, [collaboratorsList, selectedUserId]);
 
   // 2. Fetch Catalogue Items (Certifications or Trainings)
   const { data: certsPage, isLoading: isLoadingCerts } = useQuery({
@@ -212,63 +223,84 @@ export function AssignItemModal({
             </button>
           </div>
 
-          {/* Step 2: Select Collaborator */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-3">
-            <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider">
-              1. Sélectionner le Collaborateur
-            </label>
-
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">person_search</span>
-              <input
-                type="text"
-                placeholder="Rechercher un collaborateur par nom ou email..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
-              />
+          {/* Step 2: Select Collaborator (Locked Banner if preselected, or Search List if global) */}
+          {preselectedUserId ? (
+            <div className="bg-gradient-to-r from-red-50/80 via-gray-50 to-white p-4 rounded-2xl border border-red-100/90 shadow-2xs flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[#b70f30] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                  {selectedCollabInfo?.name?.[0] || 'C'}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                    <span>Collaborateur ciblé :</span>
+                    <span className="text-[#b70f30] font-extrabold">{selectedCollabInfo?.name || 'Collaborateur'}</span>
+                  </div>
+                  <div className="text-[11px] text-gray-500">{selectedCollabInfo?.email || ''} {selectedCollabInfo?.squadName ? `• Squad: ${selectedCollabInfo.squadName}` : ''}</div>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                <span>Pré-sélectionné</span>
+              </span>
             </div>
+          ) : (
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-3">
+              <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider">
+                1. Sélectionner le Collaborateur
+              </label>
 
-            {isUserLoading ? (
-              <div className="p-3 text-center text-xs text-gray-400">Chargement des collaborateurs...</div>
-            ) : collaboratorsList.length === 0 ? (
-              <div className="p-3 text-center text-xs text-gray-400">
-                {isAdmin ? 'Aucun collaborateur trouvé.' : 'Aucun collaborateur dans votre équipe.'}
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">person_search</span>
+                <input
+                  type="text"
+                  placeholder="Rechercher un collaborateur par nom ou email..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
+                />
               </div>
-            ) : (
-              <div className="max-h-[140px] overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100 bg-white">
-                {collaboratorsList.map(c => {
-                  const isSelected = selectedUserId === c.id;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => setSelectedUserId(c.id)}
-                      className={clsx(
-                        "p-2.5 flex items-center justify-between cursor-pointer transition-colors",
-                        isSelected ? "bg-red-50/80 border-l-4 border-[#b70f30]" : "hover:bg-gray-50"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={clsx(
-                          "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
-                          isSelected ? "bg-[#b70f30] text-white" : "bg-blue-50 text-blue-700 border border-blue-100"
-                        )}>
-                          {c.name?.[0]}
+
+              {isUserLoading ? (
+                <div className="p-3 text-center text-xs text-gray-400">Chargement des collaborateurs...</div>
+              ) : collaboratorsList.length === 0 ? (
+                <div className="p-3 text-center text-xs text-gray-400">
+                  {isAdmin ? 'Aucun collaborateur trouvé.' : 'Aucun collaborateur dans votre équipe.'}
+                </div>
+              ) : (
+                <div className="max-h-[140px] overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100 bg-white">
+                  {collaboratorsList.map(c => {
+                    const isSelected = selectedUserId === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => setSelectedUserId(c.id)}
+                        className={clsx(
+                          "p-2.5 flex items-center justify-between cursor-pointer transition-colors",
+                          isSelected ? "bg-red-50/80 border-l-4 border-[#b70f30]" : "hover:bg-gray-50"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={clsx(
+                            "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+                            isSelected ? "bg-[#b70f30] text-white" : "bg-blue-50 text-blue-700 border border-blue-100"
+                          )}>
+                            {c.name?.[0]}
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold text-gray-900">{c.name}</div>
+                            <div className="text-[11px] text-gray-500">{c.email} {c.squadName ? `• Squad: ${c.squadName}` : ''}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-xs font-semibold text-gray-900">{c.name}</div>
-                          <div className="text-[11px] text-gray-500">{c.email} {c.squadName ? `• Squad: ${c.squadName}` : ''}</div>
-                        </div>
+                        {isSelected && (
+                          <span className="material-symbols-outlined text-[18px] text-[#b70f30]">check_circle</span>
+                        )}
                       </div>
-                      {isSelected && (
-                        <span className="material-symbols-outlined text-[18px] text-[#b70f30]">check_circle</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Step 3: Select Item from Catalogue */}
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-3">

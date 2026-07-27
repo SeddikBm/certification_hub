@@ -5,6 +5,7 @@ import { certificationService } from '../services/certification.service';
 import { useAuth } from '../contexts/AuthContext';
 import { CertificationFormModal } from '../components/CertificationFormModal';
 import { Pagination } from '../components/ui/Pagination';
+import { formatDifficulty, formatPriority } from '../utils/enumFormatters';
 import clsx from 'clsx';
 
 // Smart helper to get icon and color config for ANY provider (known or dynamic custom)
@@ -279,10 +280,10 @@ export function Certifications() {
                 onChange={(e) => { setDifficultyFilter(e.target.value); setPage(0); }}
               >
                 <option value="">Toutes difficultés</option>
-                <option value="FOUNDATIONAL">FOUNDATIONAL</option>
-                <option value="INTERMEDIATE">INTERMEDIATE</option>
-                <option value="ADVANCED">ADVANCED</option>
-                <option value="EXPERT">EXPERT</option>
+                <option value="FOUNDATIONAL">Débutant</option>
+                <option value="INTERMEDIATE">Intermédiaire</option>
+                <option value="ADVANCED">Avancé</option>
+                <option value="EXPERT">Expert</option>
               </select>
               {difficultyFilter ? (
                 <button 
@@ -309,10 +310,10 @@ export function Certifications() {
                 onChange={(e) => { setPriorityFilter(e.target.value); setPage(0); }}
               >
                 <option value="">Toutes priorités</option>
-                <option value="MANDATORY">MANDATORY</option>
-                <option value="HIGH">HIGH</option>
-                <option value="NORMAL">NORMAL</option>
-                <option value="ADVANCED">ADVANCED</option>
+                <option value="MANDATORY">Obligatoire</option>
+                <option value="HIGH">Haute</option>
+                <option value="NORMAL">Normale</option>
+                <option value="ADVANCED">Avancée</option>
               </select>
               {priorityFilter ? (
                 <button 
@@ -383,7 +384,7 @@ export function Certifications() {
                 {renderSortableHeader("Priorité", "priority")}
                 {renderSortableHeader("Coût", "examCostUsd")}
                 <th className="p-3.5 text-xs text-[#7c2d37] font-bold">Note</th>
-                <th className="p-3.5 text-xs text-[#7c2d37] font-bold text-center">Actions</th>
+                {canAdd && <th className="p-3.5 text-xs text-[#7c2d37] font-bold text-center">Actions</th>}
               </tr>
             </thead>
             {certsPage?.content && certsPage.content.length > 0 && (
@@ -406,14 +407,14 @@ export function Certifications() {
                       </td>
                       <td className="p-3.5">
                         <span className={clsx(
-                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border uppercase tracking-wider",
+                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border tracking-wide",
                           cert.difficulty === 'FOUNDATIONAL' ? 'bg-emerald-50/50 text-emerald-700 border-emerald-300' : 
                           cert.difficulty === 'INTERMEDIATE' ? 'bg-sky-50/50 text-sky-700 border-sky-300' : 
                           cert.difficulty === 'ADVANCED' ? 'bg-purple-50/50 text-purple-700 border-purple-300' : 
                           cert.difficulty === 'EXPERT' ? 'bg-rose-50/50 text-rose-700 border-rose-400' :
                           'bg-gray-100 text-gray-700 border-gray-200'
                         )}>
-                          {cert.difficulty}
+                          {formatDifficulty(cert.difficulty)}
                         </span>
                       </td>
                       <td className="p-3.5">
@@ -424,8 +425,8 @@ export function Certifications() {
                             cert.priority === 'NORMAL' ? 'bg-gray-500' : 
                             'bg-slate-400'
                           )}></span>
-                          <span className="text-[11px] font-semibold tracking-wide uppercase text-gray-700">
-                            {cert.priority}
+                          <span className="text-[11px] font-semibold tracking-wide text-gray-700">
+                            {formatPriority(cert.priority)}
                           </span>
                         </div>
                       </td>
@@ -442,39 +443,37 @@ export function Certifications() {
                           <span className="text-gray-400 text-xs italic bg-gray-50 px-2 py-0.5 rounded-md w-fit border border-gray-200">N/A</span>
                         )}
                       </td>
-                      <td className="p-3.5 text-center relative">
-                        <div className="flex items-center justify-center gap-1">
-                          {canAdd && (
-                            <>
-                              <button 
-                                type="button"
-                                className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all flex items-center justify-center" 
-                                title="Éditer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCertToEdit(cert);
-                                  setIsModalOpen(true);
-                                }}
-                              >
-                                <span className="material-symbols-outlined text-[18px]">edit</span>
-                              </button>
-                              <button 
-                                type="button"
-                                className="w-8 h-8 rounded-lg text-gray-400 hover:text-[#b70f30] hover:bg-red-50 transition-all flex items-center justify-center"
-                                onClick={(e) => { 
-                                  e.stopPropagation(); 
-                                  setDeleteError(null); 
-                                  setCertToDelete({id: cert.id, name: cert.name}); 
-                                  setDeleteDialogOpen(true); 
-                                }} 
-                                title="Supprimer"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                      {canAdd && (
+                        <td className="p-3.5 text-center relative">
+                          <div className="flex items-center justify-center gap-1">
+                            <button 
+                              type="button"
+                              className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all flex items-center justify-center" 
+                              title="Éditer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCertToEdit(cert);
+                                setIsModalOpen(true);
+                              }}
+                            >
+                              <span className="material-symbols-outlined text-[18px]">edit</span>
+                            </button>
+                            <button 
+                              type="button"
+                              className="w-8 h-8 rounded-lg text-gray-400 hover:text-[#b70f30] hover:bg-red-50 transition-all flex items-center justify-center"
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setDeleteError(null); 
+                                setCertToDelete({id: cert.id, name: cert.name}); 
+                                setDeleteDialogOpen(true); 
+                              }} 
+                              title="Supprimer"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

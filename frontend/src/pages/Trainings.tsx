@@ -310,8 +310,8 @@ export function Trainings() {
                 onChange={(e) => { setPriorityFilter(e.target.value); setPage(0); }}
               >
                 <option value="">Toutes priorités</option>
-                <option value="MANDATORY">MANDATORY</option>
-                <option value="OPTIONAL">OPTIONAL</option>
+                <option value="MANDATORY">Obligatoire</option>
+                <option value="OPTIONAL">Optionnelle</option>
               </select>
               {priorityFilter ? (
                 <button 
@@ -421,10 +421,12 @@ export function Trainings() {
                       <td className="p-3.5">
                         <div className="flex items-center gap-1.5">
                           <span className={clsx("w-2 h-2 rounded-full",
-                            training.priority === 'MANDATORY' ? 'bg-[#b70f30]' : 'bg-gray-400'
+                            training.priority === 'MANDATORY' ? 'bg-[#b70f30]' : 
+                            training.priority === 'HIGH' ? 'bg-amber-500' :
+                            'bg-gray-400'
                           )}></span>
-                          <span className="text-[11px] font-semibold tracking-wide uppercase text-gray-700">
-                            {training.priority}
+                          <span className="text-[11px] font-semibold tracking-wide text-gray-700">
+                            {training.priority === 'MANDATORY' ? 'Obligatoire' : training.priority === 'HIGH' ? 'Haute' : 'Normale'}
                           </span>
                         </div>
                       </td>

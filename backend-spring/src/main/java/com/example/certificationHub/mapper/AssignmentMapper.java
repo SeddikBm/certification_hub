@@ -4,6 +4,7 @@ import com.example.certificationHub.dto.response.AssignmentResponse;
 import com.example.certificationHub.entity.Assignment;
 import com.example.certificationHub.enumeration.ItemType;
 import com.example.certificationHub.repository.CertificationRepository;
+import com.example.certificationHub.repository.ManagerAssignmentRepository;
 import com.example.certificationHub.repository.TrainingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ public class AssignmentMapper {
 
     private final CertificationRepository certificationRepository;
     private final TrainingRepository trainingRepository;
+    private final ManagerAssignmentRepository managerAssignmentRepository;
 
     public AssignmentResponse toResponse(Assignment assignment) {
         if (assignment == null) return null;
@@ -38,12 +40,18 @@ public class AssignmentMapper {
         String userName = null;
         String userEmail = null;
         String squadName = null;
+        String managerName = null;
 
         if (assignment.getUser() != null) {
             userName = assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName();
             userEmail = assignment.getUser().getEmail();
             if (assignment.getUser().getSquad() != null) {
                 squadName = assignment.getUser().getSquad().getName();
+            }
+
+            var ma = managerAssignmentRepository.findByCollaboratorId(assignment.getUser().getId()).orElse(null);
+            if (ma != null && ma.getManager() != null) {
+                managerName = ma.getManager().getFirstName() + " " + ma.getManager().getLastName();
             }
         }
 
@@ -57,6 +65,7 @@ public class AssignmentMapper {
                 .userName(userName)
                 .userEmail(userEmail)
                 .squadName(squadName)
+                .managerName(managerName)
                 .assignedById(assignment.getAssignedBy() != null ? assignment.getAssignedBy().getId() : null)
                 .statusCertification(assignment.getStatusCertification() != null
                         ? assignment.getStatusCertification().name() : null)

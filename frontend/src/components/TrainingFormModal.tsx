@@ -246,8 +246,8 @@ export function TrainingFormModal({ isOpen, onClose, trainingToEdit, onSuccess }
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Priorité</label>
                   <div className="relative">
                     <select {...register('priority')} className="w-full px-3.5 py-2.5 text-xs font-medium bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30] transition-all appearance-none cursor-pointer">
-                      <option value="MANDATORY">MANDATORY</option>
-                      <option value="OPTIONAL">OPTIONAL</option>
+                      <option value="MANDATORY">Obligatoire</option>
+                      <option value="OPTIONAL">Optionnelle</option>
                     </select>
                     <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[18px]">expand_more</span>
                   </div>

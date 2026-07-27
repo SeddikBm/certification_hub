@@ -11,11 +11,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ManagerAssignmentRepository extends JpaRepository<ManagerAssignment, ManagerAssignment.Id> {
         // Trouver tous les collaborateurs gérés par un Career Manager
         List<ManagerAssignment> findByManagerId(UUID managerId);
+
+        Optional<ManagerAssignment> findByCollaboratorId(UUID collaboratorId);
 
         @Query("SELECT new com.example.certificationHub.dto.response.CareerManagerHierarchyResponse(" +
                         "u.id, u.firstName, u.lastName, u.email, COUNT(ma.collaborator.id)) " +

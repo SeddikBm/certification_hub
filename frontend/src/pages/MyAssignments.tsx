@@ -14,7 +14,6 @@ export function MyAssignments() {
   const pageSize = 25;
 
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-  const [selectedUploadAssignment, setSelectedUploadAssignment] = useState<AssignmentResponse | null>(null);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -185,24 +184,24 @@ export function MyAssignments() {
               <option value="">Tous les statuts</option>
               {activeTab === 'CERTIFICATION' ? (
                 <>
-                  <option value="PENDING_APPROVAL">En attente (PENDING_APPROVAL)</option>
-                  <option value="APPROVED">Approuvé (APPROVED)</option>
-                  <option value="PLANNED">Planifié (PLANNED)</option>
-                  <option value="IN_PROGRESS">En cours (IN_PROGRESS)</option>
-                  <option value="EXAM_SCHEDULED">Examen Programmé (EXAM_SCHEDULED)</option>
-                  <option value="COMPLETED">Obtenu (COMPLETED)</option>
-                  <option value="FAILED">Échoué (FAILED)</option>
-                  <option value="CANCELLED">Annulé / Refusé (CANCELLED)</option>
-                  <option value="EXPIRED">Expiré (EXPIRED)</option>
+                  <option value="PENDING_APPROVAL">En attente de validation</option>
+                  <option value="APPROVED">Approuvé</option>
+                  <option value="PLANNED">Planifié</option>
+                  <option value="IN_PROGRESS">En cours</option>
+                  <option value="EXAM_SCHEDULED">Examen programmé</option>
+                  <option value="COMPLETED">Obtenu</option>
+                  <option value="FAILED">Échoué</option>
+                  <option value="CANCELLED">Refusé / Annulé</option>
+                  <option value="EXPIRED">Expiré</option>
                 </>
               ) : (
                 <>
-                  <option value="PENDING_APPROVAL">En attente (PENDING_APPROVAL)</option>
-                  <option value="APPROVED">Approuvé (APPROVED)</option>
-                  <option value="PLANNED">Planifié (PLANNED)</option>
-                  <option value="IN_PROGRESS">En cours (IN_PROGRESS)</option>
-                  <option value="COMPLETED">Terminé (COMPLETED)</option>
-                  <option value="CANCELLED">Annulé / Refusé (CANCELLED)</option>
+                  <option value="PENDING_APPROVAL">En attente de validation</option>
+                  <option value="APPROVED">Approuvé</option>
+                  <option value="PLANNED">Planifié</option>
+                  <option value="IN_PROGRESS">En cours</option>
+                  <option value="COMPLETED">Terminé</option>
+                  <option value="CANCELLED">Refusé / Annulé</option>
                 </>
               )}
             </select>

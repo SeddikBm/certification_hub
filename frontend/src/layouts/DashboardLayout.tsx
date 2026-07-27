@@ -15,12 +15,13 @@ export function DashboardLayout() {
   };
 
   const navItems = [
-    { name: 'Tableau de Bord', icon: 'dashboard', path: '/dashboard', roles: ['ADMIN', 'MANAGER', 'USER'] },
-    { name: 'Certifications', icon: 'verified', path: '/certifications', roles: ['ADMIN', 'MANAGER', 'USER'] },
-    { name: 'Formations', icon: 'school', path: '/trainings', roles: ['ADMIN', 'MANAGER', 'USER'] },
+    { name: 'Tableau de Bord', icon: 'dashboard', path: '/dashboard', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'MANAGER'] },
+    { name: 'Certifications', icon: 'verified', path: '/certifications', roles: ['ADMIN', 'CAREER_MANAGER', 'COLLABORATOR', 'MANAGER', 'USER'] },
+    { name: 'Formations', icon: 'school', path: '/trainings', roles: ['ADMIN', 'CAREER_MANAGER', 'COLLABORATOR', 'MANAGER', 'USER'] },
+    { name: 'Mes Assignations', icon: 'task_alt', path: '/my-assignments', roles: ['COLLABORATOR', 'USER'] },
+    { name: 'Hiérarchie', icon: 'account_tree', path: '/hierarchy', roles: ['ADMIN'] },
+    { name: 'Gestion des Assignations', icon: 'assignment', path: '/manage-assignments', roles: ['ADMIN', 'CAREER_MANAGER', 'MANAGER'] },
     { name: 'Utilisateurs', icon: 'group', path: '/users', roles: ['ADMIN'] },
-    { name: 'Hiérarchie', icon: 'account_tree', path: '/hierarchy', roles: ['ADMIN', 'MANAGER'] },
-    { name: 'Assignations', icon: 'assignment', path: '/manage-assignments', roles: ['ADMIN', 'MANAGER'] },
   ];
 
   const visibleNavItems = navItems.filter(item => !item.roles || item.roles.includes(user?.role || 'USER'));

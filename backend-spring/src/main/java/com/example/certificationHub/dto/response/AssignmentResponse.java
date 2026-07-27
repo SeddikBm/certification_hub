@@ -11,8 +11,12 @@ public class AssignmentResponse {
     private UUID id;
     private String itemType;
     private UUID itemId;
+    private String itemName;
+    private String provider;
     private UUID userId;
     private String userName;
+    private String userEmail;
+    private String squadName;
     private UUID assignedById;
     private String statusCertification;
     private String statusTraining;

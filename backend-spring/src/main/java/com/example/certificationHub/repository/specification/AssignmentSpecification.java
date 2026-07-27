@@ -2,6 +2,8 @@ package com.example.certificationHub.repository.specification;
 
 import com.example.certificationHub.entity.Assignment;
 import com.example.certificationHub.enumeration.ItemType;
+import com.example.certificationHub.enumeration.StatusCertification;
+import com.example.certificationHub.enumeration.StatusTraining;
 import org.springframework.data.jpa.domain.Specification;
 import jakarta.persistence.criteria.Predicate;
 
@@ -38,10 +40,20 @@ public class AssignmentSpecification {
                 predicates.add(cb.equal(root.get("itemType"), itemType));
             }
             if (status != null && !status.isBlank()) {
-                // Recherche dans l'un ou l'autre des statuts polymorphiques
-                Predicate certStatus = cb.equal(root.get("statusCertification"), cb.literal(status));
-                Predicate trainStatus = cb.equal(root.get("statusTraining"), cb.literal(status));
-                predicates.add(cb.or(certStatus, trainStatus));
+                List<Predicate> statusPredicates = new ArrayList<>();
+                try {
+                    StatusCertification sc = StatusCertification.valueOf(status.trim());
+                    statusPredicates.add(cb.equal(root.get("statusCertification"), sc));
+                } catch (IllegalArgumentException ignored) {}
+
+                try {
+                    StatusTraining st = StatusTraining.valueOf(status.trim());
+                    statusPredicates.add(cb.equal(root.get("statusTraining"), st));
+                } catch (IllegalArgumentException ignored) {}
+
+                if (!statusPredicates.isEmpty()) {
+                    predicates.add(cb.or(statusPredicates.toArray(new Predicate[0])));
+                }
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

@@ -3,28 +3,28 @@ import type { Page } from './training.service';
 
 export interface AssignmentResponse {
   id: string;
-  itemType: string;
+  itemType: 'CERTIFICATION' | 'TRAINING' | string;
   itemId: string;
+  itemName?: string;
+  provider?: string;
   userId: string;
-  userName: string;
-  assignedById: string;
-  statusCertification: string;
-  statusTraining: string;
-  assignedAt: string;
-  completedAt: string;
-  examAt: string;
-  trainingProgressPercentage: number;
-  notes: string;
-}
-
-export interface AssignmentCreateRequest {
-  itemType: string;
-  itemId: string;
-  userId: string;
+  userName?: string;
+  userEmail?: string;
+  squadName?: string;
   assignedById?: string;
   statusCertification?: string;
   statusTraining?: string;
+  assignedAt?: string;
+  completedAt?: string;
   examAt?: string;
+  trainingProgressPercentage?: number;
+  notes?: string;
+}
+
+export interface AssignmentCreateRequest {
+  itemType: 'CERTIFICATION' | 'TRAINING';
+  itemId: string;
+  userId: string;
   notes?: string;
 }
 

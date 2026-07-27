@@ -44,6 +44,7 @@ export const userService = {
     search?: string;
     page?: number;
     size?: number;
+    sort?: string;
   }): Promise<Page<UserResponse>> => {
     const response = await api.get<Page<UserResponse>>('/users', { params });
     return response.data;

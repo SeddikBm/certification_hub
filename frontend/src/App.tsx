@@ -53,11 +53,11 @@ function App() {
 
               <Route element={<RoleGuard allowedRoles={['ADMIN', 'TRAINING_MANAGER', 'MANAGER']} />}>
                 <Route path="/manage-assignments" element={<ManageAssignments />} />
-                <Route path="/hierarchy" element={<Hierarchy />} />
               </Route>
 
               <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
                 <Route path="/users" element={<Users />} />
+                <Route path="/hierarchy" element={<Hierarchy />} />
               </Route>
 
             </Route>

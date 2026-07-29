@@ -58,8 +58,16 @@ public class ManagerAssignmentController {
     }
 
     @GetMapping("/{managerId}/collaborators")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CAREER_MANAGER', 'TRAINING_MANAGER')")
     public List<AssignedCollaboratorResponse> getAssignedCollaborators(@PathVariable UUID managerId) {
         return managerAssignmentService.getAssignedCollaborators(managerId);
+    }
+
+    @GetMapping("/my-managers")
+    @PreAuthorize("isAuthenticated()")
+    public List<AssignedCollaboratorResponse> getMyManagers(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        UUID userId = UUID.fromString(jwt.getClaimAsString("user_id"));
+        return managerAssignmentService.getMyManagers(userId);
     }
 }

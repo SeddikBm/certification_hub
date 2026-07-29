@@ -18,7 +18,12 @@ public interface ManagerAssignmentRepository extends JpaRepository<ManagerAssign
         // Trouver tous les collaborateurs gérés par un Career Manager
         List<ManagerAssignment> findByManagerId(UUID managerId);
 
-        Optional<ManagerAssignment> findByCollaboratorId(UUID collaboratorId);
+        List<ManagerAssignment> findByCollaboratorId(UUID collaboratorId);
+
+        default Optional<ManagerAssignment> findFirstByCollaboratorId(UUID collaboratorId) {
+                List<ManagerAssignment> list = findByCollaboratorId(collaboratorId);
+                return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+        }
 
         @Query("SELECT new com.example.certificationHub.dto.response.CareerManagerHierarchyResponse(" +
                         "u.id, u.firstName, u.lastName, u.email, COUNT(ma.collaborator.id)) " +

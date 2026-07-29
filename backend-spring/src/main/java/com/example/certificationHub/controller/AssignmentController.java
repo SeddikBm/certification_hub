@@ -60,7 +60,7 @@ public class AssignmentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CAREER_MANAGER','COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'COLLABORATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public AssignmentResponse createAssignment(
             @Valid @RequestBody AssignmentCreateRequest request,

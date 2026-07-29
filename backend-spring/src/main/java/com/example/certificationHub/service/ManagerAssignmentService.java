@@ -42,6 +42,19 @@ public class ManagerAssignmentService {
         return managerAssignmentRepository.getCollaboratorsByManagerId(managerId);
     }
 
+    @Transactional(readOnly = true)
+    public List<AssignedCollaboratorResponse> getMyManagers(UUID collaboratorId) {
+        return managerAssignmentRepository.findByCollaboratorId(collaboratorId).stream()
+                .map(ma -> new AssignedCollaboratorResponse(
+                        ma.getManager().getId(),
+                        ma.getManager().getFirstName(),
+                        ma.getManager().getLastName(),
+                        ma.getManager().getEmail(),
+                        null
+                ))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     @Transactional
     public ManagerAssignmentResponse assignManager(ManagerAssignmentRequest request, UUID adminId) {
         ManagerAssignment.Id id = new ManagerAssignment.Id(request.getManagerId(), request.getCollaboratorId());

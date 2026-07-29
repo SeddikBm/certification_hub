@@ -54,7 +54,7 @@ public class AssignmentService {
         List<UUID> managedUserIds = new ArrayList<>();
         String role = currentUserRole != null ? currentUserRole.replace("ROLE_", "") : "";
 
-        if ("CAREER_MANAGER".equals(role)) {
+        if ("CAREER_MANAGER".equals(role) || "ADMIN".equals(role) || "DIRECTOR".equals(role) || "TRAINING_MANAGER".equals(role)) {
             managedUserIds = managerAssignmentRepository.findByManagerId(currentUserId).stream()
                     .filter(ma -> ma.getCollaborator() != null)
                     .map(ma -> ma.getCollaborator().getId())
@@ -82,6 +82,11 @@ public class AssignmentService {
         User collaborator = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Collaborateur introuvable"));
 
+        if ("DIRECTOR".equals(currentUserRole)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Le directeur n'a pas le droit d'effectuer des assignations.");
+        }
+
         if ("COLLABORATOR".equals(currentUserRole) && !currentUserId.equals(collaborator.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Vous ne pouvez demander une certification que pour vous-même.");
@@ -91,8 +96,13 @@ public class AssignmentService {
             boolean isManaged = managerAssignmentRepository.existsById(
                     new ManagerAssignment.Id(currentUserId, collaborator.getId()));
             if (!isManaged && !currentUserId.equals(collaborator.getId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Vous ne pouvez assigner qu'à vos propres collaborateurs.");
+                boolean isManagedFallback = managerAssignmentRepository.findFirstByCollaboratorId(collaborator.getId())
+                        .map(ma -> ma.getManager() != null && currentUserId.equals(ma.getManager().getId()))
+                        .orElse(false);
+                if (!isManagedFallback) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            "Vous ne pouvez assigner qu'à vos propres collaborateurs.");
+                }
             }
         }
 
@@ -128,6 +138,9 @@ public class AssignmentService {
         java.util.Map<String, Object> metadata = new java.util.HashMap<>();
         if (request.getPriority() != null && !request.getPriority().isBlank()) {
             metadata.put("priority", request.getPriority());
+        }
+        if (request.getTargetManagerId() != null) {
+            metadata.put("targetManagerId", request.getTargetManagerId().toString());
         }
 
         Assignment assignment = Assignment.builder()

@@ -23,16 +23,44 @@ public class AssignmentSpecification {
             // --- 1. SÉCURITÉ (RLS) ---
             String role = currentUserRole != null ? currentUserRole.replace("ROLE_", "") : "";
 
-            if (!"ADMIN".equals(role) && !"DIRECTOR".equals(role) && !"TRAINING_MANAGER".equals(role)) {
-                if ("CAREER_MANAGER".equals(role) || "SQUAD_LEAD".equals(role)) {
-                    List<UUID> allowedIds = new ArrayList<>(managedUserIds);
-                    if (!allowedIds.contains(currentUserId)) {
-                        allowedIds.add(currentUserId); // Allow managers / squad leads to see their own assignments
-                    }
-                    predicates.add(root.get("user").get("id").in(allowedIds));
+            if ("COLLABORATOR".equals(role)) {
+                // Collaborateur classique
+                predicates.add(cb.equal(root.get("user").get("id"), currentUserId));
+            } else if ("CAREER_MANAGER".equals(role) || "SQUAD_LEAD".equals(role)) {
+                List<UUID> allowedIds = new ArrayList<>(managedUserIds);
+                if (!allowedIds.contains(currentUserId)) {
+                    allowedIds.add(currentUserId); // Allow managers / squad leads to see their own assignments
+                }
+                Predicate userInManaged = root.get("user").get("id").in(allowedIds);
+                Predicate assignedByMe = cb.equal(root.get("assignedBy").get("id"), currentUserId);
+
+                Predicate isPendingCertif = cb.equal(root.get("statusCertification"), StatusCertification.PENDING_APPROVAL);
+                Predicate isPendingTrain = cb.equal(root.get("statusTraining"), StatusTraining.PENDING_APPROVAL);
+                Predicate isPending = cb.or(isPendingCertif, isPendingTrain);
+
+                Predicate targetManagerMatches = cb.equal(
+                    cb.function("jsonb_extract_path_text", String.class, root.get("metadata"), cb.literal("targetManagerId")),
+                    currentUserId.toString()
+                );
+                Predicate targetManagerNull = cb.isNull(
+                    cb.function("jsonb_extract_path_text", String.class, root.get("metadata"), cb.literal("targetManagerId"))
+                );
+
+                Predicate pendingRoutedToMe = cb.and(isPending, userInManaged, cb.or(targetManagerMatches, targetManagerNull));
+                Predicate nonPending = cb.not(isPending);
+
+                predicates.add(cb.or(assignedByMe, pendingRoutedToMe, cb.and(nonPending, userInManaged)));
+            } else if ("ADMIN".equals(role) || "DIRECTOR".equals(role) || "TRAINING_MANAGER".equals(role)) {
+                // Admin / Director / TM tracks only assignments assigned by themselves (assignedBy == currentUserId)
+                // or assignments of collaborators directly managed by them (if any)
+                List<UUID> allowedIds = new ArrayList<>(managedUserIds);
+                Predicate assignedByMe = cb.equal(root.get("assignedBy").get("id"), currentUserId);
+
+                if (!allowedIds.isEmpty()) {
+                    Predicate userInManaged = root.get("user").get("id").in(allowedIds);
+                    predicates.add(cb.or(userInManaged, assignedByMe));
                 } else {
-                    // Collaborateur classique
-                    predicates.add(cb.equal(root.get("user").get("id"), currentUserId));
+                    predicates.add(assignedByMe);
                 }
             }
 

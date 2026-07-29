@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService } from '../services/assignment.service';
 import { certificationService } from '../services/certification.service';
 import { trainingService } from '../services/training.service';
+import { managerAssignmentService } from '../services/managerAssignment.service';
 import { useAuth } from '../contexts/AuthContext';
 import clsx from 'clsx';
 
@@ -19,7 +20,15 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
   const [itemType, setItemType] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [itemSearch, setItemSearch] = useState<string>('');
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+
+  // 0. Fetch My Career Managers
+  const { data: myManagers = [] } = useQuery({
+    queryKey: ['myManagersList', user?.id],
+    queryFn: () => managerAssignmentService.getMyManagers(),
+    enabled: isOpen && !!user?.id
+  });
 
   // 1. Fetch Catalogue Items
   const { data: certsPage, isLoading: isLoadingCerts } = useQuery({
@@ -50,16 +59,20 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
   const createRequestMutation = useMutation({
     mutationFn: () => {
       if (!user?.id) throw new Error("Utilisateur non connecté");
+      const targetManager = selectedManagerId || (myManagers.length > 0 ? myManagers[0].collaboratorId : undefined);
       return assignmentService.createAssignment({
         itemType,
         itemId: selectedItemId,
         userId: user.id,
+        targetManagerId: targetManager,
         notes: notes ? `Demande collaborateur: ${notes}` : 'Demande formulée par le collaborateur'
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['management-assignments'] });
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       onSuccessNotification('success', 'Votre demande a été soumise avec succès à votre Career Manager.');
       resetForm();
       onClose();
@@ -234,6 +247,27 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
                   Provider: <strong>{selectedCert?.provider || selectedTraining?.provider}</strong>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Manager Selection if Multiple CMs exist */}
+          {myManagers.length > 1 && (
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-2">
+              <label className="block text-xs font-semibold text-gray-700">
+                Career Manager pour validation <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedManagerId}
+                onChange={(e) => setSelectedManagerId(e.target.value)}
+                className="w-full p-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
+              >
+                <option value="">Sélectionner le Career Manager...</option>
+                {myManagers.map(m => (
+                  <option key={m.collaboratorId} value={m.collaboratorId}>
+                    {m.firstName} {m.lastName} ({m.email})
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

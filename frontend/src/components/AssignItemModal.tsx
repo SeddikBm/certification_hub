@@ -45,14 +45,15 @@ export function AssignItemModal({
   }, [isOpen, preselectedUserId, defaultItemType]);
 
   const isAdmin = user?.role === 'ADMIN';
+  const isAdminOrTM = user?.role === 'ADMIN' || user?.role === 'TRAINING_MANAGER';
 
   // 1. Fetch Collaborators List
   // For Career Manager: fetch managed collaborators from GET /api/v1/manager-assignments/:managerId/collaborators
-  // For Admin: fetch all collaborators from GET /api/v1/users?role=COLLABORATOR
+  // For Admin / Training Manager: fetch all collaborators from GET /api/v1/users?role=COLLABORATOR
   const { data: managedCollabs = [], isLoading: isLoadingManaged } = useQuery({
     queryKey: ['myManagedCollaborators', user?.id],
     queryFn: () => user?.id ? managerAssignmentService.getAssignedCollaborators(user.id) : Promise.resolve([]),
-    enabled: isOpen && !isAdmin && !!user?.id
+    enabled: isOpen && !isAdminOrTM && !!user?.id
   });
 
   const { data: adminCollabsPage, isLoading: isLoadingAdminCollabs } = useQuery({
@@ -62,11 +63,11 @@ export function AssignItemModal({
       search: userSearch || undefined,
       size: 50
     }),
-    enabled: isOpen && isAdmin
+    enabled: isOpen && isAdminOrTM
   });
 
   const collaboratorsList = useMemo(() => {
-    if (isAdmin) {
+    if (isAdminOrTM) {
       return (adminCollabsPage?.content || []).map(u => ({
         id: u.id,
         name: `${u.firstName} ${u.lastName}`,
@@ -76,18 +77,18 @@ export function AssignItemModal({
     }
     const filtered = userSearch.trim()
       ? managedCollabs.filter(c => 
-          `${c.firstName} ${c.lastName}`.toLowerCase().includes(userSearch.toLowerCase()) ||
-          c.email.toLowerCase().includes(userSearch.toLowerCase())
+          `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().includes(userSearch.toLowerCase()) ||
+          (c.email || '').toLowerCase().includes(userSearch.toLowerCase())
         )
       : managedCollabs;
 
     return filtered.map(c => ({
-      id: c.collaboratorId,
-      name: `${c.firstName} ${c.lastName}`,
+      id: c.collaboratorId || (c as any).id,
+      name: c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : (c as any).name || (c as any).userName || 'Collaborateur',
       email: c.email,
       squadName: c.squadName
     }));
-  }, [isAdmin, adminCollabsPage?.content, managedCollabs, userSearch]);
+  }, [isAdminOrTM, adminCollabsPage?.content, managedCollabs, userSearch]);
 
   const selectedCollabInfo = useMemo(() => {
     return collaboratorsList.find(c => c.id === selectedUserId);
@@ -136,18 +137,22 @@ export function AssignItemModal({
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['management-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       onSuccessNotification('success', 'Assignation créée avec succès.');
       resetForm();
       onClose();
     },
     onError: (err: any) => {
       console.error(err);
+      const detailMsg = err.response?.data?.detail || err.response?.data?.message || err.message;
       if (err.response?.status === 409) {
-        onSuccessNotification('error', 'Une assignation active existe déjà pour ce collaborateur et cet item.');
+        onSuccessNotification('error', detailMsg || 'Une assignation active existe déjà pour ce collaborateur et cet item.');
       } else if (err.response?.status === 403) {
-        onSuccessNotification('error', err.response?.data?.message || 'Accès refusé. Vous ne pouvez assigner qu\'à vos collaborateurs.');
+        onSuccessNotification('error', detailMsg || 'Accès refusé. Vous ne pouvez assigner qu\'à vos collaborateurs.');
       } else {
-        onSuccessNotification('error', err.response?.data?.message || 'Erreur lors de la création de l\'assignation.');
+        onSuccessNotification('error', detailMsg || 'Erreur lors de la création de l\'assignation.');
       }
     }
   });
@@ -430,7 +435,7 @@ export function AssignItemModal({
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-gray-700">
-                {itemType === 'CERTIFICATION' ? 'Date d\'Examen Prévue' : 'Date Cible de Fin'}
+                Date Cible (Deadline)
               </label>
               <input
                 type="date"

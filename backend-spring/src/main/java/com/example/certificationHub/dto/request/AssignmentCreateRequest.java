@@ -16,6 +16,7 @@ public class AssignmentCreateRequest {
     @NotNull(message = "L'ID de l'utilisateur est obligatoire")
     private UUID userId;
 
+    private UUID targetManagerId;
     private String priority;
     private String targetDate;
     private String notes;

@@ -6,6 +6,7 @@ export interface AssignmentResponse {
   itemType: 'CERTIFICATION' | 'TRAINING' | string;
   itemId: string;
   itemName?: string;
+  itemCode?: string;
   provider?: string;
   userId: string;
   userName?: string;
@@ -13,12 +14,16 @@ export interface AssignmentResponse {
   squadName?: string;
   managerName?: string;
   assignedById?: string;
+  assignedByName?: string;
+  assignedByRole?: string;
   statusCertification?: string;
   statusTraining?: string;
   priority?: string;
   assignedAt?: string;
   completedAt?: string;
   examAt?: string;
+  targetDate?: string;
+  isNearDeadline?: boolean;
   trainingProgressPercentage?: number;
   notes?: string;
 }
@@ -27,6 +32,7 @@ export interface AssignmentCreateRequest {
   itemType: 'CERTIFICATION' | 'TRAINING';
   itemId: string;
   userId: string;
+  targetManagerId?: string;
   priority?: string;
   targetDate?: string;
   notes?: string;

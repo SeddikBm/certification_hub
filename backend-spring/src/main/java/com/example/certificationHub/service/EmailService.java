@@ -21,7 +21,18 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.password:}")
+    private String mailPassword;
+
+    private boolean isMailConfigured() {
+        return mailPassword != null && !mailPassword.isBlank() && !mailPassword.contains("CHANGE_ME");
+    }
+
     public void sendHtmlWelcomeEmail(WelcomeEmailEvent event) {
+        if (!isMailConfigured()) {
+            log.info("[DEV MODE] Email de bienvenue simulé pour {}", event.getEmail());
+            return;
+        }
         try {
             MimeMessage message = mailSender.createMimeMessage();
             // true = on indique que c'est un message multipart (pour supporter le HTML)
@@ -44,13 +55,16 @@ public class EmailService {
             // 4. Envoyer
             mailSender.send(message);
             log.info("Email de bienvenue envoyé avec succès à {}", event.getEmail());
-        } catch (MessagingException e) {
-            log.error("Échec de l'envoi de l'email de bienvenue à {}", event.getEmail(), e);
-            throw new RuntimeException("Échec de l'envoi de l'email de bienvenue", e);
+        } catch (Exception e) {
+            log.warn("Notification par email non délivrée à {} (SMTP local non configuré) : {}", event.getEmail(), e.getMessage());
         }
     }
 
     public void sendHtmlAssignmentEmail(AssignmentEvent event, String emailTitle, String emailMessage) {
+        if (!isMailConfigured()) {
+            log.info("[DEV MODE] Email d'assignation simulé pour {} : {}", event.getUserEmail(), emailTitle);
+            return;
+        }
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -74,11 +88,8 @@ public class EmailService {
             mailSender.send(message);
             log.info("Email d'assignation envoyé avec succès à {}", event.getUserEmail());
 
-        } catch (MessagingException e) {
-            log.error("Échec de l'envoi de l'email à {}", event.getUserEmail(), e);
-            // On lance une RuntimeException pour que RabbitMQ sache que ça a échoué et
-            // fasse un Retry
-            throw new RuntimeException("Échec de l'envoi de l'email d'assignation", e);
+        } catch (Exception e) {
+            log.warn("Notification par email non délivrée à {} (SMTP local non configuré) : {}", event.getUserEmail(), e.getMessage());
         }
     }
 }

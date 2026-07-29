@@ -12,8 +12,8 @@ export function ManageAssignments() {
   const isDirectView = user?.role === 'CAREER_MANAGER' || user?.role === 'SQUAD_LEAD';
   const queryClient = useQueryClient();
 
+  const [activeTab, setActiveTab] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
   const [collabSearch, setCollabSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [page, setPage] = useState(0);
@@ -21,7 +21,6 @@ export function ManageAssignments() {
 
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [modalPreselectedUser, setModalPreselectedUser] = useState<string | undefined>(undefined);
-  const [modalDefaultItemType, setModalDefaultItemType] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
@@ -44,9 +43,9 @@ export function ManageAssignments() {
   // - Admin: ALL assignments
   // - Career Manager: Managed collaborators' assignments
   const { data: assignmentsPage, isLoading, error } = useQuery({
-    queryKey: ['assignments', { itemType: typeFilter, status: statusFilter, page }],
+    queryKey: ['assignments', { itemType: activeTab, status: statusFilter, page }],
     queryFn: () => assignmentService.getAllAssignments({
-      itemType: typeFilter || undefined,
+      itemType: activeTab,
       status: statusFilter || undefined,
       page,
       size: pageSize
@@ -72,7 +71,18 @@ export function ManageAssignments() {
     allAssignments.forEach(ass => {
       const uName = ass.userName || 'Inconnu';
       const uEmail = ass.userEmail || '';
-      const mName = ass.managerName || 'Sans Career Manager';
+      let mName = '';
+      if (user?.role === 'CAREER_MANAGER') {
+        mName = `Mon Équipe (${user.name || 'Career Manager'})`;
+      } else if (user?.id && ass.assignedById === user.id) {
+        mName = `Attribué par : ${ass.assignedByName || user.name || 'Moi'}`;
+      } else if (ass.managerName) {
+        mName = ass.managerName.startsWith('Équipe') ? ass.managerName : `Équipe : ${ass.managerName}`;
+      } else if (ass.assignedByName) {
+        mName = `Attribué par : ${ass.assignedByName}`;
+      } else {
+        mName = 'Sans Career Manager';
+      }
 
       if (term && !uName.toLowerCase().includes(term) && !uEmail.toLowerCase().includes(term) && !mName.toLowerCase().includes(term)) {
         return;
@@ -102,9 +112,9 @@ export function ManageAssignments() {
       collabMap.get(ass.userId)!.assignments.push(ass);
     });
 
-    return Array.from(managerMap.values()).map(mGroup => ({
-      managerName: mGroup.managerName,
-      collaborators: Array.from(mGroup.collaboratorsMap.values())
+    return Array.from(managerMap.values()).map(m => ({
+      managerName: m.managerName,
+      collaborators: Array.from(m.collaboratorsMap.values())
     }));
   }, [allAssignments, collabSearch, priorityFilter]);
 
@@ -113,6 +123,9 @@ export function ManageAssignments() {
     mutationFn: ({ id, data }: { id: string; data: any }) => assignmentService.updateAssignment(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['management-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       showNotification('success', 'Assignation mise à jour avec succès.');
     },
     onError: (err: any) => {
@@ -228,7 +241,7 @@ export function ManageAssignments() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-[#111827] tracking-tight">Gestion des Assignations</h1>
-          <p className="text-xs text-gray-500 mt-1">Supervisez et attribuez les parcours de certifications et formations de vos équipes.</p>
+          <p className="text-xs text-gray-500 mt-1">Supervisez, attribuez et validez les parcours de certifications et formations.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -241,33 +254,61 @@ export function ManageAssignments() {
             <span>Exporter Excel</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => { setModalDefaultItemType('TRAINING'); setModalPreselectedUser(undefined); setIsAssignModalOpen(true); }}
-            className="h-9 px-3.5 text-xs font-semibold rounded-xl border border-red-200/80 bg-red-50 text-[#b70f30] hover:bg-red-100/80 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">school</span>
-            <span>Assigner Formation</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setModalDefaultItemType('CERTIFICATION'); setModalPreselectedUser(undefined); setIsAssignModalOpen(true); }}
-            className="h-9 px-4 text-xs font-semibold rounded-xl bg-[#b70f30] text-white hover:bg-red-800 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">verified</span>
-            <span>Assigner Certification</span>
-          </button>
+          {(user?.role === 'ADMIN' || user?.role === 'TRAINING_MANAGER' || user?.role === 'CAREER_MANAGER') && (
+            <button
+              type="button"
+              onClick={() => { setModalPreselectedUser(undefined); setIsAssignModalOpen(true); }}
+              className="h-9 px-4 text-xs font-semibold rounded-xl bg-[#b70f30] text-white hover:bg-red-800 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[18px]">add_task</span>
+              <span>Assigner Certification / Formation</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Filter Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 w-full">
+      {/* Tabs & Filters */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-3">
+          
+          {/* Tabs */}
+          <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200/60">
+            <button
+              type="button"
+              onClick={() => { setActiveTab('CERTIFICATION'); setPage(0); setStatusFilter(''); }}
+              className={clsx(
+                "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
+                activeTab === 'CERTIFICATION' 
+                  ? "bg-white text-[#b70f30] shadow-2xs border border-red-100" 
+                  : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              <span className="material-symbols-outlined text-[18px]">verified</span>
+              <span>Certifications</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('TRAINING'); setPage(0); setStatusFilter(''); }}
+              className={clsx(
+                "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
+                activeTab === 'TRAINING' 
+                  ? "bg-white text-[#b70f30] shadow-2xs border border-red-100" 
+                  : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              <span className="material-symbols-outlined text-[18px]">school</span>
+              <span>Formations</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Inputs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
           
           {/* Collaborator Search */}
-          <div className="md:col-span-3 space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 block">Collaborateur</label>
+          <div className="md:col-span-4 space-y-1.5">
+            <label className="text-xs font-semibold text-gray-500 block">Collaborateur / CM</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
               <input
@@ -280,22 +321,8 @@ export function ManageAssignments() {
             </div>
           </div>
 
-          {/* Type Filter */}
-          <div className="md:col-span-3 space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 block">Type d'Item</label>
-            <select
-              value={typeFilter}
-              onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }}
-              className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 outline-none focus:border-[#b70f30]"
-            >
-              <option value="">Tous les types</option>
-              <option value="CERTIFICATION">Certification</option>
-              <option value="TRAINING">Formation</option>
-            </select>
-          </div>
-
           {/* Dynamic Status Filter */}
-          <div className="md:col-span-3 space-y-1.5">
+          <div className="md:col-span-4 space-y-1.5">
             <label className="text-xs font-semibold text-gray-500 block">Statut</label>
             <select
               value={statusFilter}
@@ -307,16 +334,16 @@ export function ManageAssignments() {
               <option value="APPROVED">Approuvé</option>
               <option value="PLANNED">Planifié</option>
               <option value="IN_PROGRESS">En cours</option>
-              {typeFilter !== 'TRAINING' && <option value="EXAM_SCHEDULED">Examen programmé</option>}
-              <option value="COMPLETED">{typeFilter === 'CERTIFICATION' ? 'Obtenu' : typeFilter === 'TRAINING' ? 'Terminé' : 'Obtenu / Terminé'}</option>
-              {typeFilter !== 'TRAINING' && <option value="FAILED">Échoué</option>}
+              {activeTab === 'CERTIFICATION' && <option value="EXAM_SCHEDULED">Examen programmé</option>}
+              <option value="COMPLETED">{activeTab === 'CERTIFICATION' ? 'Obtenu' : 'Terminé'}</option>
+              {activeTab === 'CERTIFICATION' && <option value="FAILED">Échoué</option>}
               <option value="CANCELLED">Refusé / Annulé</option>
-              {typeFilter !== 'TRAINING' && <option value="EXPIRED">Expiré</option>}
+              {activeTab === 'CERTIFICATION' && <option value="EXPIRED">Expiré</option>}
             </select>
           </div>
 
           {/* Priority Filter */}
-          <div className="md:col-span-3 space-y-1.5">
+          <div className="md:col-span-4 space-y-1.5">
             <label className="text-xs font-semibold text-gray-500 block">Priorité</label>
             <select
               value={priorityFilter}
@@ -404,12 +431,6 @@ export function ManageAssignments() {
                           <div key={ass.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50/40 hover:border-gray-200 transition-all flex flex-col justify-between space-y-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={clsx(
-                                  "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border",
-                                  ass.itemType === 'CERTIFICATION' ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-blue-50 text-blue-800 border-blue-200"
-                                )}>
-                                  {ass.itemType === 'CERTIFICATION' ? 'Certification' : 'Formation'}
-                                </span>
                                 {renderPriorityBadge(ass.priority, ass.itemType === 'TRAINING')}
                               </div>
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
@@ -417,20 +438,54 @@ export function ManageAssignments() {
                               </span>
                             </div>
 
-                            <div>
-                              <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{ass.itemName}</h4>
-                              <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1">
-                                <span>Provider: {ass.provider || '-'}</span>
-                                {renderDateWarning(ass.examAt, ass.itemType === 'TRAINING')}
+                             <div>
+                              <h4 className="text-xs font-bold text-gray-900 line-clamp-1 flex items-center gap-1.5 flex-wrap">
+                                {ass.itemCode && (
+                                  <span className="px-1.5 py-0.5 text-[10px] font-extrabold text-[#b70f30] bg-red-50 rounded border border-red-100 uppercase">
+                                    {ass.itemCode}
+                                  </span>
+                                )}
+                                <span>{ass.itemName}</span>
+                              </h4>
+                              <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1 flex-wrap gap-1">
+                                <span>Provider: <strong>{ass.provider || '-'}</strong></span>
+                                {status === 'COMPLETED' || status === 'FAILED' ? null : (
+                                  status === 'EXAM_SCHEDULED' && ass.examAt ? (
+                                    <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[12px] text-gray-500">edit_calendar</span>
+                                      <span>Examen: {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                                    </span>
+                                  ) : status === 'PLANNED' && ass.targetDate ? (
+                                    <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
+                                      <span>Prévu: {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
+                                    </span>
+                                  ) : ass.isNearDeadline && ass.targetDate ? (
+                                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 animate-pulse">
+                                      <span className="material-symbols-outlined text-[12px] text-amber-600">warning</span>
+                                      <span>Cible: {new Date(ass.targetDate).toLocaleDateString('fr-FR')} (7j)</span>
+                                    </span>
+                                  ) : ass.targetDate ? (
+                                    <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[12px] text-gray-500">flag</span>
+                                      <span>Cible: {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
+                                    </span>
+                                  ) : ass.examAt ? (
+                                    <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[12px] text-gray-500">event</span>
+                                      <span>Examen: {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                                    </span>
+                                  ) : null
+                                )}
                               </div>
                             </div>
 
-                            {/* Progress Bar (ONLY for Formations) */}
-                            {ass.itemType === 'TRAINING' && (
-                              <div className="space-y-1 bg-white p-2 rounded-lg border border-gray-100">
-                                <div className="flex justify-between text-[10px] font-bold text-gray-600">
-                                  <span>Progression Formation</span>
-                                  <span>{ass.trainingProgressPercentage || 0}%</span>
+                            {/* Progress Bar (Visible while IN_PROGRESS; disappears once exam date is scheduled or terminal) */}
+                            {status === 'IN_PROGRESS' && (
+                              <div className="space-y-1 bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                <div className="flex justify-between text-[10px] font-bold text-gray-700">
+                                  <span>Avancement du parcours</span>
+                                  <span className="text-[#b70f30] font-extrabold">{ass.trainingProgressPercentage || 0}%</span>
                                 </div>
                                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                                   <div 
@@ -672,7 +727,7 @@ export function ManageAssignments() {
         onClose={() => setIsAssignModalOpen(false)}
         onSuccessNotification={showNotification}
         preselectedUserId={modalPreselectedUser}
-        defaultItemType={modalDefaultItemType}
+        defaultItemType={activeTab}
       />
 
     </div>

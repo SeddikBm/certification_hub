@@ -12,6 +12,7 @@ public class AssignmentResponse {
     private String itemType;
     private UUID itemId;
     private String itemName;
+    private String itemCode;
     private String provider;
     private UUID userId;
     private String userName;
@@ -19,12 +20,16 @@ public class AssignmentResponse {
     private String squadName;
     private String managerName;
     private UUID assignedById;
+    private String assignedByName;
+    private String assignedByRole;
     private String statusCertification;
     private String statusTraining;
     private String priority;
     private Instant assignedAt;
     private Instant completedAt;
     private Instant examAt;
+    private Instant targetDate;
+    private Boolean isNearDeadline;
     private Short trainingProgressPercentage;
     private String notes;
 }

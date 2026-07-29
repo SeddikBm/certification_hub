@@ -6,6 +6,7 @@ interface ScheduleExamModalProps {
   onClose: () => void;
   onConfirm: (examDate: string) => void;
   itemName?: string;
+  targetDate?: string;
   isPending?: boolean;
 }
 
@@ -14,6 +15,7 @@ export function ScheduleExamModal({
   onClose,
   onConfirm,
   itemName,
+  targetDate,
   isPending = false
 }: ScheduleExamModalProps) {
   const [examDate, setExamDate] = useState('');
@@ -25,6 +27,10 @@ export function ScheduleExamModal({
     e.preventDefault();
     if (!examDate) {
       setError('Veuillez sélectionner une date d\'examen.');
+      return;
+    }
+    if (targetDate && new Date(examDate) > new Date(targetDate)) {
+      setError('La date d\'examen ne peut pas dépasser la date cible fixée par le Career Manager.');
       return;
     }
     setError('');
@@ -67,6 +73,7 @@ export function ScheduleExamModal({
               type="date"
               value={examDate}
               min={new Date().toISOString().split('T')[0]}
+              max={targetDate ? targetDate.split('T')[0] : undefined}
               onChange={(e) => {
                 setExamDate(e.target.value);
                 if (error) setError('');
@@ -84,9 +91,17 @@ export function ScheduleExamModal({
             )}
           </div>
 
-          <p className="text-[11px] text-gray-500 leading-relaxed bg-blue-50/60 p-3 rounded-xl border border-blue-100/60">
-            Une fois enregistrée, votre date apparaîtra dans votre suivi et alertera votre manager si la date cible approche.
-          </p>
+          {targetDate && (
+            <div className="text-[11px] text-blue-800 leading-relaxed bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 space-y-1">
+              <div className="font-bold flex items-center gap-1 text-blue-900">
+                <span className="material-symbols-outlined text-[15px]">info</span>
+                <span>Information importante :</span>
+              </div>
+              <p>
+                La date d'examen ne doit pas dépasser la date cible fixée par votre Career Manager. Une fois enregistrée, elle sera automatiquement transmise à votre CM et l'alerte de planification disparaîtra de votre tableau.
+              </p>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-2 pt-2">

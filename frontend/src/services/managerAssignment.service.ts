@@ -50,5 +50,10 @@ export const managerAssignmentService = {
 
   removeAssignment: async (managerId: string, collaboratorId: string): Promise<void> => {
     await api.delete(`/manager-assignments/${managerId}/${collaboratorId}`);
+  },
+
+  getMyManagers: async (): Promise<AssignedCollaboratorResponse[]> => {
+    const response = await api.get<AssignedCollaboratorResponse[]>('/manager-assignments/my-managers');
+    return response.data;
   }
 };

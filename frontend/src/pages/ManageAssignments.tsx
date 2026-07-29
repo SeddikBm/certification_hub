@@ -496,7 +496,7 @@ export function ManageAssignments() {
                               </div>
                             )}
 
-                            {isPending ? (
+                            {isPending && user?.role !== 'DIRECTOR' && user?.role !== 'SQUAD_LEAD' ? (
                               <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"

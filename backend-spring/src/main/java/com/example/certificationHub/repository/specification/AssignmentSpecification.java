@@ -51,17 +51,8 @@ public class AssignmentSpecification {
 
                 predicates.add(cb.or(assignedByMe, pendingRoutedToMe, cb.and(nonPending, userInManaged)));
             } else if ("ADMIN".equals(role) || "DIRECTOR".equals(role) || "TRAINING_MANAGER".equals(role)) {
-                // Admin / Director / TM tracks only assignments assigned by themselves (assignedBy == currentUserId)
-                // or assignments of collaborators directly managed by them (if any)
-                List<UUID> allowedIds = new ArrayList<>(managedUserIds);
-                Predicate assignedByMe = cb.equal(root.get("assignedBy").get("id"), currentUserId);
-
-                if (!allowedIds.isEmpty()) {
-                    Predicate userInManaged = root.get("user").get("id").in(allowedIds);
-                    predicates.add(cb.or(userInManaged, assignedByMe));
-                } else {
-                    predicates.add(assignedByMe);
-                }
+                // Admin, Director, and Training Manager have global access to ALL assignments
+                // No security predicate added (unrestricted access)
             }
 
             // --- 2. FILTRES OPTIONNELS ---

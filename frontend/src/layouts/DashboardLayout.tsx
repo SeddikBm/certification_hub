@@ -15,12 +15,12 @@ export function DashboardLayout() {
   };
 
   const navItems = [
-    { name: 'Tableau de Bord', icon: 'dashboard', path: '/dashboard', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'MANAGER'] },
-    { name: 'Certifications', icon: 'verified', path: '/certifications', roles: ['ADMIN', 'CAREER_MANAGER', 'COLLABORATOR', 'MANAGER', 'USER'] },
-    { name: 'Formations', icon: 'school', path: '/trainings', roles: ['ADMIN', 'CAREER_MANAGER', 'COLLABORATOR', 'MANAGER', 'USER'] },
+    { name: 'Tableau de Bord', icon: 'dashboard', path: '/dashboard', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD'] },
+    { name: 'Certifications', icon: 'verified', path: '/certifications', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'COLLABORATOR', 'USER'] },
+    { name: 'Formations', icon: 'school', path: '/trainings', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'COLLABORATOR', 'USER'] },
     { name: 'Mes Assignations', icon: 'task_alt', path: '/my-assignments', roles: ['COLLABORATOR', 'USER'] },
     { name: 'Hiérarchie', icon: 'account_tree', path: '/hierarchy', roles: ['ADMIN'] },
-    { name: 'Gestion des Assignations', icon: 'assignment', path: '/manage-assignments', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD', 'MANAGER'] },
+    { name: 'Gestion des Assignations', icon: 'assignment', path: '/manage-assignments', roles: ['ADMIN', 'DIRECTOR', 'TRAINING_MANAGER', 'CAREER_MANAGER', 'SQUAD_LEAD'] },
     { name: 'Utilisateurs', icon: 'group', path: '/users', roles: ['ADMIN'] },
   ];
 

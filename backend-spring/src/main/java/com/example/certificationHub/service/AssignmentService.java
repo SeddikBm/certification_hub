@@ -196,9 +196,14 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignation introuvable"));
 
-        // Validation RLS (Identique au GET/POST)
-        if (!"ADMIN".equals(currentUserRole) && !assignment.getUser().getId().equals(currentUserId)) {
-            if ("CAREER_MANAGER".equals(currentUserRole)) {
+        // Validation RLS
+        String role = currentUserRole != null ? currentUserRole.replace("ROLE_", "") : "";
+        if ("DIRECTOR".equals(role) || "SQUAD_LEAD".equals(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé : Ce rôle a un accès en lecture seule aux assignations.");
+        }
+
+        if (!"ADMIN".equals(role) && !"TRAINING_MANAGER".equals(role) && !assignment.getUser().getId().equals(currentUserId)) {
+            if ("CAREER_MANAGER".equals(role)) {
                 boolean isManaged = managerAssignmentRepository.existsById(
                         new ManagerAssignment.Id(currentUserId, assignment.getUser().getId()));
                 if (!isManaged)

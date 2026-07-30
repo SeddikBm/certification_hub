@@ -217,35 +217,49 @@ export function MyAssignments() {
           {/* Status Filter */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-semibold text-gray-500">Statut :</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-              className="bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-[#b70f30]"
-            >
-              <option value="">Tous les statuts</option>
-              {activeTab === 'CERTIFICATION' ? (
-                <>
-                  <option value="PENDING_APPROVAL">En attente de validation</option>
-                  <option value="APPROVED">Approuvé</option>
-                  <option value="PLANNED">Planifié</option>
-                  <option value="IN_PROGRESS">En cours</option>
-                  <option value="EXAM_SCHEDULED">Examen programmé</option>
-                  <option value="COMPLETED">Obtenu</option>
-                  <option value="FAILED">Échoué</option>
-                  <option value="CANCELLED">Refusé / Annulé</option>
-                  <option value="EXPIRED">Expiré</option>
-                </>
+            <div className="relative min-w-[180px]">
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-3.5 pr-8 py-2 text-xs font-medium transition-all appearance-none cursor-pointer outline-none"
+              >
+                <option value="">Tous les statuts</option>
+                {activeTab === 'CERTIFICATION' ? (
+                  <>
+                    <option value="PENDING_APPROVAL">En attente de validation</option>
+                    <option value="APPROVED">Approuvé</option>
+                    <option value="PLANNED">Planifié</option>
+                    <option value="IN_PROGRESS">En cours</option>
+                    <option value="EXAM_SCHEDULED">Examen programmé</option>
+                    <option value="COMPLETED">Obtenu</option>
+                    <option value="FAILED">Échoué</option>
+                    <option value="CANCELLED">Refusé / Annulé</option>
+                    <option value="EXPIRED">Expiré</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="PENDING_APPROVAL">En attente de validation</option>
+                    <option value="APPROVED">Approuvé</option>
+                    <option value="PLANNED">Planifié</option>
+                    <option value="IN_PROGRESS">En cours</option>
+                    <option value="COMPLETED">Terminé</option>
+                    <option value="CANCELLED">Refusé / Annulé</option>
+                  </>
+                )}
+              </select>
+              {statusFilter ? (
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter(''); setPage(0); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer ce filtre"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
               ) : (
-                <>
-                  <option value="PENDING_APPROVAL">En attente de validation</option>
-                  <option value="APPROVED">Approuvé</option>
-                  <option value="PLANNED">Planifié</option>
-                  <option value="IN_PROGRESS">En cours</option>
-                  <option value="COMPLETED">Terminé</option>
-                  <option value="CANCELLED">Refusé / Annulé</option>
-                </>
+                <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[18px]">expand_more</span>
               )}
-            </select>
+            </div>
           </div>
 
         </div>
@@ -253,70 +267,67 @@ export function MyAssignments() {
 
       {/* Main Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden relative min-h-[400px]">
-        {isLoading && (
-          <div className="absolute inset-0 z-10 bg-surface/60 backdrop-blur-xs flex flex-col items-center justify-center">
-            <div className="w-10 h-10 border-4 border-red-200 border-t-[#b70f30] rounded-full animate-spin mb-3"></div>
-            <p className="text-gray-500 font-medium text-xs">Chargement de vos assignations...</p>
+        
+        {isLoading ? (
+          <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+            <div className="w-8 h-8 border-3 border-red-200 border-t-[#b70f30] rounded-full animate-spin"></div>
+            <p className="text-xs text-gray-500 font-medium">Chargement de vos assignations...</p>
           </div>
-        )}
-
-        {error && (
-          <div className="p-12 text-center text-red-600 flex flex-col items-center justify-center">
-            <span className="material-symbols-outlined text-[48px] mb-2">error</span>
-            <p className="text-xs font-medium">Échec du chargement des assignations.</p>
+        ) : error ? (
+          <div className="p-12 text-center space-y-2">
+            <span className="material-symbols-outlined text-red-500 text-3xl">error</span>
+            <p className="text-xs font-semibold text-gray-700">Erreur de chargement des assignations</p>
           </div>
-        )}
-
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead>
-              <tr className="bg-[#fdf4f5] border-b border-red-100 text-[#7c2d37] text-xs font-bold">
-                <th className="p-3.5 pl-6 w-[26%]">Intitulé de l'Item</th>
-                <th className="p-3.5 w-[15%]">Provider / Organisme</th>
-                <th className="p-3.5 text-center w-[13%]">Date d'Assignation</th>
-                <th className="p-3.5 text-center w-[14%]">Statut</th>
-                <th className="p-3.5 text-center w-[18%]">Date Cible / Examen</th>
-                <th className="p-3.5 text-center w-[14%]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {!assignmentsPage?.content || assignmentsPage.content.length === 0 ? (
+        ) : assignmentsPage.content.length === 0 ? (
+          <div className="p-12 text-center space-y-2">
+            <span className="material-symbols-outlined text-gray-300 text-4xl">assignment_late</span>
+            <p className="text-xs text-gray-500 font-medium">Aucune assignation trouvée</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50/80 border-b border-gray-100 text-gray-600 font-bold">
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-gray-400 text-xs">
-                    Aucune assignation trouvée pour le filtre sélectionné.
-                  </td>
+                  <th className="p-3.5">Certif / Formation</th>
+                  <th className="p-3.5 text-center">Assigné Par</th>
+                  <th className="p-3.5 text-center">Date Attribution</th>
+                  <th className="p-3.5 text-center">Statut</th>
+                  <th className="p-3.5 text-center">Date Cible / Examen</th>
+                  <th className="p-3.5 text-center">Actions</th>
                 </tr>
-              ) : (
-                assignmentsPage.content.map(ass => {
-                  const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
+              </thead>
+              <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                {assignmentsPage.content.map((ass) => {
+                  const status = activeTab === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
 
                   return (
-                    <tr key={ass.id} className="hover:bg-[#fcf8f8] transition-colors group">
-                      
-                      {/* Item Name & Code */}
-                      <td className="p-3.5 pl-6">
-                        <div>
-                          <div className="font-bold text-gray-900 text-xs flex items-center gap-1.5 flex-wrap">
-                            {ass.itemCode && (
-                              <span className="px-1.5 py-0.5 text-[10px] font-extrabold text-[#b70f30] bg-red-50 rounded border border-red-100/80 uppercase">
-                                {ass.itemCode}
-                              </span>
-                            )}
-                            <span>{ass.itemName || `Item ID: ${ass.itemId}`}</span>
+                    <tr key={ass.id} className="hover:bg-gray-50/60 transition-colors">
+                      {/* Name & Code */}
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-red-50 text-[#b70f30] flex items-center justify-center flex-shrink-0">
+                            <span className="material-symbols-outlined text-[18px]">
+                              {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
+                            </span>
                           </div>
-                          {ass.notes && <div className="text-[11px] text-gray-500 italic mt-0.5">{ass.notes}</div>}
+                          <div>
+                            <div className="font-bold text-gray-900 line-clamp-1">{ass.itemName || '-'}</div>
+                            <div className="text-[11px] text-gray-400">
+                              {ass.itemCode ? <span className="font-semibold text-gray-600 mr-1.5">{ass.itemCode}</span> : null}
+                              Provider: <strong>{ass.provider || '-'}</strong>
+                            </div>
+                          </div>
                         </div>
                       </td>
 
-                      {/* Provider */}
-                      <td className="p-3.5">
-                        <span className="text-xs font-semibold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-md">
-                          {ass.provider || 'N/A'}
-                        </span>
+                      {/* Assigned By */}
+                      <td className="p-3.5 text-center">
+                        <div className="text-xs font-semibold text-gray-900">{ass.assignedByName || '-'}</div>
+                        <div className="text-[10px] text-gray-400">{ass.assignedByRole || 'SYSTEM'}</div>
                       </td>
 
                       {/* Assigned At */}
-                      <td className="p-3.5 text-center text-xs text-gray-600 font-medium">
+                      <td className="p-3.5 text-center text-gray-500">
                         {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}
                       </td>
 
@@ -334,11 +345,6 @@ export function MyAssignments() {
                             <span className="material-symbols-outlined text-[14px] text-gray-500">edit_calendar</span>
                             <span>Examen : {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
                           </div>
-                        ) : status === 'PLANNED' && ass.targetDate ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200/80 shadow-2xs">
-                            <span className="material-symbols-outlined text-[14px] text-blue-600">event_repeat</span>
-                            <span>Prévu : {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
-                          </div>
                         ) : ass.isNearDeadline && ass.targetDate ? (
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs animate-pulse" title="Moins de 7 jours pour planifier votre examen !">
                             <span className="material-symbols-outlined text-[14px] text-amber-600">warning</span>
@@ -350,9 +356,9 @@ export function MyAssignments() {
                             <span>Cible : {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
                           </div>
                         ) : ass.examAt ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200/80 shadow-2xs">
-                            <span className="material-symbols-outlined text-[14px] text-gray-500">event</span>
-                            <span>Examen : {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200/80 shadow-2xs">
+                            <span className="material-symbols-outlined text-[14px] text-blue-600">event_repeat</span>
+                            <span>Prévu : {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
                           </div>
                         ) : (
                           <span className="text-xs text-gray-400 italic">Non définie</span>
@@ -519,9 +525,8 @@ export function MyAssignments() {
 
                     </tr>
                   );
-                })
-              )}
-            </tbody>
+                })}
+              </tbody>
           </table>
         </div>
 
@@ -686,11 +691,12 @@ export function MyAssignments() {
                 type="button" 
                 onClick={() => {
                   if (startDateModalState.assignmentId) {
+                    const isoExamAt = plannedStartDate ? new Date(plannedStartDate).toISOString() : undefined;
                     updateStatusMutation.mutate({
                       id: startDateModalState.assignmentId,
                       data: startDateModalState.itemType === 'CERTIFICATION'
-                        ? { statusCertification: 'PLANNED' }
-                        : { statusTraining: 'PLANNED' }
+                        ? { statusCertification: 'PLANNED', examAt: isoExamAt }
+                        : { statusTraining: 'PLANNED', examAt: isoExamAt }
                     });
                     setStartDateModalState({ isOpen: false, assignmentId: null, itemType: undefined });
                     showNotification('success', 'Statut planifié avec succès !');

@@ -21,12 +21,13 @@ public class UserSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             // --- 1. SÉCURITÉ (RLS APPLICATIVE) ---
-            if (!"ADMIN".equals(currentUserRole)) {
-                if ("CAREER_MANAGER".equals(currentUserRole)) {
+            String r = currentUserRole != null ? currentUserRole.replace("ROLE_", "") : "";
+            if (!"ADMIN".equals(r) && !"TRAINING_MANAGER".equals(r)) {
+                if ("CAREER_MANAGER".equals(r)) {
                     List<UUID> allowedIds = new ArrayList<>(managedUserIds);
                     allowedIds.add(currentUserId);
                     predicates.add(root.get("id").in(allowedIds));
-                } else if ("SQUAD_LEAD".equals(currentUserRole) && !leadSquadIds.isEmpty()) {
+                } else if ("SQUAD_LEAD".equals(r) && !leadSquadIds.isEmpty()) {
                     Predicate isSelf = cb.equal(root.get("id"), currentUserId);
                     Predicate isInLeadSquads = root.get("squad").get("id").in(leadSquadIds);
                     predicates.add(cb.or(isSelf, isInLeadSquads));

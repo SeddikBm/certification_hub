@@ -22,6 +22,7 @@ import com.example.certificationHub.repository.UserRepository;
 import com.example.certificationHub.repository.specification.AssignmentSpecification;
 import com.example.certificationHub.validator.AssignmentWorkflowValidator;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -115,11 +116,17 @@ public class AssignmentService {
                 throw new ResourceNotFoundException("Formation introuvable");
         }
 
-        // Vérification des doublons actifs
-        boolean exists = assignmentRepository.existsByUserIdAndItemIdAndItemTypeAndCompletedAtIsNull(
-                collaborator.getId(), request.getItemId(), request.getItemType());
-        if (exists) {
-            throw new ResourceConflictException("Une assignation active existe déjà pour cet utilisateur et cet item.");
+        // Vérification des doublons actifs à l'échelle du système
+        List<Assignment> existingAssignments = assignmentRepository.findByUserId(collaborator.getId());
+        boolean existsActive = existingAssignments.stream().anyMatch(a ->
+            a.getItemType() == request.getItemType() &&
+            request.getItemId().equals(a.getItemId()) &&
+            a.getCompletedAt() == null &&
+            (a.getStatusCertification() == null || a.getStatusCertification() != com.example.certificationHub.enumeration.StatusCertification.CANCELLED) &&
+            (a.getStatusTraining() == null || a.getStatusTraining() != com.example.certificationHub.enumeration.StatusTraining.CANCELLED)
+        );
+        if (existsActive) {
+            throw new ResourceConflictException("Ce collaborateur est déjà assigné à cette certification/formation.");
         }
 
         User assignedBy = userRepository.findById(currentUserId).orElseThrow();
@@ -133,6 +140,11 @@ public class AssignmentService {
                     examAt = java.time.LocalDate.parse(request.getTargetDate()).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
                 } catch (Exception ignored2) {}
             }
+        }
+
+        Instant min7Days = java.time.LocalDate.now().plusDays(6).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        if (examAt != null && examAt.isBefore(min7Days)) {
+            throw new ResourceConflictException("La date cible doit être fixée au moins 7 jours à l'avance.");
         }
 
         java.util.Map<String, Object> metadata = new java.util.HashMap<>();
@@ -154,19 +166,18 @@ public class AssignmentService {
                 .metadata(metadata.isEmpty() ? null : metadata)
                 .build();
 
-        // Management assignments: if targetDate/examAt is provided, set to PLANNED; else APPROVED. Collaborator self-requests start as PENDING_APPROVAL.
+        // Management assignments start as APPROVED. Collaborator self-requests start as PENDING_APPROVAL.
         boolean isDirectManagementAssignment = !currentUserId.equals(collaborator.getId());
-        boolean hasTargetDate = examAt != null;
 
         if (request.getItemType() == ItemType.CERTIFICATION) {
             if (isDirectManagementAssignment) {
-                assignment.setStatusCertification(hasTargetDate ? StatusCertification.PLANNED : StatusCertification.APPROVED);
+                assignment.setStatusCertification(StatusCertification.APPROVED);
             } else {
                 assignment.setStatusCertification(StatusCertification.PENDING_APPROVAL);
             }
         } else {
             if (isDirectManagementAssignment) {
-                assignment.setStatusTraining(hasTargetDate ? StatusTraining.PLANNED : StatusTraining.APPROVED);
+                assignment.setStatusTraining(StatusTraining.APPROVED);
             } else {
                 assignment.setStatusTraining(StatusTraining.PENDING_APPROVAL);
             }
@@ -291,5 +302,47 @@ public class AssignmentService {
         }
 
         return assignmentMapper.toResponse(updatedAssignment);
+    }
+
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void autoFailExpiredAssignments() {
+        List<Assignment> assignments = assignmentRepository.findAll();
+        Instant now = Instant.now();
+        for (Assignment a : assignments) {
+            if (a.getCompletedAt() != null) continue;
+
+            Instant targetDate = null;
+            if (a.getMetadata() != null && a.getMetadata().containsKey("targetDate")) {
+                try {
+                    targetDate = Instant.parse(a.getMetadata().get("targetDate").toString());
+                } catch (Exception ignored) {}
+            }
+            if (targetDate == null && a.getExamAt() != null) {
+                targetDate = a.getExamAt();
+            }
+
+            if (targetDate != null && targetDate.isBefore(now)) {
+                if (a.getItemType() == ItemType.CERTIFICATION) {
+                    if (a.getStatusCertification() != StatusCertification.EXAM_SCHEDULED &&
+                        a.getStatusCertification() != StatusCertification.COMPLETED &&
+                        a.getStatusCertification() != StatusCertification.FAILED &&
+                        a.getStatusCertification() != StatusCertification.CANCELLED) {
+                        
+                        a.setStatusCertification(StatusCertification.FAILED);
+                        a.setCompletedAt(now);
+                        assignmentRepository.save(a);
+                    }
+                } else if (a.getItemType() == ItemType.TRAINING) {
+                    if (a.getStatusTraining() != StatusTraining.COMPLETED &&
+                        a.getStatusTraining() != StatusTraining.CANCELLED) {
+                        
+                        a.setStatusTraining(StatusTraining.CANCELLED);
+                        a.setCompletedAt(now);
+                        assignmentRepository.save(a);
+                    }
+                }
+            }
+        }
     }
 }

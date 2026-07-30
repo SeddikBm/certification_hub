@@ -316,46 +316,84 @@ export function ManageAssignments() {
                 placeholder="Nom, email..."
                 value={collabSearch}
                 onChange={(e) => setCollabSearch(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 focus:border-[#b70f30] rounded-xl pl-10 pr-4 py-2 text-xs outline-none"
+                className="w-full bg-gray-50/50 border border-gray-200 text-gray-900 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-10 pr-9 py-2.5 text-xs font-medium outline-none transition-all"
               />
+              {collabSearch && (
+                <button
+                  type="button"
+                  onClick={() => setCollabSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer la recherche"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* Dynamic Status Filter */}
           <div className="md:col-span-4 space-y-1.5">
             <label className="text-xs font-semibold text-gray-500 block">Statut</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-              className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 outline-none focus:border-[#b70f30]"
-            >
-              <option value="">Tous les statuts</option>
-              <option value="PENDING_APPROVAL">En attente de validation</option>
-              <option value="APPROVED">Approuvé</option>
-              <option value="PLANNED">Planifié</option>
-              <option value="IN_PROGRESS">En cours</option>
-              {activeTab === 'CERTIFICATION' && <option value="EXAM_SCHEDULED">Examen programmé</option>}
-              <option value="COMPLETED">{activeTab === 'CERTIFICATION' ? 'Obtenu' : 'Terminé'}</option>
-              {activeTab === 'CERTIFICATION' && <option value="FAILED">Échoué</option>}
-              <option value="CANCELLED">Refusé / Annulé</option>
-              {activeTab === 'CERTIFICATION' && <option value="EXPIRED">Expiré</option>}
-            </select>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-medium transition-all appearance-none cursor-pointer outline-none"
+              >
+                <option value="">Tous les statuts</option>
+                <option value="PENDING_APPROVAL">En attente de validation</option>
+                <option value="APPROVED">Approuvé</option>
+                <option value="PLANNED">Planifié</option>
+                <option value="IN_PROGRESS">En cours</option>
+                {activeTab === 'CERTIFICATION' && <option value="EXAM_SCHEDULED">Examen programmé</option>}
+                <option value="COMPLETED">{activeTab === 'CERTIFICATION' ? 'Obtenu' : 'Terminé'}</option>
+                {activeTab === 'CERTIFICATION' && <option value="FAILED">Échoué</option>}
+                <option value="CANCELLED">Refusé / Annulé</option>
+                {activeTab === 'CERTIFICATION' && <option value="EXPIRED">Expiré</option>}
+              </select>
+              {statusFilter ? (
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter(''); setPage(0); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer ce filtre"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              ) : (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[18px]">expand_more</span>
+              )}
+            </div>
           </div>
 
           {/* Priority Filter */}
           <div className="md:col-span-4 space-y-1.5">
             <label className="text-xs font-semibold text-gray-500 block">Priorité</label>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 outline-none focus:border-[#b70f30]"
-            >
-              <option value="">Toutes les priorités</option>
-              <option value="MANDATORY">Obligatoire</option>
-              <option value="HIGH">Haute</option>
-              <option value="NORMAL">Normale</option>
-              <option value="OPTIONAL">Optionnelle</option>
-            </select>
+            <div className="relative">
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 focus:border-[#b70f30] focus:ring-2 focus:ring-[#b70f30]/10 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-medium transition-all appearance-none cursor-pointer outline-none"
+              >
+                <option value="">Toutes les priorités</option>
+                <option value="MANDATORY">Obligatoire</option>
+                <option value="HIGH">Haute</option>
+                <option value="NORMAL">Normale</option>
+                <option value="OPTIONAL">Optionnelle</option>
+              </select>
+              {priorityFilter ? (
+                <button
+                  type="button"
+                  onClick={() => setPriorityFilter('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-colors"
+                  title="Effacer ce filtre"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                </button>
+              ) : (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[18px]">expand_more</span>
+              )}
+            </div>
           </div>
 
         </div>
@@ -450,16 +488,35 @@ export function ManageAssignments() {
                               <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1 flex-wrap gap-1">
                                 <span>Provider: <strong>{ass.provider || '-'}</strong></span>
                                 {status === 'COMPLETED' || status === 'FAILED' ? null : (
-                                  status === 'EXAM_SCHEDULED' && ass.examAt ? (
+                                  status === 'EXAM_SCHEDULED' ? (
                                     <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
                                       <span className="material-symbols-outlined text-[12px] text-gray-500">edit_calendar</span>
-                                      <span>Examen: {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                                      <span>Examen: {ass.examAt ? new Date(ass.examAt).toLocaleDateString('fr-FR') : ass.targetDate ? new Date(ass.targetDate).toLocaleDateString('fr-FR') : '-'}</span>
                                     </span>
-                                  ) : status === 'PLANNED' && ass.targetDate ? (
-                                    <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
-                                      <span>Prévu: {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
-                                    </span>
+                                  ) : status === 'PLANNED' ? (
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {ass.targetDate && (
+                                        <span className={clsx(
+                                          "text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1",
+                                          ass.isNearDeadline ? "text-amber-800 bg-amber-50 border-amber-200 font-bold animate-pulse" : "text-gray-700 bg-gray-100 border-gray-200"
+                                        )}>
+                                          <span className="material-symbols-outlined text-[12px] text-gray-500">flag</span>
+                                          <span>Cible: {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
+                                        </span>
+                                      )}
+                                      {ass.examAt && (
+                                        <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
+                                          <span>Prévu: {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                                        </span>
+                                      )}
+                                      {!ass.targetDate && !ass.examAt && (
+                                        <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
+                                          <span>Prévu</span>
+                                        </span>
+                                      )}
+                                    </div>
                                   ) : ass.isNearDeadline && ass.targetDate ? (
                                     <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 animate-pulse">
                                       <span className="material-symbols-outlined text-[12px] text-amber-600">warning</span>
@@ -480,7 +537,7 @@ export function ManageAssignments() {
                               </div>
                             </div>
 
-                            {/* Progress Bar (Visible while IN_PROGRESS; disappears once exam date is scheduled or terminal) */}
+                            {/* Progress Bar (Visible ONLY while IN_PROGRESS) */}
                             {status === 'IN_PROGRESS' && (
                               <div className="space-y-1 bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
                                 <div className="flex justify-between text-[10px] font-bold text-gray-700">

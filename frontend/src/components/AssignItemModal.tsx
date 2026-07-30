@@ -146,13 +146,13 @@ export function AssignItemModal({
     },
     onError: (err: any) => {
       console.error(err);
-      const detailMsg = err.response?.data?.detail || err.response?.data?.message || err.message;
+      const serverMsg = err.response?.data?.message || err.response?.data?.detail;
       if (err.response?.status === 409) {
-        onSuccessNotification('error', detailMsg || 'Une assignation active existe déjà pour ce collaborateur et cet item.');
+        onSuccessNotification('error', serverMsg || 'Ce collaborateur a déjà une assignation en cours pour cette certification/formation.');
       } else if (err.response?.status === 403) {
-        onSuccessNotification('error', detailMsg || 'Accès refusé. Vous ne pouvez assigner qu\'à vos collaborateurs.');
+        onSuccessNotification('error', serverMsg || 'Accès refusé. Vous n\'avez pas les droits d\'effectuer cette assignation.');
       } else {
-        onSuccessNotification('error', detailMsg || 'Erreur lors de la création de l\'assignation.');
+        onSuccessNotification('error', serverMsg || 'Erreur lors de la création de l\'assignation.');
       }
     }
   });
@@ -435,11 +435,12 @@ export function AssignItemModal({
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-gray-700">
-                Date Cible (Deadline)
+                Date Cible (Deadline, min. 7 jours)
               </label>
               <input
                 type="date"
                 value={targetDate}
+                min={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                 onChange={(e) => setTargetDate(e.target.value)}
                 className="w-full p-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
               />

@@ -460,7 +460,7 @@ export function Certifications() {
                             </button>
                             <button 
                               type="button"
-                              className="w-8 h-8 rounded-lg text-gray-400 hover:text-[#b70f30] hover:bg-red-50 transition-all flex items-center justify-center"
+                              className="w-8 h-8 rounded-lg text-[#b70f30] hover:bg-red-50 transition-all flex items-center justify-center cursor-pointer"
                               onClick={(e) => { 
                                 e.stopPropagation(); 
                                 setDeleteError(null); 

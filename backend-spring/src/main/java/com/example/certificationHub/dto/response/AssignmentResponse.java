@@ -18,6 +18,7 @@ public class AssignmentResponse {
     private String userName;
     private String userEmail;
     private String squadName;
+    private UUID managerId;
     private String managerName;
     private UUID assignedById;
     private String assignedByName;
@@ -27,6 +28,7 @@ public class AssignmentResponse {
     private String priority;
     private Instant assignedAt;
     private Instant completedAt;
+    private Instant plannedStartDate;
     private Instant examAt;
     private Instant targetDate;
     private Boolean isNearDeadline;

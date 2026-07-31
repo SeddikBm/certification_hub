@@ -91,14 +91,24 @@ export function ScheduleExamModal({
             )}
           </div>
 
-          {targetDate && (
+          {targetDate ? (
             <div className="text-[11px] text-blue-800 leading-relaxed bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 space-y-1">
               <div className="font-bold flex items-center gap-1 text-blue-900">
                 <span className="material-symbols-outlined text-[15px]">info</span>
                 <span>Information importante :</span>
               </div>
               <p>
-                La date d'examen ne doit pas dépasser la date cible fixée par votre Career Manager. Une fois enregistrée, elle sera automatiquement transmise à votre CM et l'alerte de planification disparaîtra de votre tableau.
+                La date d'examen ne doit pas dépasser la date cible fixée par votre Career Manager. Une fois enregistrée, elle sera automatiquement transmise à votre CM.
+              </p>
+            </div>
+          ) : (
+            <div className="text-[11px] text-blue-800 leading-relaxed bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 space-y-1">
+              <div className="font-bold flex items-center gap-1 text-blue-900">
+                <span className="material-symbols-outlined text-[15px]">info</span>
+                <span>Recommandation :</span>
+              </div>
+              <p>
+                Aucune date cible n'a été imposée. Choisissez une date d'examen vous laissant suffisamment de temps pour réviser et réussir votre certification.
               </p>
             </div>
           )}

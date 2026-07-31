@@ -38,18 +38,7 @@ public class AssignmentSpecification {
                 Predicate isPendingTrain = cb.equal(root.get("statusTraining"), StatusTraining.PENDING_APPROVAL);
                 Predicate isPending = cb.or(isPendingCertif, isPendingTrain);
 
-                Predicate targetManagerMatches = cb.equal(
-                    cb.function("jsonb_extract_path_text", String.class, root.get("metadata"), cb.literal("targetManagerId")),
-                    currentUserId.toString()
-                );
-                Predicate targetManagerNull = cb.isNull(
-                    cb.function("jsonb_extract_path_text", String.class, root.get("metadata"), cb.literal("targetManagerId"))
-                );
-
-                Predicate pendingRoutedToMe = cb.and(isPending, userInManaged, cb.or(targetManagerMatches, targetManagerNull));
-                Predicate nonPending = cb.not(isPending);
-
-                predicates.add(cb.or(assignedByMe, pendingRoutedToMe, cb.and(nonPending, userInManaged)));
+                predicates.add(cb.or(assignedByMe, userInManaged));
             } else if ("ADMIN".equals(role) || "DIRECTOR".equals(role) || "TRAINING_MANAGER".equals(role)) {
                 // Admin, Director, and Training Manager have global access to ALL assignments
                 // No security predicate added (unrestricted access)

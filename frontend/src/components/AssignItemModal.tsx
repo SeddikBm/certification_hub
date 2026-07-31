@@ -59,35 +59,38 @@ export function AssignItemModal({
   const { data: adminCollabsPage, isLoading: isLoadingAdminCollabs } = useQuery({
     queryKey: ['adminCollaboratorsList', userSearch],
     queryFn: () => userService.getUsers({
-      role: 'COLLABORATOR',
       search: userSearch || undefined,
-      size: 50
+      size: 100
     }),
     enabled: isOpen && isAdminOrTM
   });
 
   const collaboratorsList = useMemo(() => {
+    let list: Array<{ id: string; name: string; email?: string; squadName?: string }> = [];
     if (isAdminOrTM) {
-      return (adminCollabsPage?.content || []).map(u => ({
+      list = (adminCollabsPage?.content || []).map(u => ({
         id: u.id,
         name: `${u.firstName} ${u.lastName}`,
         email: u.email,
         squadName: u.squadName
       }));
-    }
-    const filtered = userSearch.trim()
-      ? managedCollabs.filter(c => 
-          `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().includes(userSearch.toLowerCase()) ||
-          (c.email || '').toLowerCase().includes(userSearch.toLowerCase())
-        )
-      : managedCollabs;
+    } else {
+      const filtered = userSearch.trim()
+        ? managedCollabs.filter(c => 
+            `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().includes(userSearch.toLowerCase()) ||
+            (c.email || '').toLowerCase().includes(userSearch.toLowerCase())
+          )
+        : managedCollabs;
 
-    return filtered.map(c => ({
-      id: c.collaboratorId || (c as any).id,
-      name: c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : (c as any).name || (c as any).userName || 'Collaborateur',
-      email: c.email,
-      squadName: c.squadName
-    }));
+      list = filtered.map(c => ({
+        id: c.collaboratorId || (c as any).id,
+        name: c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : (c as any).name || (c as any).userName || 'Collaborateur',
+        email: c.email,
+        squadName: c.squadName
+      }));
+    }
+
+    return list;
   }, [isAdminOrTM, adminCollabsPage?.content, managedCollabs, userSearch]);
 
   const selectedCollabInfo = useMemo(() => {

@@ -9,7 +9,7 @@ import clsx from 'clsx';
 
 export function ManageAssignments() {
   const { user } = useAuth();
-  const isDirectView = user?.role === 'CAREER_MANAGER' || user?.role === 'SQUAD_LEAD';
+  const isDirectView = user?.role === 'CAREER_MANAGER';
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
@@ -74,10 +74,12 @@ export function ManageAssignments() {
       let mName = '';
       if (user?.role === 'CAREER_MANAGER') {
         mName = `Mon Équipe (${user.name || 'Career Manager'})`;
+      } else if (ass.assignedByRole === 'ADMIN' || ass.assignedByRole === 'TRAINING_MANAGER') {
+        mName = `Attribué par : ${ass.assignedByName || 'Admin/TM'}`;
       } else if (user?.id && ass.assignedById === user.id) {
         mName = `Attribué par : ${ass.assignedByName || user.name || 'Moi'}`;
       } else if (ass.managerName) {
-        mName = ass.managerName.startsWith('Équipe') ? ass.managerName : `Équipe : ${ass.managerName}`;
+        mName = ass.managerName.replace(/^Équipe\s*:\s*/i, '');
       } else if (ass.assignedByName) {
         mName = `Attribué par : ${ass.assignedByName}`;
       } else {
@@ -183,6 +185,30 @@ export function ManageAssignments() {
       </span>
     );
   };
+  const renderStatusBadge = (status: string | undefined) => {
+    if (!status) return null;
+
+    const badgeConfig: Record<string, { bg: string, text: string, border: string, label: string, icon: string }> = {
+      PENDING_APPROVAL: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'En attente', icon: 'hourglass_top' },
+      APPROVED: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', label: 'Approuvé', icon: 'verified' },
+      PLANNED: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', label: 'Planifié', icon: 'event' },
+      IN_PROGRESS: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', label: 'En cours', icon: 'autorenew' },
+      EXAM_SCHEDULED: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', label: 'Examen Programmé', icon: 'edit_calendar' },
+      COMPLETED: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', label: 'Obtenu / Terminé', icon: 'check_circle' },
+      FAILED: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: 'Échoué', icon: 'cancel' },
+      CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300', label: 'Annulé / Refusé', icon: 'block' },
+      EXPIRED: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', label: 'Expiré', icon: 'history' }
+    };
+
+    const cfg = badgeConfig[status] || { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200', label: status, icon: 'info' };
+
+    return (
+      <span className={clsx("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border", cfg.bg, cfg.text, cfg.border)}>
+        <span className="material-symbols-outlined text-[13px]">{cfg.icon}</span>
+        <span>{cfg.label}</span>
+      </span>
+    );
+  };
 
   const renderDateWarning = (dateStr: string | undefined, isTraining?: boolean) => {
     if (!dateStr) return null;
@@ -211,6 +237,120 @@ export function ManageAssignments() {
         <span className="material-symbols-outlined text-[13px]">calendar_today</span>
         <span>{label} : {targetDate.toLocaleDateString('fr-FR')}</span>
       </span>
+    );
+  };
+
+  const renderAssignmentCard = (ass: AssignmentResponse) => {
+    const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
+    const isPending = status === 'PENDING_APPROVAL';
+
+    return (
+      <div key={ass.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50/40 hover:border-gray-200 transition-all flex flex-col justify-between space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {renderPriorityBadge(ass.priority, ass.itemType === 'TRAINING')}
+          </div>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
+            {formatStatus(status, ass.itemType)}
+          </span>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-bold text-gray-900 line-clamp-1 flex items-center gap-1.5 flex-wrap">
+            {ass.itemCode && (
+              <span className="px-1.5 py-0.5 text-[10px] font-extrabold text-[#b70f30] bg-red-50 rounded border border-red-100 uppercase">
+                {ass.itemCode}
+              </span>
+            )}
+            <span>{ass.itemName}</span>
+          </h4>
+          <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1 flex-wrap gap-1">
+            <span>Provider: <strong>{ass.provider || '-'}</strong></span>
+            {status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED' ? (
+              <span className="text-[10px] font-semibold text-gray-400">-</span>
+            ) : (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {ass.plannedStartDate && (
+                  <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
+                    <span>Planifié: {new Date(ass.plannedStartDate).toLocaleDateString('fr-FR')}</span>
+                  </span>
+                )}
+                {ass.targetDate && (
+                  <span className={clsx(
+                    "text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1",
+                    ass.isNearDeadline ? "text-amber-800 bg-amber-50 border-amber-200 font-bold animate-pulse" : "text-gray-700 bg-gray-100 border-gray-200"
+                  )}>
+                    <span className="material-symbols-outlined text-[12px] text-gray-500">flag</span>
+                    <span>Cible: {new Date(ass.targetDate).toLocaleDateString('fr-FR')}{ass.isNearDeadline ? ' (7j)' : ''}</span>
+                  </span>
+                )}
+                {ass.examAt && (
+                  <span className="text-[10px] font-semibold text-rose-800 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px] text-rose-600">edit_calendar</span>
+                    <span>Examen: {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                  </span>
+                )}
+                {!ass.plannedStartDate && !ass.targetDate && !ass.examAt && (
+                  <span className="text-[10px] font-semibold text-gray-400">-</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Progress Bar (Visible ONLY while IN_PROGRESS) */}
+        {status === 'IN_PROGRESS' && (
+          <div className="space-y-1 bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+            <div className="flex justify-between text-[10px] font-bold text-gray-700">
+              <span>Avancement du parcours</span>
+              <span className="text-[#b70f30] font-extrabold">{ass.trainingProgressPercentage || 0}%</span>
+            </div>
+            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-[#b70f30] h-full rounded-full transition-all duration-300"
+                style={{ width: `${ass.trainingProgressPercentage || 0}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
+        {isPending && user?.role !== 'DIRECTOR' && user?.role !== 'SQUAD_LEAD' ? (
+          <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => updateStatusMutation.mutate({
+                id: ass.id,
+                data: ass.itemType === 'CERTIFICATION'
+                  ? { statusCertification: 'CANCELLED' }
+                  : { statusTraining: 'CANCELLED' }
+              })}
+              className="px-2.5 py-1 text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">close</span>
+              <span>Refuser</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => updateStatusMutation.mutate({
+                id: ass.id,
+                data: ass.itemType === 'CERTIFICATION'
+                  ? { statusCertification: 'APPROVED' }
+                  : { statusTraining: 'APPROVED' }
+              })}
+              className="px-2.5 py-1 text-[11px] font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+            >
+              <span className="material-symbols-outlined text-[14px]">check</span>
+              <span>Approuver</span>
+            </button>
+          </div>
+        ) : (
+          <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+            <span>Attribué le: {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}</span>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -461,136 +601,7 @@ export function ManageAssignments() {
 
                     {/* Assignment Cards Grid */}
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
-                      {group.assignments.map((ass) => {
-                        const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
-                        const isPending = status === 'PENDING_APPROVAL';
-
-                        return (
-                          <div key={ass.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50/40 hover:border-gray-200 transition-all flex flex-col justify-between space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                {renderPriorityBadge(ass.priority, ass.itemType === 'TRAINING')}
-                              </div>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
-                                {formatStatus(status, ass.itemType)}
-                              </span>
-                            </div>
-
-                             <div>
-                              <h4 className="text-xs font-bold text-gray-900 line-clamp-1 flex items-center gap-1.5 flex-wrap">
-                                {ass.itemCode && (
-                                  <span className="px-1.5 py-0.5 text-[10px] font-extrabold text-[#b70f30] bg-red-50 rounded border border-red-100 uppercase">
-                                    {ass.itemCode}
-                                  </span>
-                                )}
-                                <span>{ass.itemName}</span>
-                              </h4>
-                              <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1 flex-wrap gap-1">
-                                <span>Provider: <strong>{ass.provider || '-'}</strong></span>
-                                {status === 'COMPLETED' || status === 'FAILED' ? null : (
-                                  status === 'EXAM_SCHEDULED' ? (
-                                    <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-[12px] text-gray-500">edit_calendar</span>
-                                      <span>Examen: {ass.examAt ? new Date(ass.examAt).toLocaleDateString('fr-FR') : ass.targetDate ? new Date(ass.targetDate).toLocaleDateString('fr-FR') : '-'}</span>
-                                    </span>
-                                  ) : status === 'PLANNED' ? (
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      {ass.targetDate && (
-                                        <span className={clsx(
-                                          "text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1",
-                                          ass.isNearDeadline ? "text-amber-800 bg-amber-50 border-amber-200 font-bold animate-pulse" : "text-gray-700 bg-gray-100 border-gray-200"
-                                        )}>
-                                          <span className="material-symbols-outlined text-[12px] text-gray-500">flag</span>
-                                          <span>Cible: {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
-                                        </span>
-                                      )}
-                                      {ass.examAt && (
-                                        <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
-                                          <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
-                                          <span>Prévu: {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
-                                        </span>
-                                      )}
-                                      {!ass.targetDate && !ass.examAt && (
-                                        <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
-                                          <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
-                                          <span>Prévu</span>
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : ass.isNearDeadline && ass.targetDate ? (
-                                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 animate-pulse">
-                                      <span className="material-symbols-outlined text-[12px] text-amber-600">warning</span>
-                                      <span>Cible: {new Date(ass.targetDate).toLocaleDateString('fr-FR')} (7j)</span>
-                                    </span>
-                                  ) : ass.targetDate ? (
-                                    <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-[12px] text-gray-500">flag</span>
-                                      <span>Cible: {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
-                                    </span>
-                                  ) : ass.examAt ? (
-                                    <span className="text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200 flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-[12px] text-gray-500">event</span>
-                                      <span>Examen: {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
-                                    </span>
-                                  ) : null
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Progress Bar (Visible ONLY while IN_PROGRESS) */}
-                            {status === 'IN_PROGRESS' && (
-                              <div className="space-y-1 bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
-                                <div className="flex justify-between text-[10px] font-bold text-gray-700">
-                                  <span>Avancement du parcours</span>
-                                  <span className="text-[#b70f30] font-extrabold">{ass.trainingProgressPercentage || 0}%</span>
-                                </div>
-                                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                  <div 
-                                    className="bg-[#b70f30] h-full rounded-full transition-all duration-300"
-                                    style={{ width: `${ass.trainingProgressPercentage || 0}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            )}
-
-                            {isPending && user?.role !== 'DIRECTOR' && user?.role !== 'SQUAD_LEAD' ? (
-                              <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => updateStatusMutation.mutate({
-                                    id: ass.id,
-                                    data: ass.itemType === 'CERTIFICATION'
-                                      ? { statusCertification: 'CANCELLED' }
-                                      : { statusTraining: 'CANCELLED' }
-                                  })}
-                                  className="px-2.5 py-1 text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">close</span>
-                                  <span>Refuser</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => updateStatusMutation.mutate({
-                                    id: ass.id,
-                                    data: ass.itemType === 'CERTIFICATION'
-                                      ? { statusCertification: 'APPROVED' }
-                                      : { statusTraining: 'APPROVED' }
-                                  })}
-                                  className="px-2.5 py-1 text-[11px] font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">check</span>
-                                  <span>Approuver</span>
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                                <span>Attribué le: {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                      {group.assignments.map(ass => renderAssignmentCard(ass))}
                     </div>
                   </div>
                 );
@@ -612,9 +623,20 @@ export function ManageAssignments() {
                         <span className="material-symbols-outlined text-[18px]">badge</span>
                       </div>
                       <div>
-                        <h2 className="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                          <span>Équipe :</span>
-                          <span className="text-[#b70f30]">{mGroup.managerName}</span>
+                        <h2 className="text-sm font-bold text-gray-900 tracking-tight flex items-center gap-1.5">
+                          {mGroup.managerName.startsWith('Attribué par') ? (
+                            <>
+                              <span className="text-gray-900 font-bold">Attribué par :</span>
+                              <span className="text-[#b70f30]">{mGroup.managerName.replace(/^Attribué par\s*:\s*/i, '')}</span>
+                            </>
+                          ) : mGroup.managerName.startsWith('Mon Équipe') || mGroup.managerName.startsWith('Sans') ? (
+                            <span className="text-[#b70f30]">{mGroup.managerName}</span>
+                          ) : (
+                            <>
+                              <span className="text-gray-900 font-bold">Équipe :</span>
+                              <span className="text-[#b70f30]">{mGroup.managerName.replace(/^Équipe\s*:\s*/i, '')}</span>
+                            </>
+                          )}
                         </h2>
                         <p className="text-[11px] text-gray-500">
                           {mGroup.collaborators.length} collaborateur(s) sous cette responsabilité
@@ -679,80 +701,8 @@ export function ManageAssignments() {
                             </div>
 
                             {/* Assignment Cards Grid */}
-                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
-                              {group.assignments.map(ass => {
-                                const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
-                                const isPending = status === 'PENDING_APPROVAL';
-
-                                return (
-                                  <div key={ass.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative">
-                                    <div>
-                                      <div className="flex items-center justify-between mb-2.5">
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                          <span className="material-symbols-outlined text-[13px]">
-                                            {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
-                                          </span>
-                                          {ass.itemType === 'CERTIFICATION' ? 'Certification' : 'Formation'}
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
-                                          {formatStatus(status, ass.itemType)}
-                                        </span>
-                                      </div>
-
-                                      <h4 className="text-xs font-bold text-gray-900 leading-snug mb-1">
-                                        {ass.itemName || `Item ID: ${ass.itemId}`}
-                                      </h4>
-
-                                      <p className="text-[11px] text-gray-500 mb-3">
-                                        Provider: <strong className="text-gray-700">{ass.provider || 'N/A'}</strong>
-                                      </p>
-
-                                      {ass.notes && (
-                                        <div className="text-[11px] text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100 mb-3 italic">
-                                          "{ass.notes}"
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Actions for Pending Requests */}
-                                    {isPending ? (
-                                      <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => updateStatusMutation.mutate({
-                                            id: ass.id,
-                                            data: ass.itemType === 'CERTIFICATION'
-                                              ? { statusCertification: 'CANCELLED' }
-                                              : { statusTraining: 'CANCELLED' }
-                                          })}
-                                          className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
-                                        >
-                                          <span className="material-symbols-outlined text-[15px]">close</span>
-                                          <span>Refuser</span>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => updateStatusMutation.mutate({
-                                            id: ass.id,
-                                            data: ass.itemType === 'CERTIFICATION'
-                                              ? { statusCertification: 'APPROVED' }
-                                              : { statusTraining: 'APPROVED' }
-                                          })}
-                                          className="px-3 py-1.5 text-xs font-semibold text-white bg-[#006949] hover:bg-emerald-800 rounded-xl transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
-                                        >
-                                          <span className="material-symbols-outlined text-[15px]">check</span>
-                                          <span>Approuver</span>
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                                        <span>Attribué le: {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
+                              {group.assignments.map(ass => renderAssignmentCard(ass))}
                             </div>
                           </div>
                         );

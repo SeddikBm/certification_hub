@@ -10,6 +10,7 @@ import com.example.certificationHub.enumeration.StatusTraining;
 public class AssignmentUpdateRequest {
     private StatusCertification statusCertification;
     private StatusTraining statusTraining;
+    private Instant plannedStartDate;
     private Instant examAt;
     private Short trainingProgressPercentage;
     private String notes;

@@ -12,6 +12,7 @@ export interface AssignmentResponse {
   userName?: string;
   userEmail?: string;
   squadName?: string;
+  managerId?: string;
   managerName?: string;
   assignedById?: string;
   assignedByName?: string;
@@ -21,6 +22,7 @@ export interface AssignmentResponse {
   priority?: string;
   assignedAt?: string;
   completedAt?: string;
+  plannedStartDate?: string;
   examAt?: string;
   targetDate?: string;
   isNearDeadline?: boolean;
@@ -42,6 +44,7 @@ export interface AssignmentUpdateRequest {
   statusCertification?: string;
   statusTraining?: string;
   trainingProgressPercentage?: number;
+  plannedStartDate?: string;
   examAt?: string;
   notes?: string;
 }

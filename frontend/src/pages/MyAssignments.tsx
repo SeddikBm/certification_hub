@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService, type AssignmentResponse } from '../services/assignment.service';
 import { RequestAssignmentModal } from '../components/RequestAssignmentModal';
@@ -84,6 +84,47 @@ export function MyAssignments() {
       showNotification('error', err.response?.data?.message || 'Échec de la mise à jour du statut.');
     }
   });
+
+  // Auto-transition PLANNED -> IN_PROGRESS and overdue targetDate -> FAILED
+  useEffect(() => {
+    if (assignmentsPage?.content) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      assignmentsPage.content.forEach((ass) => {
+        const status = ass.itemType === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
+        const planDateStr = ass.plannedStartDate || ass.examAt;
+
+        // 1. Auto-transition PLANNED assignments to IN_PROGRESS when planned date is reached (<= today)
+        if (status === 'PLANNED' && planDateStr) {
+          const plannedDate = new Date(planDateStr);
+          plannedDate.setHours(0, 0, 0, 0);
+          if (plannedDate <= today) {
+            updateStatusMutation.mutate({
+              id: ass.id,
+              data: ass.itemType === 'CERTIFICATION'
+                ? { statusCertification: 'IN_PROGRESS', trainingProgressPercentage: 0 }
+                : { statusTraining: 'IN_PROGRESS', trainingProgressPercentage: 0 }
+            });
+          }
+        }
+
+        // 2. Auto-fail (FAILED) if Target Date reached/passed AND no exam date scheduled
+        if (ass.targetDate && status !== 'EXAM_SCHEDULED' && status !== 'COMPLETED' && status !== 'FAILED' && status !== 'CANCELLED') {
+          const targetDateObj = new Date(ass.targetDate);
+          targetDateObj.setHours(23, 59, 59, 999);
+          if (targetDateObj < new Date()) {
+            updateStatusMutation.mutate({
+              id: ass.id,
+              data: ass.itemType === 'CERTIFICATION'
+                ? { statusCertification: 'FAILED' }
+                : { statusTraining: 'CANCELLED' }
+            });
+          }
+        }
+      });
+    }
+  }, [assignmentsPage?.content]);
 
   // Render Status Badge for all Enum Values
   const renderStatusBadge = (status: string | undefined) => {
@@ -278,92 +319,115 @@ export function MyAssignments() {
             <span className="material-symbols-outlined text-red-500 text-3xl">error</span>
             <p className="text-xs font-semibold text-gray-700">Erreur de chargement des assignations</p>
           </div>
-        ) : assignmentsPage.content.length === 0 ? (
-          <div className="p-12 text-center space-y-2">
-            <span className="material-symbols-outlined text-gray-300 text-4xl">assignment_late</span>
-            <p className="text-xs text-gray-500 font-medium">Aucune assignation trouvée</p>
-          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50/80 border-b border-gray-100 text-gray-600 font-bold">
                 <tr>
-                  <th className="p-3.5">Certif / Formation</th>
-                  <th className="p-3.5 text-center">Assigné Par</th>
+                  <th className="p-3.5">{activeTab === 'CERTIFICATION' ? 'Certification' : 'Formation'}</th>
+                  <th className="p-3.5 text-center">Provider</th>
                   <th className="p-3.5 text-center">Date Attribution</th>
                   <th className="p-3.5 text-center">Statut</th>
-                  <th className="p-3.5 text-center">Date Cible / Examen</th>
+                  <th className="p-3.5 text-center">
+                    {activeTab === 'CERTIFICATION' ? 'Date Planifiée / Cible / Examen' : 'Date Planifiée / Cible'}
+                  </th>
                   <th className="p-3.5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-                {assignmentsPage.content.map((ass) => {
-                  const status = activeTab === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
+                {assignmentsPage.content.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-12 text-center text-gray-500">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <span className="material-symbols-outlined text-gray-300 text-4xl">assignment_late</span>
+                        <p className="text-xs text-gray-500 font-medium">Aucune assignation trouvée</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  assignmentsPage.content.map((ass) => {
+                    const status = activeTab === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
 
-                  return (
-                    <tr key={ass.id} className="hover:bg-gray-50/60 transition-colors">
-                      {/* Name & Code */}
-                      <td className="p-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-red-50 text-[#b70f30] flex items-center justify-center flex-shrink-0">
-                            <span className="material-symbols-outlined text-[18px]">
-                              {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="font-bold text-gray-900 line-clamp-1">{ass.itemName || '-'}</div>
-                            <div className="text-[11px] text-gray-400">
-                              {ass.itemCode ? <span className="font-semibold text-gray-600 mr-1.5">{ass.itemCode}</span> : null}
-                              Provider: <strong>{ass.provider || '-'}</strong>
+                    return (
+                      <tr key={ass.id} className="hover:bg-gray-50/60 transition-colors">
+                        {/* Name & Code */}
+                        <td className="p-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-red-50 text-[#b70f30] flex items-center justify-center flex-shrink-0 font-bold">
+                              <span className="material-symbols-outlined text-[18px]">
+                                {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-bold text-gray-900 line-clamp-1">{ass.itemName || '-'}</div>
+                              {ass.itemCode ? (
+                                <div className="text-[11px] font-semibold text-gray-500">{ass.itemCode}</div>
+                              ) : null}
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Assigned By */}
-                      <td className="p-3.5 text-center">
-                        <div className="text-xs font-semibold text-gray-900">{ass.assignedByName || '-'}</div>
-                        <div className="text-[10px] text-gray-400">{ass.assignedByRole || 'SYSTEM'}</div>
-                      </td>
+                        {/* Provider */}
+                        <td className="p-3.5 text-center">
+                          <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100/80 text-gray-800 border border-gray-200/60">
+                            {ass.provider || '-'}
+                          </span>
+                        </td>
 
-                      {/* Assigned At */}
-                      <td className="p-3.5 text-center text-gray-500">
-                        {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}
-                      </td>
+                        {/* Assigned At */}
+                        <td className="p-3.5 text-center text-gray-500">
+                          {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}
+                        </td>
 
-                      {/* Status */}
-                      <td className="p-3.5 text-center">
-                        <div className="flex justify-center">{renderStatusBadge(status)}</div>
-                      </td>
+                        {/* Status */}
+                        <td className="p-3.5 text-center">
+                          <div className="flex justify-center">{renderStatusBadge(status)}</div>
+                        </td>
 
-                      {/* Date Cible / Examen / Planification Column */}
-                      <td className="p-3.5 text-center">
-                        {status === 'COMPLETED' || status === 'FAILED' ? (
-                          <span className="text-xs text-gray-400 font-medium">-</span>
-                        ) : status === 'EXAM_SCHEDULED' && ass.examAt ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200/80 shadow-2xs">
-                            <span className="material-symbols-outlined text-[14px] text-gray-500">edit_calendar</span>
-                            <span>Examen : {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
-                          </div>
-                        ) : ass.isNearDeadline && ass.targetDate ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs animate-pulse" title="Moins de 7 jours pour planifier votre examen !">
-                            <span className="material-symbols-outlined text-[14px] text-amber-600">warning</span>
-                            <span>Cible : {new Date(ass.targetDate).toLocaleDateString('fr-FR')} (7j)</span>
-                          </div>
-                        ) : ass.targetDate ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200/80 shadow-2xs">
-                            <span className="material-symbols-outlined text-[14px] text-gray-500">flag</span>
-                            <span>Cible : {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
-                          </div>
-                        ) : ass.examAt ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200/80 shadow-2xs">
-                            <span className="material-symbols-outlined text-[14px] text-blue-600">event_repeat</span>
-                            <span>Prévu : {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-400 italic">Non définie</span>
-                        )}
-                      </td>
+                        {/* Date Cible / Examen / Planification Column */}
+                        <td className="p-3.5 text-center">
+                          {status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED' ? (
+                            <span className="text-xs text-gray-400 font-medium">-</span>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              {/* Planifié date (ONLY when status === 'PLANNED') */}
+                              {status === 'PLANNED' && (ass.plannedStartDate || ass.examAt) && (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200/80 shadow-2xs">
+                                  <span className="material-symbols-outlined text-[14px] text-blue-600">event_repeat</span>
+                                  <span>Planifié : {new Date(ass.plannedStartDate || ass.examAt!).toLocaleDateString('fr-FR')}</span>
+                                </div>
+                              )}
+
+                              {/* Examen date (if EXAM_SCHEDULED) */}
+                              {status === 'EXAM_SCHEDULED' && ass.examAt && (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 shadow-2xs">
+                                  <span className="material-symbols-outlined text-[14px] text-gray-500">edit_calendar</span>
+                                  <span>Examen : {new Date(ass.examAt).toLocaleDateString('fr-FR')}</span>
+                                </div>
+                              )}
+
+                              {/* Cible date (on the RIGHT / à droite) - hidden when EXAM_SCHEDULED */}
+                              {status !== 'EXAM_SCHEDULED' && ass.targetDate && (
+                                ass.isNearDeadline ? (
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs animate-pulse" title="Moins de 7 jours pour planifier votre examen !">
+                                    <span className="material-symbols-outlined text-[14px] text-amber-600">warning</span>
+                                    <span>Cible : {new Date(ass.targetDate).toLocaleDateString('fr-FR')} (7j)</span>
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200/80 shadow-2xs">
+                                    <span className="material-symbols-outlined text-[14px] text-gray-500">flag</span>
+                                    <span>Cible : {new Date(ass.targetDate).toLocaleDateString('fr-FR')}</span>
+                                  </div>
+                                )
+                              )}
+
+                              {/* Fallback if no date is present */}
+                              {!ass.targetDate && !ass.plannedStartDate && !ass.examAt && (
+                                <span className="text-xs text-gray-400 font-medium">-</span>
+                              )}
+                            </div>
+                          )}
+                        </td>
 
                       {/* Actions */}
                       <td className="p-3.5 text-center">
@@ -408,8 +472,8 @@ export function MyAssignments() {
                                 onClick={() => updateStatusMutation.mutate({
                                   id: ass.id,
                                   data: ass.itemType === 'CERTIFICATION'
-                                    ? { statusCertification: 'IN_PROGRESS', trainingProgressPercentage: 0 }
-                                    : { statusTraining: 'IN_PROGRESS', trainingProgressPercentage: 0 }
+                                    ? { statusCertification: 'IN_PROGRESS', trainingProgressPercentage: 0, examAt: null }
+                                    : { statusTraining: 'IN_PROGRESS', trainingProgressPercentage: 0, examAt: null }
                                 })}
                                 className="px-2.5 py-1 text-[11px] font-semibold text-[#006949] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                               >
@@ -442,8 +506,8 @@ export function MyAssignments() {
                               onClick={() => updateStatusMutation.mutate({
                                 id: ass.id,
                                 data: ass.itemType === 'CERTIFICATION'
-                                  ? { statusCertification: 'IN_PROGRESS', trainingProgressPercentage: 0 }
-                                  : { statusTraining: 'IN_PROGRESS', trainingProgressPercentage: 0 }
+                                  ? { statusCertification: 'IN_PROGRESS', trainingProgressPercentage: 0, examAt: null }
+                                  : { statusTraining: 'IN_PROGRESS', trainingProgressPercentage: 0, examAt: null }
                               })}
                               className="px-2.5 py-1 text-[11px] font-semibold text-[#006949] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                             >
@@ -498,8 +562,8 @@ export function MyAssignments() {
                             </>
                           )}
 
-                          {/* Training in IN_PROGRESS: Can mark COMPLETED */}
-                          {ass.itemType === 'TRAINING' && status === 'IN_PROGRESS' && (
+                          {/* Training in IN_PROGRESS: Can mark COMPLETED ONLY if progress = 100% */}
+                          {ass.itemType === 'TRAINING' && status === 'IN_PROGRESS' && (ass.trainingProgressPercentage || 0) >= 100 && (
                             <button
                               type="button"
                               onClick={() => updateStatusMutation.mutate({
@@ -515,7 +579,7 @@ export function MyAssignments() {
 
                           {status === 'PENDING_APPROVAL' && (
                             <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                              En attente de votre CM
+                              En attente de validation
                             </span>
                           )}
 
@@ -525,10 +589,11 @@ export function MyAssignments() {
 
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
           </table>
         </div>
+      )}
 
         {/* Pagination */}
         {assignmentsPage && (
@@ -664,7 +729,7 @@ export function MyAssignments() {
 
             <div className="space-y-3">
               <label className="block text-xs font-bold text-gray-700">
-                Date de début prévue {startDateModalState.targetDate ? "(dans l'intervalle d'une semaine)" : ''} <span className="text-red-500">*</span>
+                Date de début de votre parcours <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -674,9 +739,21 @@ export function MyAssignments() {
                 onChange={(e) => setPlannedStartDate(e.target.value)}
                 className="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
               />
-              <p className="text-[11px] text-gray-500 bg-blue-50/60 p-2.5 rounded-xl border border-blue-100/60">
-                Une fois la date atteinte, votre statut passera automatiquement en cours avec l'avancement.
-              </p>
+              {startDateModalState.targetDate ? (
+                <p className="text-[11px] text-blue-900 bg-blue-50/80 p-3 rounded-xl border border-blue-200/80 flex items-start gap-2 leading-relaxed">
+                  <span className="material-symbols-outlined text-[16px] text-blue-600 flex-shrink-0 mt-0.5">info</span>
+                  <span>
+                    <strong>Information :</strong> Une Date Cible est associée à ce parcours. La date de début doit être planifiée dans un délai maximum de <strong>7 jours</strong> suivant l'attribution.
+                  </span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-200/80 flex items-start gap-2 leading-relaxed">
+                  <span className="material-symbols-outlined text-[16px] text-blue-600 flex-shrink-0 mt-0.5">info</span>
+                  <span>
+                    Choisissez votre date de début de préparation. Dès que cette date sera atteinte, le parcours passera automatiquement au statut <strong>En cours</strong>.
+                  </span>
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end gap-2.5 pt-2">
@@ -691,12 +768,12 @@ export function MyAssignments() {
                 type="button" 
                 onClick={() => {
                   if (startDateModalState.assignmentId) {
-                    const isoExamAt = plannedStartDate ? new Date(plannedStartDate).toISOString() : undefined;
+                    const isoPlannedStartDate = plannedStartDate ? new Date(plannedStartDate).toISOString() : undefined;
                     updateStatusMutation.mutate({
                       id: startDateModalState.assignmentId,
                       data: startDateModalState.itemType === 'CERTIFICATION'
-                        ? { statusCertification: 'PLANNED', examAt: isoExamAt }
-                        : { statusTraining: 'PLANNED', examAt: isoExamAt }
+                        ? { statusCertification: 'PLANNED', plannedStartDate: isoPlannedStartDate }
+                        : { statusTraining: 'PLANNED', plannedStartDate: isoPlannedStartDate }
                     });
                     setStartDateModalState({ isOpen: false, assignmentId: null, itemType: undefined });
                     showNotification('success', 'Statut planifié avec succès !');

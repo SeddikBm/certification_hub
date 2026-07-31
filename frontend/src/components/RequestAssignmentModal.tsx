@@ -21,6 +21,7 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [itemSearch, setItemSearch] = useState<string>('');
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
+  const [priority, setPriority] = useState<string>('NORMAL');
   const [notes, setNotes] = useState<string>('');
 
   // 0. Fetch My Career Managers
@@ -65,6 +66,7 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
         itemId: selectedItemId,
         userId: user.id,
         targetManagerId: targetManager,
+        priority,
         notes: notes ? `Demande collaborateur: ${notes}` : 'Demande formulée par le collaborateur'
       });
     },
@@ -250,8 +252,8 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
             </div>
           )}
 
-          {/* Manager Selection if Multiple CMs exist */}
-          {myManagers.length > 1 && (
+          {/* Manager Selection if CMs exist */}
+          {myManagers.length > 0 && (
             <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-2">
               <label className="block text-xs font-semibold text-gray-700">
                 Career Manager pour validation <span className="text-red-500">*</span>
@@ -270,6 +272,21 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
               </select>
             </div>
           )}
+
+          {/* Priority Selection */}
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-2">
+            <label className="block text-xs font-semibold text-gray-700">Priorité de la demande</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="w-full p-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30]"
+            >
+              <option value="MANDATORY">Obligatoire</option>
+              <option value="HIGH">Haute</option>
+              <option value="NORMAL">Normale (par défaut)</option>
+              <option value="OPTIONAL">Optionnelle</option>
+            </select>
+          </div>
 
           {/* Justification / Notes */}
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs space-y-2">

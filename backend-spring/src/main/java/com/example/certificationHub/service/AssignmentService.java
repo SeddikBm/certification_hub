@@ -71,10 +71,37 @@ public class AssignmentService {
             }
         }
 
-        return assignmentRepository.findAll(
+        Page<Assignment> page = assignmentRepository.findAll(
                 AssignmentSpecification.withSecurityAndFilters(targetUserId, itemType, status, currentUserId,
                         role, managedUserIds),
-                pageable).map(assignmentMapper::toResponse);
+                pageable);
+
+        if ("CAREER_MANAGER".equals(role)) {
+            List<AssignmentResponse> filtered = page.getContent().stream()
+                    .filter(a -> {
+                        // 1. If assigned directly by this CM: KEEP IT
+                        if (a.getAssignedBy() != null && currentUserId.equals(a.getAssignedBy().getId())) {
+                            return true;
+                        }
+                        // 2. If assigned by someone else (ADMIN, TRAINING_MANAGER, or another CM): HIDE FROM THIS CM
+                        if (a.getAssignedBy() != null && !currentUserId.equals(a.getAssignedBy().getId())) {
+                            return false;
+                        }
+                        // 3. If requested by collaborator targeting a specific CM: ONLY show if targeted to THIS CM
+                        if (a.getMetadata() != null && a.getMetadata().containsKey("targetManagerId")) {
+                            Object tmObj = a.getMetadata().get("targetManagerId");
+                            if (tmObj != null && !tmObj.toString().isBlank()) {
+                                return currentUserId.toString().equals(tmObj.toString());
+                            }
+                        }
+                        return true;
+                    })
+                    .map(assignmentMapper::toResponse)
+                    .toList();
+            return new org.springframework.data.domain.PageImpl<>(filtered, pageable, page.getTotalElements());
+        }
+
+        return page.map(assignmentMapper::toResponse);
     }
 
     @Transactional
@@ -116,17 +143,30 @@ public class AssignmentService {
                 throw new ResourceNotFoundException("Formation introuvable");
         }
 
-        // Vérification des doublons actifs à l'échelle du système
+        // Vérification des doublons à l'échelle du système
         List<Assignment> existingAssignments = assignmentRepository.findByUserId(collaborator.getId());
+
+        // 1. Interdit si déjà obtenu (COMPLETED)
+        boolean existsCompleted = existingAssignments.stream().anyMatch(a ->
+            a.getItemType() == request.getItemType() &&
+            request.getItemId().equals(a.getItemId()) &&
+            ((a.getItemType() == ItemType.CERTIFICATION && a.getStatusCertification() == StatusCertification.COMPLETED) ||
+             (a.getItemType() == ItemType.TRAINING && a.getStatusTraining() == StatusTraining.COMPLETED))
+        );
+        if (existsCompleted) {
+            String label = request.getItemType() == ItemType.CERTIFICATION ? "cette certification." : "cette formation.";
+            throw new ResourceConflictException("Ce collaborateur a déjà obtenu " + label);
+        }
+
+        // 2. Interdit si assignation active (sauf si CANCELLED ou FAILED)
         boolean existsActive = existingAssignments.stream().anyMatch(a ->
             a.getItemType() == request.getItemType() &&
             request.getItemId().equals(a.getItemId()) &&
-            a.getCompletedAt() == null &&
-            (a.getStatusCertification() == null || a.getStatusCertification() != com.example.certificationHub.enumeration.StatusCertification.CANCELLED) &&
-            (a.getStatusTraining() == null || a.getStatusTraining() != com.example.certificationHub.enumeration.StatusTraining.CANCELLED)
+            (a.getStatusCertification() == null || (a.getStatusCertification() != StatusCertification.CANCELLED && a.getStatusCertification() != StatusCertification.FAILED)) &&
+            (a.getStatusTraining() == null || a.getStatusTraining() != StatusTraining.CANCELLED)
         );
         if (existsActive) {
-            throw new ResourceConflictException("Ce collaborateur est déjà assigné à cette certification/formation.");
+            throw new ResourceConflictException("Ce collaborateur a déjà une assignation active pour cette certification/formation.");
         }
 
         User assignedBy = userRepository.findById(currentUserId).orElseThrow();
@@ -142,9 +182,12 @@ public class AssignmentService {
             }
         }
 
-        Instant min7Days = java.time.LocalDate.now().plusDays(6).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
-        if (examAt != null && examAt.isBefore(min7Days)) {
-            throw new ResourceConflictException("La date cible doit être fixée au moins 7 jours à l'avance.");
+        boolean isDirectManagementAssignment = !currentUserId.equals(collaborator.getId());
+        if (!isDirectManagementAssignment && examAt != null) {
+            Instant min7Days = java.time.LocalDate.now().plusDays(6).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+            if (examAt.isBefore(min7Days)) {
+                throw new ResourceConflictException("La date cible doit être fixée au moins 7 jours à l'avance.");
+            }
         }
 
         java.util.Map<String, Object> metadata = new java.util.HashMap<>();
@@ -154,6 +197,9 @@ public class AssignmentService {
         if (request.getTargetManagerId() != null) {
             metadata.put("targetManagerId", request.getTargetManagerId().toString());
         }
+        if (examAt != null) {
+            metadata.put("targetDate", examAt.toString());
+        }
 
         Assignment assignment = Assignment.builder()
                 .itemType(request.getItemType())
@@ -161,7 +207,7 @@ public class AssignmentService {
                 .user(collaborator)
                 .assignedBy(assignedBy)
                 .assignedAt(Instant.now())
-                .examAt(examAt)
+                .examAt(null)
                 .notes(request.getNotes())
                 .metadata(metadata.isEmpty() ? null : metadata)
                 .build();
@@ -266,6 +312,17 @@ public class AssignmentService {
             }
         }
 
+        if (request.getPlannedStartDate() != null) {
+            java.util.Map<String, Object> metadata = assignment.getMetadata();
+            if (metadata == null) {
+                metadata = new java.util.HashMap<>();
+            } else {
+                metadata = new java.util.HashMap<>(metadata);
+            }
+            metadata.put("plannedStartDate", request.getPlannedStartDate().toString());
+            assignment.setMetadata(metadata);
+        }
+
         // Mise à jour des autres champs optionnels
         if (request.getExamAt() != null)
             assignment.setExamAt(request.getExamAt());
@@ -317,9 +374,6 @@ public class AssignmentService {
                 try {
                     targetDate = Instant.parse(a.getMetadata().get("targetDate").toString());
                 } catch (Exception ignored) {}
-            }
-            if (targetDate == null && a.getExamAt() != null) {
-                targetDate = a.getExamAt();
             }
 
             if (targetDate != null && targetDate.isBefore(now)) {

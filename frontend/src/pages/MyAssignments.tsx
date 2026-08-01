@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService, type AssignmentResponse } from '../services/assignment.service';
 import { RequestAssignmentModal } from '../components/RequestAssignmentModal';
 import { ScheduleExamModal } from '../components/ScheduleExamModal';
+import { UploadCertificateModal } from '../components/UploadCertificateModal';
 import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
@@ -15,6 +16,15 @@ export function MyAssignments() {
   const pageSize = 25;
 
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [uploadModalState, setUploadModalState] = useState<{
+    isOpen: boolean;
+    assignmentId: string | null;
+    itemName: string;
+  }>({
+    isOpen: false,
+    assignmentId: null,
+    itemName: ''
+  });
   const [scheduleModalState, setScheduleModalState] = useState<{
     isOpen: boolean;
     assignmentId: string | null;
@@ -583,6 +593,35 @@ export function MyAssignments() {
                             </span>
                           )}
 
+                          {/* Certificate Download & Upload Buttons */}
+                          {ass.certificateId && (
+                            <button
+                              type="button"
+                              onClick={() => assignmentService.downloadCertificate(ass.certificateId!, ass.certificateFileName)}
+                              className="px-2.5 py-1 text-[11px] font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                              title="Télécharger le certificat officiel PDF"
+                            >
+                              <span className="material-symbols-outlined text-[15px] text-emerald-600">download</span>
+                              <span>Télécharger PDF</span>
+                            </button>
+                          )}
+
+                          {(status === 'COMPLETED' || status === 'EXAM_SCHEDULED' || status === 'IN_PROGRESS' || status === 'FAILED') && (
+                            <button
+                              type="button"
+                              onClick={() => setUploadModalState({
+                                isOpen: true,
+                                assignmentId: ass.id,
+                                itemName: ass.itemName || 'Mon parcours'
+                              })}
+                              className="px-2 py-1 text-[11px] font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300/70 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                              title="Déposer votre certificat au format PDF (max 5 MB)"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">upload_file</span>
+                              <span>{ass.certificateId ? 'Changer PDF' : 'Déposer Certificat'}</span>
+                            </button>
+                          )}
+
                           </div>
                         </div>
                       </td>
@@ -787,6 +826,19 @@ export function MyAssignments() {
           </div>
         </div>
       )}
+
+      {/* Upload Certificate Modal */}
+      <UploadCertificateModal
+        isOpen={uploadModalState.isOpen}
+        onClose={() => setUploadModalState({ isOpen: false, assignmentId: null, itemName: '' })}
+        assignmentId={uploadModalState.assignmentId || ''}
+        itemName={uploadModalState.itemName}
+        onSuccess={(msg) => {
+          queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
+          queryClient.invalidateQueries({ queryKey: ['assignments'] });
+          showNotification('success', msg);
+        }}
+      />
 
     </div>
   );

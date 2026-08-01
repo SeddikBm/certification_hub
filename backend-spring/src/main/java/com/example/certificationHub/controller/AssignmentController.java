@@ -87,7 +87,7 @@ public class AssignmentController {
     }
 
     @PostMapping(value = "/{id}/upload-certificate", consumes = { "multipart/form-data" })
-    @PreAuthorize("hasRole('COLLABORATOR')")
+    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.CREATED)
     public void uploadCertificate(
             @PathVariable UUID id,

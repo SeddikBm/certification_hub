@@ -12,6 +12,7 @@ import com.example.certificationHub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import com.example.certificationHub.repository.CertificateRepository;
 import java.util.UUID;
 
 @Component
@@ -22,6 +23,7 @@ public class AssignmentMapper {
     private final TrainingRepository trainingRepository;
     private final ManagerAssignmentRepository managerAssignmentRepository;
     private final UserRepository userRepository;
+    private final CertificateRepository certificateRepository;
 
     public AssignmentResponse toResponse(Assignment assignment) {
         if (assignment == null) return null;
@@ -135,6 +137,18 @@ public class AssignmentMapper {
             }
         }
 
+        UUID certificateId = null;
+        String certificateFileName = null;
+        String certificateStatus = null;
+
+        var certs = certificateRepository.findByAssignmentId(assignment.getId());
+        if (certs != null && !certs.isEmpty()) {
+            var certObj = certs.get(certs.size() - 1);
+            certificateId = certObj.getId();
+            certificateFileName = certObj.getFileName();
+            certificateStatus = certObj.getStatus() != null ? certObj.getStatus().name() : null;
+        }
+
         return AssignmentResponse.builder()
                 .id(assignment.getId())
                 .itemType(assignment.getItemType() != null ? assignment.getItemType().name() : null)
@@ -164,6 +178,9 @@ public class AssignmentMapper {
                 .isNearDeadline(isNearDeadline)
                 .trainingProgressPercentage(assignment.getTrainingProgressPercentage())
                 .notes(assignment.getNotes())
+                .certificateId(certificateId)
+                .certificateFileName(certificateFileName)
+                .certificateStatus(certificateStatus)
                 .build();
     }
 }

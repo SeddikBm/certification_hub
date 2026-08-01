@@ -322,6 +322,23 @@ export function ManageAssignments() {
           </div>
         )}
 
+        {ass.certificateId && (
+          <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[11px] text-gray-500 font-medium truncate max-w-[150px]" title={ass.certificateFileName}>
+              📄 {ass.certificateFileName || 'Certificat PDF'}
+            </span>
+            <button
+              type="button"
+              onClick={() => assignmentService.downloadCertificate(ass.certificateId!, ass.certificateFileName)}
+              className="px-2 py-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-all flex items-center gap-1 cursor-pointer"
+              title="Télécharger le certificat PDF"
+            >
+              <span className="material-symbols-outlined text-[13px] text-emerald-600">download</span>
+              <span>Télécharger</span>
+            </button>
+          </div>
+        )}
+
         {isPending && user?.role !== 'DIRECTOR' && user?.role !== 'SQUAD_LEAD' ? (
           <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-1.5">
             <button

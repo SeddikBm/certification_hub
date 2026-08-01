@@ -34,4 +34,7 @@ public class AssignmentResponse {
     private Boolean isNearDeadline;
     private Short trainingProgressPercentage;
     private String notes;
+    private UUID certificateId;
+    private String certificateFileName;
+    private String certificateStatus;
 }

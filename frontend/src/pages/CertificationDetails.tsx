@@ -577,7 +577,7 @@ export function CertificationDetails() {
                         </>
                       )}
 
-                      {r.userId !== user?.id && !r.isReported && (
+                      {r.userId !== user?.id && (!canManage || !r.isReported) && (
                         <button
                           type="button"
                           onClick={() => {

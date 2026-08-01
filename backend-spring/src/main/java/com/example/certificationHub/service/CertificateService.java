@@ -56,9 +56,13 @@ public class CertificateService {
 
     @Transactional
     public Certificate uploadCertificate(UUID assignmentId, MultipartFile file, UUID currentUserId) {
-        // 1. Validation du type PDF
-        if (file.getContentType() == null || !file.getContentType().equals("application/pdf")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seuls les fichiers PDF sont autorisés.");
+        // 1. Validation du type PDF et de la taille maximale (5MB)
+        if (file.getContentType() == null || !file.getContentType().equalsIgnoreCase("application/pdf")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seuls les fichiers au format PDF sont autorisés.");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La taille du fichier PDF ne doit pas dépasser 5 Mo.");
         }
 
         // 2. Récupération de l'assignation et validation de propriété

@@ -17,4 +17,5 @@ public class RatingResponse {
     private Integer difficulty;
     private Integer usefulness;
     private String squadName;
+    private Boolean isReported;
 }

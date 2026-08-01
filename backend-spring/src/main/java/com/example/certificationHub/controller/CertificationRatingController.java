@@ -60,4 +60,14 @@ public class CertificationRatingController {
 
         ratingService.reportInappropriateRating(certId, authorId, currentUserId);
     }
+
+    // DELETE - Supprimer un avis (ADMIN ou TRAINING_MANAGER)
+    @DeleteMapping("/{authorId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRAINING_MANAGER')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteRating(
+            @PathVariable UUID certId,
+            @PathVariable UUID authorId) {
+        ratingService.deleteRating(certId, authorId);
+    }
 }

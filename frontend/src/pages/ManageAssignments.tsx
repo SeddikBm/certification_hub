@@ -608,9 +608,6 @@ export function ManageAssignments() {
                             <span>Assigner</span>
                           </button>
 
-                          <span className="text-xs font-semibold text-gray-500 group-hover:text-[#b70f30] transition-colors hidden sm:inline">
-                            {isCollabCollapsed ? 'Afficher' : 'Masquer'}
-                          </span>
                           <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 group-hover:text-[#b70f30] group-hover:border-red-200 transition-all">
                             <span className="material-symbols-outlined text-[18px]">
                               {isCollabCollapsed ? 'expand_more' : 'expand_less'}

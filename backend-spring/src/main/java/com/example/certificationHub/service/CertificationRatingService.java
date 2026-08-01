@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class CertificationRatingService {
@@ -54,13 +56,16 @@ public class CertificationRatingService {
         Certification cert = certificationRepository.findById(certId)
                 .orElseThrow(() -> new ResourceNotFoundException("Certification introuvable"));
 
-        // 1. VÉRIFICATION : L'utilisateur a-t-il complété cette certification ?
-        List<Assignment> assignments = assignmentRepository.findByUserIdAndItemIdAndItemTypeAndStatusCertification(
-                currentUserId, certId, ItemType.CERTIFICATION, StatusCertification.COMPLETED);
+        // 1. VÉRIFICATION : L'utilisateur a-t-il passé cette certification (COMPLETED ou FAILED) ?
+        List<Assignment> assignments = assignmentRepository.findByUserId(currentUserId).stream()
+                .filter(a -> ItemType.CERTIFICATION.equals(a.getItemType()) && certId.equals(a.getItemId()))
+                .filter(a -> a.getStatusCertification() == StatusCertification.COMPLETED ||
+                             a.getStatusCertification() == StatusCertification.FAILED)
+                .collect(Collectors.toList());
 
         if (assignments.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Vous devez avoir complété cette certification pour laisser un avis.");
+                    "Vous devez avoir passé cette certification (réussie ou échouée) pour laisser un avis.");
         }
         Assignment completedAssignment = assignments.get(0);
 
@@ -104,12 +109,17 @@ public class CertificationRatingService {
     @Transactional
     public void reportInappropriateRating(UUID certId, UUID authorId, UUID reporterId) {
         CertificationRating.Id ratingId = new CertificationRating.Id(authorId, certId);
-        if (!ratingRepository.existsById(ratingId)) {
-            throw new ResourceNotFoundException("Avis introuvable");
-        }
+        CertificationRating rating = ratingRepository.findById(ratingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Avis introuvable"));
 
         Certification cert = certificationRepository.findById(certId).orElseThrow();
-        User reporter = userRepository.findById(reporterId).orElseThrow();
+
+        // Marquer l'avis comme signalé sans modifier la structure de la BDD
+        String rawComment = rating.getComment() != null ? rating.getComment() : "";
+        if (!rawComment.contains("[REPORTED]")) {
+            rating.setComment(rawComment + "\n[REPORTED]");
+            ratingRepository.save(rating);
+        }
 
         // On envoie une notification aux ADMINS pour modération via RabbitMQ
         notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
@@ -119,5 +129,20 @@ public class CertificationRatingService {
                 .itemName(cert.getName())
                 .eventType("REVIEW_REPORTED")
                 .build());
+    }
+
+    @Transactional
+    public void deleteRating(UUID certId, UUID authorId) {
+        CertificationRating.Id ratingId = new CertificationRating.Id(authorId, certId);
+        if (!ratingRepository.existsById(ratingId)) {
+            throw new ResourceNotFoundException("Avis introuvable");
+        }
+
+        ratingRepository.deleteById(ratingId);
+
+        Certification cert = certificationRepository.findById(certId).orElse(null);
+        if (cert != null) {
+            updateCertificationStatistics(cert);
+        }
     }
 }

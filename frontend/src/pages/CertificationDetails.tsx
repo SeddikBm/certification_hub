@@ -102,7 +102,8 @@ export function CertificationDetails() {
 
   const hasCompletedCert = Boolean(
     myAssignmentsPage?.content?.some(
-      a => a.itemId === id && a.itemType === 'CERTIFICATION' && a.statusCertification === 'COMPLETED'
+      a => a.itemId === id && a.itemType === 'CERTIFICATION' && 
+      (a.statusCertification === 'COMPLETED' || a.statusCertification === 'FAILED')
     )
   );
 
@@ -116,6 +117,20 @@ export function CertificationDetails() {
     onError: () => {
       showNotification('error', "Échec lors du signalement de l'avis.");
       setReportingUser(null);
+    }
+  });
+
+  // Delete Rating Mutation (Admin & Training Manager)
+  const deleteRatingMutation = useMutation({
+    mutationFn: (authorId: string) => certificationService.deleteRating(id!, authorId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certification-ratings', id] });
+      queryClient.invalidateQueries({ queryKey: ['certification', id] });
+      showNotification('success', "L'avis a été supprimé avec succès.");
+      refetch();
+    },
+    onError: () => {
+      showNotification('error', "Échec lors de la suppression de l'avis.");
     }
   });
 
@@ -527,7 +542,7 @@ export function CertificationDetails() {
                     )}
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
                     {r.wouldRecommend !== undefined ? (
                       <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
                         <span className={`material-symbols-outlined text-[15px] ${r.wouldRecommend ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -537,21 +552,47 @@ export function CertificationDetails() {
                       </div>
                     ) : <div />}
 
-                    {r.userId !== user?.id && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReportingUser(r.userId);
-                          reportMutation.mutate(r.userId);
-                        }}
-                        disabled={reportMutation.isPending && reportingUser === r.userId}
-                        title="Signaler cet avis pour modération"
-                        className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">flag</span>
-                        <span>{reportMutation.isPending && reportingUser === r.userId ? 'Signalement...' : 'Signaler'}</span>
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {canManage && r.isReported && (
+                        <>
+                          <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px]">warning</span>
+                            <span>Signalé</span>
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm("Cet avis a été signalé comme inapproprié. Êtes-vous sûr de vouloir le supprimer ?")) {
+                                deleteRatingMutation.mutate(r.userId);
+                              }
+                            }}
+                            disabled={deleteRatingMutation.isPending}
+                            title="Supprimer cet avis signalé (Admin/TM)"
+                            className="text-white bg-[#b70f30] hover:bg-red-800 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold shadow-2xs cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                            <span>Supprimer</span>
+                          </button>
+                        </>
+                      )}
+
+                      {r.userId !== user?.id && !r.isReported && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReportingUser(r.userId);
+                            reportMutation.mutate(r.userId);
+                          }}
+                          disabled={reportMutation.isPending && reportingUser === r.userId}
+                          title="Signaler cet avis pour modération"
+                          className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">flag</span>
+                          <span>{reportMutation.isPending && reportingUser === r.userId ? 'Signalement...' : 'Signaler'}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

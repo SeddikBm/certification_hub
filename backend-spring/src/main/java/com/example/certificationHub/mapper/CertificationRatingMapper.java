@@ -12,6 +12,13 @@ public class CertificationRatingMapper {
         if (rating == null) return null;
 
         String rawComment = rating.getComment();
+        boolean isReported = false;
+
+        if (rawComment != null && rawComment.contains("[REPORTED]")) {
+            isReported = true;
+            rawComment = rawComment.replace("[REPORTED]", "").trim();
+        }
+
         String cleanComment = rawComment;
         Integer difficulty = null;
         Integer materialsQuality = null;
@@ -56,6 +63,7 @@ public class CertificationRatingMapper {
                 .difficulty(difficulty)
                 .usefulness(usefulness)
                 .squadName(rating.getUser() != null && rating.getUser().getSquad() != null ? rating.getUser().getSquad().getName() : null)
+                .isReported(isReported)
                 .build();
     }
 

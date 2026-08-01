@@ -53,6 +53,7 @@ export interface RatingResponse {
   difficulty?: number;
   usefulness?: number;
   squadName?: string;
+  isReported?: boolean;
 }
 
 export const certificationService = {
@@ -86,6 +87,10 @@ export const certificationService = {
 
   reportRating: async (certId: string, authorId: string): Promise<void> => {
     await api.post(`/certifications/${certId}/ratings/${authorId}/report`);
+  },
+
+  deleteRating: async (certId: string, authorId: string): Promise<void> => {
+    await api.delete(`/certifications/${certId}/ratings/${authorId}`);
   },
 
   createCertification: async (data: CertificationRequest): Promise<CertificationResponse> => {

@@ -13,5 +13,8 @@ public class RatingResponse {
     private Short rating;
     private String comment;
     private Boolean wouldRecommend;
+    private Integer materialsQuality;
+    private Integer difficulty;
+    private Integer usefulness;
     private String squadName;
 }

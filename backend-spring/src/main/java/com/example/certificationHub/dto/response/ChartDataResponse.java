@@ -12,4 +12,11 @@ import lombok.NoArgsConstructor;
 public class ChartDataResponse {
     private String label;
     private Long value;
+    private Long certificationsCount;
+    private Long trainingsCount;
+
+    public ChartDataResponse(String label, Long value) {
+        this.label = label;
+        this.value = value;
+    }
 }

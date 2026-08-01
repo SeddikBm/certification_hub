@@ -26,18 +26,24 @@ public class AssignmentSpecification {
             if ("COLLABORATOR".equals(role)) {
                 // Collaborateur classique
                 predicates.add(cb.equal(root.get("user").get("id"), currentUserId));
-            } else if ("CAREER_MANAGER".equals(role) || "SQUAD_LEAD".equals(role)) {
+            } else if ("CAREER_MANAGER".equals(role)) {
+                Predicate assignedByMe = cb.equal(root.get("assignedBy").get("id"), currentUserId);
+                try {
+                    Predicate targetedToMe = cb.equal(
+                            cb.function("jsonb_extract_path_text", String.class, root.get("metadata"), cb.literal("targetManagerId")),
+                            currentUserId.toString()
+                    );
+                    predicates.add(cb.or(assignedByMe, targetedToMe));
+                } catch (Exception e) {
+                    predicates.add(assignedByMe);
+                }
+            } else if ("SQUAD_LEAD".equals(role)) {
                 List<UUID> allowedIds = new ArrayList<>(managedUserIds);
                 if (!allowedIds.contains(currentUserId)) {
-                    allowedIds.add(currentUserId); // Allow managers / squad leads to see their own assignments
+                    allowedIds.add(currentUserId);
                 }
                 Predicate userInManaged = root.get("user").get("id").in(allowedIds);
                 Predicate assignedByMe = cb.equal(root.get("assignedBy").get("id"), currentUserId);
-
-                Predicate isPendingCertif = cb.equal(root.get("statusCertification"), StatusCertification.PENDING_APPROVAL);
-                Predicate isPendingTrain = cb.equal(root.get("statusTraining"), StatusTraining.PENDING_APPROVAL);
-                Predicate isPending = cb.or(isPendingCertif, isPendingTrain);
-
                 predicates.add(cb.or(assignedByMe, userInManaged));
             } else if ("ADMIN".equals(role) || "DIRECTOR".equals(role) || "TRAINING_MANAGER".equals(role)) {
                 // Admin, Director, and Training Manager have global access to ALL assignments

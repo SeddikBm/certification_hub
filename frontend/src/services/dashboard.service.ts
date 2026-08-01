@@ -3,6 +3,8 @@ import api from './api';
 export interface ChartDataResponse {
   label: string;
   value: number;
+  certificationsCount?: number;
+  trainingsCount?: number;
 }
 
 export interface DashboardStatsResponse {

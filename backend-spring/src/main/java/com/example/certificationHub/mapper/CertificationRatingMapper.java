@@ -11,6 +11,38 @@ public class CertificationRatingMapper {
     public RatingResponse toResponse(CertificationRating rating) {
         if (rating == null) return null;
 
+        String rawComment = rating.getComment();
+        String cleanComment = rawComment;
+        Integer difficulty = null;
+        Integer materialsQuality = null;
+        Integer usefulness = null;
+
+        if (rawComment != null && rawComment.contains("\n---\n")) {
+            String[] parts = rawComment.split("\n---\n", 2);
+            cleanComment = parts[0].trim().isEmpty() ? null : parts[0].trim();
+            String details = parts[1];
+
+            for (String line : details.split("\n")) {
+                line = line.trim();
+                if (line.startsWith("Difficulté :")) {
+                    try {
+                        String val = line.replace("Difficulté :", "").replace("/5", "").trim();
+                        difficulty = Integer.parseInt(val);
+                    } catch (Exception ignored) {}
+                } else if (line.startsWith("Qualité des supports :")) {
+                    try {
+                        String val = line.replace("Qualité des supports :", "").replace("/5", "").trim();
+                        materialsQuality = Integer.parseInt(val);
+                    } catch (Exception ignored) {}
+                } else if (line.startsWith("Utilité :")) {
+                    try {
+                        String val = line.replace("Utilité :", "").replace("/5", "").trim();
+                        usefulness = Integer.parseInt(val);
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+
         return RatingResponse.builder()
                 .userId(rating.getUser() != null ? rating.getUser().getId() : null)
                 .userFullName(rating.getUser() != null
@@ -18,8 +50,11 @@ public class CertificationRatingMapper {
                         : null)
                 .certificationId(rating.getCertification() != null ? rating.getCertification().getId() : null)
                 .rating(rating.getRating())
-                .comment(rating.getComment())
+                .comment(cleanComment)
                 .wouldRecommend(rating.getWouldRecommend())
+                .materialsQuality(materialsQuality)
+                .difficulty(difficulty)
+                .usefulness(usefulness)
                 .squadName(rating.getUser() != null && rating.getUser().getSquad() != null ? rating.getUser().getSquad().getName() : null)
                 .build();
     }

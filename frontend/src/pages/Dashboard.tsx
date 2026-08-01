@@ -7,7 +7,14 @@ import { useAuth } from '../contexts/AuthContext';
 export function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [hoveredSlice, setHoveredSlice] = useState<{ label: string; value: number; percentage: number; color: string } | null>(null);
+  const [hoveredSlice, setHoveredSlice] = useState<{
+    label: string;
+    value: number;
+    percentage: number;
+    color: string;
+    certificationsCount?: number;
+    trainingsCount?: number;
+  } | null>(null);
   const [hoveredProgressItem, setHoveredProgressItem] = useState<{ label: string; count: number; percentage: number; color: string } | null>(null);
 
   useEffect(() => {
@@ -153,12 +160,16 @@ export function Dashboard() {
       {/* Analytics Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Donut Chart: Providers */}
+        {/* Donut Chart: Providers / Collaborateurs */}
         <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:shadow-red-500/10 hover:border-red-200 hover:bg-gradient-to-br hover:from-[#fffcfc] hover:to-white hover:-translate-y-1 transition-all duration-300 flex flex-col">
           <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
             <div>
-              <h2 className="text-base font-bold text-[#111827]">Répartition par Provider</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Part de chaque fournisseur</p>
+              <h2 className="text-base font-bold text-[#111827]">
+                {isCareerManager || isSquadLead ? 'Répartition par Collaborateur' : 'Répartition par Provider'}
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isCareerManager || isSquadLead ? 'Certifications et formations par collaborateur' : 'Part de chaque fournisseur'}
+              </p>
             </div>
             <div className="p-2 bg-gray-50 rounded-lg text-[#b70f30]">
               <span className="material-symbols-outlined text-[18px]">pie_chart</span>
@@ -173,18 +184,22 @@ export function Dashboard() {
                 {/* Tooltip when hovering slice */}
                 {hoveredSlice && (
                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#111827] text-white text-[10px] font-bold px-2.5 py-1 rounded shadow-xl transition-opacity duration-200 pointer-events-none whitespace-nowrap z-40">
-                    {hoveredSlice.label}: {hoveredSlice.value} certif{hoveredSlice.value > 1 ? 's' : ''} ({hoveredSlice.percentage}%)
+                    {hoveredSlice.label}: {hoveredSlice.certificationsCount !== undefined || hoveredSlice.trainingsCount !== undefined
+                      ? `${hoveredSlice.certificationsCount || 0} certif(s), ${hoveredSlice.trainingsCount || 0} formation(s)`
+                      : `${hoveredSlice.value} certif(s)`
+                    } ({hoveredSlice.percentage}%)
                   </div>
                 )}
 
                 <svg className="w-52 h-52 -rotate-90 transform" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" stroke="#f3f4f6" strokeWidth="12" fill="none" />
                   {stats.certificationsByProvider.map((item, i) => {
-                    const percentage = Math.round((item.value / totalProviders) * 100);
+                    const exactPercentage = (item.value / totalProviders) * 100;
+                    const percentage = Math.round(exactPercentage);
                     const color = providerColors[i % providerColors.length];
-                    const strokeDasharray = `${(percentage / 100) * CIRCUMFERENCE} ${CIRCUMFERENCE}`;
+                    const strokeDasharray = `${(exactPercentage / 100) * CIRCUMFERENCE} ${CIRCUMFERENCE}`;
                     const strokeDashoffset = - (cumulativePercent / 100) * CIRCUMFERENCE;
-                    cumulativePercent += percentage;
+                    cumulativePercent += exactPercentage;
                     const isHovered = hoveredSlice?.label === item.label;
 
                     return (
@@ -199,7 +214,14 @@ export function Dashboard() {
                         strokeDashoffset={strokeDashoffset}
                         fill="none"
                         className="transition-all duration-300 cursor-pointer hover:opacity-90"
-                        onMouseEnter={() => setHoveredSlice({ label: item.label, value: item.value, percentage, color })}
+                        onMouseEnter={() => setHoveredSlice({
+                          label: item.label,
+                          value: item.value,
+                          percentage,
+                          color,
+                          certificationsCount: item.certificationsCount,
+                          trainingsCount: item.trainingsCount
+                        })}
                         onMouseLeave={() => setHoveredSlice(null)}
                       />
                     );
@@ -222,7 +244,9 @@ export function Dashboard() {
                     </>
                   ) : (
                     <>
-                      <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Providers</span>
+                      <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                        {isCareerManager || isSquadLead ? 'Collaborateurs' : 'Providers'}
+                      </span>
                       <span className="text-2xl font-extrabold text-[#111827]">{stats.certificationsByProvider.length}</span>
                     </>
                   )}

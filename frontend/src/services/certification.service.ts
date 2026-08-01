@@ -33,6 +33,15 @@ export interface CertificationResponse {
   associatedSquads: SquadShortDto[];
 }
 
+export interface RatingCreateRequest {
+  rating: number;
+  comment?: string;
+  wouldRecommend: boolean;
+  materialsQuality?: number;
+  difficulty?: number;
+  usefulness?: number;
+}
+
 export interface RatingResponse {
   userId: string;
   userFullName: string;
@@ -40,6 +49,9 @@ export interface RatingResponse {
   rating: number;
   comment?: string;
   wouldRecommend?: boolean;
+  materialsQuality?: number;
+  difficulty?: number;
+  usefulness?: number;
   squadName?: string;
 }
 
@@ -65,6 +77,15 @@ export const certificationService = {
   getCertificationRatings: async (id: string): Promise<Page<RatingResponse>> => {
     const response = await api.get<Page<RatingResponse>>(`/certifications/${id}/ratings`);
     return response.data;
+  },
+
+  addRating: async (certId: string, data: RatingCreateRequest): Promise<RatingResponse> => {
+    const response = await api.post<RatingResponse>(`/certifications/${certId}/ratings`, data);
+    return response.data;
+  },
+
+  reportRating: async (certId: string, authorId: string): Promise<void> => {
+    await api.post(`/certifications/${certId}/ratings/${authorId}/report`);
   },
 
   createCertification: async (data: CertificationRequest): Promise<CertificationResponse> => {

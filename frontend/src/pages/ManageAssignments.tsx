@@ -9,7 +9,6 @@ import clsx from 'clsx';
 
 export function ManageAssignments() {
   const { user } = useAuth();
-  const isDirectView = user?.role === 'CAREER_MANAGER';
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
@@ -23,11 +22,19 @@ export function ManageAssignments() {
   const [modalPreselectedUser, setModalPreselectedUser] = useState<string | undefined>(undefined);
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [collapsedCollaborators, setCollapsedCollaborators] = useState<Record<string, boolean>>({});
 
   const toggleSection = (sectionName: string) => {
     setCollapsedSections(prev => ({
       ...prev,
       [sectionName]: !prev[sectionName]
+    }));
+  };
+
+  const toggleCollaborator = (userId: string) => {
+    setCollapsedCollaborators(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
     }));
   };
 
@@ -264,19 +271,19 @@ export function ManageAssignments() {
             )}
             <span>{ass.itemName}</span>
           </h4>
-          <div className="flex items-center justify-between text-[11px] text-gray-500 mt-1 flex-wrap gap-1">
+          <div className="flex items-center justify-between text-[11px] text-gray-500 mt-2 flex-wrap gap-2">
             <span>Provider: <strong>{ass.provider || '-'}</strong></span>
             {status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED' ? (
-              <span className="text-[10px] font-semibold text-gray-400">-</span>
+              <span className="text-[10px] font-semibold text-gray-400 ml-auto">-</span>
             ) : (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {ass.plannedStartDate && (
+              <div className="flex items-center justify-end gap-1.5 flex-wrap ml-auto">
+                {!ass.examAt && status !== 'EXAM_SCHEDULED' && ass.plannedStartDate && (
                   <span className="text-[10px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
                     <span className="material-symbols-outlined text-[12px] text-blue-600">event_repeat</span>
                     <span>Planifié: {new Date(ass.plannedStartDate).toLocaleDateString('fr-FR')}</span>
                   </span>
                 )}
-                {ass.targetDate && (
+                {!ass.examAt && status !== 'EXAM_SCHEDULED' && ass.targetDate && (
                   <span className={clsx(
                     "text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1",
                     ass.isNearDeadline ? "text-amber-800 bg-amber-50 border-amber-200 font-bold animate-pulse" : "text-gray-700 bg-gray-100 border-gray-200"
@@ -292,7 +299,7 @@ export function ManageAssignments() {
                   </span>
                 )}
                 {!ass.plannedStartDate && !ass.targetDate && !ass.examAt && (
-                  <span className="text-[10px] font-semibold text-gray-400">-</span>
+                  <span className="text-[10px] font-semibold text-gray-400 ml-auto">-</span>
                 )}
               </div>
             )}
@@ -555,19 +562,22 @@ export function ManageAssignments() {
         </div>
       ) : (
         <div className="space-y-6">
-          {isDirectView ? (
-            /* Direct Collaborator Cards View for Career Manager */
+          {user?.role === 'CAREER_MANAGER' ? (
             <div className="space-y-5">
               {groupedManagers.flatMap(m => m.collaborators).map(group => {
+                const isCollabCollapsed = collapsedCollaborators[group.userId] || false;
                 const pendingCount = group.assignments.filter(a => (a.statusCertification === 'PENDING_APPROVAL' || a.statusTraining === 'PENDING_APPROVAL')).length;
                 const activeCount = group.assignments.length - pendingCount;
 
                 return (
-                  <div key={group.userId} className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
-                    {/* Collaborator Header */}
-                    <div className="bg-gray-50/80 px-6 py-3.5 border-b border-gray-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div key={group.userId} className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden transition-all">
+                    {/* Collaborator Collapsible Header */}
+                    <div 
+                      onClick={() => toggleCollaborator(group.userId)}
+                      className="bg-gray-50/90 px-6 py-4 border-b border-gray-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-gray-100/70 transition-colors select-none group"
+                    >
                       <div className="flex items-center gap-3.5">
-                        <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100 shadow-2xs">
                           {group.userName?.[0]}
                         </div>
                         <div>
@@ -576,7 +586,7 @@ export function ManageAssignments() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                         <div className="flex items-center gap-2">
                           {pendingCount > 0 && (
                             <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
@@ -588,21 +598,34 @@ export function ManageAssignments() {
                           </span>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => { setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
-                          className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">add</span>
-                          <span>Assigner</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
+                            className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">add</span>
+                            <span>Assigner</span>
+                          </button>
+
+                          <span className="text-xs font-semibold text-gray-500 group-hover:text-[#b70f30] transition-colors hidden sm:inline">
+                            {isCollabCollapsed ? 'Afficher' : 'Masquer'}
+                          </span>
+                          <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 group-hover:text-[#b70f30] group-hover:border-red-200 transition-all">
+                            <span className="material-symbols-outlined text-[18px]">
+                              {isCollabCollapsed ? 'expand_more' : 'expand_less'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     {/* Assignment Cards Grid */}
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
-                      {group.assignments.map(ass => renderAssignmentCard(ass))}
-                    </div>
+                    {!isCollabCollapsed && (
+                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white animate-in fade-in duration-150">
+                        {group.assignments.map(ass => renderAssignmentCard(ass))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -660,13 +683,17 @@ export function ManageAssignments() {
                   {!isCollapsed && (
                     <div className="space-y-5 pl-2 sm:pl-4 border-l-2 border-red-100">
                       {mGroup.collaborators.map(group => {
+                        const isCollabCollapsed = collapsedCollaborators[group.userId] || false;
                         const pendingCount = group.assignments.filter(a => (a.statusCertification === 'PENDING_APPROVAL' || a.statusTraining === 'PENDING_APPROVAL')).length;
                         const activeCount = group.assignments.length - pendingCount;
 
                         return (
                           <div key={group.userId} className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
                             {/* Collaborator Header */}
-                            <div className="bg-gray-50/80 px-6 py-3.5 border-b border-gray-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div 
+                              onClick={() => toggleCollaborator(group.userId)}
+                              className="bg-gray-50/80 px-6 py-3.5 border-b border-gray-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-gray-100/70 transition-colors select-none group"
+                            >
                               <div className="flex items-center gap-3.5">
                                 <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100">
                                   {group.userName?.[0]}
@@ -689,21 +716,31 @@ export function ManageAssignments() {
                                   </span>
                                 </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() => { setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
-                                  className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
-                                >
-                                  <span className="material-symbols-outlined text-[16px]">add</span>
-                                  <span>Assigner</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
+                                    className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">add</span>
+                                    <span>Assigner</span>
+                                  </button>
+
+                                  <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 group-hover:text-[#b70f30] group-hover:border-red-200 transition-all">
+                                    <span className="material-symbols-outlined text-[18px]">
+                                      {isCollabCollapsed ? 'expand_more' : 'expand_less'}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
                             {/* Assignment Cards Grid */}
-                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
-                              {group.assignments.map(ass => renderAssignmentCard(ass))}
-                            </div>
+                            {!isCollabCollapsed && (
+                              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
+                                {group.assignments.map(ass => renderAssignmentCard(ass))}
+                              </div>
+                            )}
                           </div>
                         );
                       })}

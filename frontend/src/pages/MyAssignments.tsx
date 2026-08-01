@@ -390,11 +390,11 @@ export function MyAssignments() {
                             <span className="text-xs text-gray-400 font-medium">-</span>
                           ) : (
                             <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                              {/* Planifié date (ONLY when status === 'PLANNED') */}
-                              {status === 'PLANNED' && (ass.plannedStartDate || ass.examAt) && (
+                              {/* Planifié date (ONLY when status === 'PLANNED' and no examAt) */}
+                              {status === 'PLANNED' && !ass.examAt && ass.plannedStartDate && (
                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200/80 shadow-2xs">
                                   <span className="material-symbols-outlined text-[14px] text-blue-600">event_repeat</span>
-                                  <span>Planifié : {new Date(ass.plannedStartDate || ass.examAt!).toLocaleDateString('fr-FR')}</span>
+                                  <span>Planifié : {new Date(ass.plannedStartDate).toLocaleDateString('fr-FR')}</span>
                                 </div>
                               )}
 
@@ -406,8 +406,8 @@ export function MyAssignments() {
                                 </div>
                               )}
 
-                              {/* Cible date (on the RIGHT / à droite) - hidden when EXAM_SCHEDULED */}
-                              {status !== 'EXAM_SCHEDULED' && ass.targetDate && (
+                              {/* Cible date (on the RIGHT / à droite) - hidden when EXAM_SCHEDULED or examAt present */}
+                              {!ass.examAt && status !== 'EXAM_SCHEDULED' && ass.targetDate && (
                                 ass.isNearDeadline ? (
                                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs animate-pulse" title="Moins de 7 jours pour planifier votre examen !">
                                     <span className="material-symbols-outlined text-[14px] text-amber-600">warning</span>

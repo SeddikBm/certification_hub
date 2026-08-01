@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { certificationService } from '../services/certification.service';
 import { useAuth } from '../contexts/AuthContext';
 import { CertificationFormModal } from '../components/CertificationFormModal';
+import { RatingFormModal } from '../components/certifications/RatingFormModal';
+import { assignmentService } from '../services/assignment.service';
 import clsx from 'clsx';
 
 // Smart helper to get icon and color config for ANY provider (known or dynamic custom)
@@ -64,6 +66,8 @@ export function CertificationDetails() {
   const queryClient = useQueryClient();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [reportingUser, setReportingUser] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -87,6 +91,32 @@ export function CertificationDetails() {
     queryKey: ['certification-ratings', id],
     queryFn: () => certificationService.getCertificationRatings(id!),
     enabled: !!id
+  });
+
+  // Query user's assignments to check if completed
+  const { data: myAssignmentsPage } = useQuery({
+    queryKey: ['my-assignments-completed', id],
+    queryFn: () => assignmentService.getMyAssignments({ page: 0, size: 100 }),
+    enabled: !!user && !!id
+  });
+
+  const hasCompletedCert = Boolean(
+    myAssignmentsPage?.content?.some(
+      a => a.itemId === id && a.itemType === 'CERTIFICATION' && a.statusCertification === 'COMPLETED'
+    )
+  );
+
+  // Report Rating Mutation
+  const reportMutation = useMutation({
+    mutationFn: (authorId: string) => certificationService.reportRating(id!, authorId),
+    onSuccess: () => {
+      showNotification('success', 'Cet avis a été signalé pour modération.');
+      setReportingUser(null);
+    },
+    onError: () => {
+      showNotification('error', "Échec lors du signalement de l'avis.");
+      setReportingUser(null);
+    }
   });
 
   // Delete Mutation
@@ -414,22 +444,35 @@ export function CertificationDetails() {
           )}
         </div>
 
-        {/* Section 5: Note Globale & Avis (Ratings with Star Ratings, Comment, Author, Squad) */}
+        {/* Section 5: Note Globale & Avis (Ratings with Star Ratings, Detailed Breakdown, Moderation) */}
         <div className="lg:col-span-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#b70f30] text-[20px]">star</span>
-              <h2 className="text-base font-bold text-[#111827]">Avis & Commentaires</h2>
-            </div>
-            
-            {cert.averageRating ? (
-              <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-                <span className="material-symbols-outlined text-[18px] text-amber-500" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                <span className="text-xs font-extrabold text-amber-900">{cert.averageRating.toFixed(1)} / 5</span>
-                <span className="text-[11px] text-amber-700 ml-1">({ratings.length} avis)</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-4 mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#b70f30] text-[20px]">star</span>
+                <h2 className="text-base font-bold text-[#111827]">Avis & Commentaires</h2>
               </div>
-            ) : (
-              <span className="text-xs text-gray-400 italic">Pas encore de note</span>
+              
+              {cert.averageRating ? (
+                <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                  <span className="material-symbols-outlined text-[18px] text-amber-500" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                  <span className="text-xs font-extrabold text-amber-900">{cert.averageRating.toFixed(1)} / 5</span>
+                  <span className="text-[11px] text-amber-700 ml-1">({ratings.length} avis)</span>
+                </div>
+              ) : (
+                <span className="text-xs text-gray-400 italic">Pas encore de note</span>
+              )}
+            </div>
+
+            {hasCompletedCert && (
+              <button
+                type="button"
+                onClick={() => setIsRatingModalOpen(true)}
+                className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#b70f30] hover:bg-red-800 rounded-xl transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">rate_review</span>
+                <span>{ratings.find(r => r.userId === user?.id) ? 'Modifier mon avis' : 'Donner mon avis'}</span>
+              </button>
             )}
           </div>
 
@@ -457,17 +500,59 @@ export function CertificationDetails() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Criteria Badges */}
+                    {(r.materialsQuality || r.difficulty || r.usefulness) && (
+                      <div className="flex flex-wrap gap-1.5 my-2">
+                        {r.materialsQuality && (
+                          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-semibold border border-blue-100">
+                            Matériaux: {r.materialsQuality}/5
+                          </span>
+                        )}
+                        {r.difficulty && (
+                          <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-semibold border border-purple-100">
+                            Difficulté: {r.difficulty}/5
+                          </span>
+                        )}
+                        {r.usefulness && (
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-100">
+                            Utilité: {r.usefulness}/5
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {r.comment && (
                       <p className="text-xs text-gray-600 mt-2 leading-relaxed whitespace-pre-line">{r.comment}</p>
                     )}
                   </div>
 
-                  {r.wouldRecommend !== undefined && (
-                    <div className="mt-3 pt-2 border-t border-gray-100 flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
-                      <span className="material-symbols-outlined text-[15px] text-emerald-600">thumb_up</span>
-                      <span>Recommande cette certification</span>
-                    </div>
-                  )}
+                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+                    {r.wouldRecommend !== undefined ? (
+                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+                        <span className={`material-symbols-outlined text-[15px] ${r.wouldRecommend ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {r.wouldRecommend ? 'thumb_up' : 'thumb_down'}
+                        </span>
+                        <span>{r.wouldRecommend ? 'Recommande cette certification' : 'Ne recommande pas'}</span>
+                      </div>
+                    ) : <div />}
+
+                    {r.userId !== user?.id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReportingUser(r.userId);
+                          reportMutation.mutate(r.userId);
+                        }}
+                        disabled={reportMutation.isPending && reportingUser === r.userId}
+                        title="Signaler cet avis pour modération"
+                        className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">flag</span>
+                        <span>{reportMutation.isPending && reportingUser === r.userId ? 'Signalement...' : 'Signaler'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -479,6 +564,23 @@ export function CertificationDetails() {
         </div>
 
       </div>
+
+      {/* Rating Form Modal */}
+      {isRatingModalOpen && (
+        <RatingFormModal
+          isOpen={isRatingModalOpen}
+          onClose={() => setIsRatingModalOpen(false)}
+          certId={cert.id}
+          certName={cert.name}
+          existingRating={ratings.find(r => r.userId === user?.id)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['certification-ratings', cert.id] });
+            queryClient.invalidateQueries({ queryKey: ['certification', cert.id] });
+            showNotification('success', 'Votre avis a été enregistré avec succès !');
+            refetch();
+          }}
+        />
+      )}
 
       {/* Edit Form Modal */}
       {isEditModalOpen && (

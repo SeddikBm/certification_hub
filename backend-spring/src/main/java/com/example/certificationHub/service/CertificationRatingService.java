@@ -73,8 +73,8 @@ public class CertificationRatingService {
                 .certification(cert)
                 .assignment(completedAssignment)
                 .rating(request.getRating())
-                .wouldRecommend(request.getWouldRecommend())
-                .comment(ratingMapper.formatCommentWithDetails(request)) // Application de l'astuce
+                .wouldRecommend(request.getWouldRecommend() != null ? request.getWouldRecommend() : true)
+                .comment(ratingMapper.formatCommentWithDetails(request))
                 .build();
 
         CertificationRating savedRating = ratingRepository.save(rating);

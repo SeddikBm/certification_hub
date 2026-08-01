@@ -33,7 +33,7 @@ public class CertificationRatingController {
 
     // POST - Ajouter/Modifier un avis
     @PostMapping
-    @PreAuthorize("hasRole('COLLABORATOR')")
+    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.CREATED)
     public RatingResponse addRating(
             @PathVariable UUID certId,
@@ -48,6 +48,7 @@ public class CertificationRatingController {
 
     // POST - Signaler un avis (Modération)
     @PostMapping("/{authorId}/report")
+    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void reportRating(
             @PathVariable UUID certId,

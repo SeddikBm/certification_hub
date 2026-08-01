@@ -48,27 +48,47 @@ public class DashboardService {
         String normalizedRole = currentUserRole != null ? currentUserRole.replace("ROLE_", "") : "";
 
         if ("CAREER_MANAGER".equals(normalizedRole)) {
-            // Scoped stats for Career Manager's collaborators
+            // Scoped stats for Career Manager's collaborators (assigned by this CM OR requested targeting this CM)
             List<ManagerAssignment> managedAssignments = managerAssignmentRepository.findByManagerId(currentUserId);
             List<UUID> managedUserIds = managedAssignments.stream()
                     .filter(ma -> ma.getCollaborator() != null)
                     .map(ma -> ma.getCollaborator().getId())
                     .collect(Collectors.toList());
 
-            List<Assignment> assignments = new ArrayList<>();
-            for (UUID uid : managedUserIds) {
-                assignments.addAll(assignmentRepository.findByUserId(uid));
-            }
+            List<Assignment> assignments = assignmentRepository.findAll().stream()
+                    .filter(a -> {
+                        // 1. Assigned directly by THIS CM: KEEP IT
+                        if (a.getAssignedBy() != null && currentUserId.equals(a.getAssignedBy().getId())) {
+                            return true;
+                        }
 
-            long teamCertCount = assignments.stream().filter(a -> a.getItemType() == ItemType.CERTIFICATION).count();
-            long teamTrainCount = assignments.stream().filter(a -> a.getItemType() == ItemType.TRAINING).count();
+                        // 2. Requested targeting THIS CM in metadata: KEEP IT
+                        if (a.getMetadata() != null && a.getMetadata().containsKey("targetManagerId")) {
+                            Object tmObj = a.getMetadata().get("targetManagerId");
+                            if (tmObj != null && !tmObj.toString().isBlank()) {
+                                return currentUserId.toString().equals(tmObj.toString());
+                            }
+                        }
 
-            long completedCount = assignments.stream().filter(a ->
+                        // Otherwise: HIDE IT
+                        return false;
+                    })
+                    .collect(Collectors.toList());
+
+            List<Assignment> activeAssignments = assignments.stream()
+                    .filter(a -> a.getStatusCertification() != StatusCertification.CANCELLED && a.getStatusTraining() != StatusTraining.CANCELLED)
+                    .collect(Collectors.toList());
+
+            long teamCertCount = activeAssignments.stream().filter(a -> a.getItemType() == ItemType.CERTIFICATION).count();
+            long teamTrainCount = activeAssignments.stream().filter(a -> a.getItemType() == ItemType.TRAINING).count();
+
+            long completedCount = activeAssignments.stream().filter(a ->
                 a.getStatusCertification() == StatusCertification.COMPLETED ||
+                a.getStatusCertification() == StatusCertification.FAILED ||
                 a.getStatusTraining() == StatusTraining.COMPLETED
             ).count();
 
-            long pendingCount = assignments.stream().filter(a ->
+            long pendingCount = activeAssignments.stream().filter(a ->
                 a.getStatusCertification() == StatusCertification.PENDING_APPROVAL ||
                 a.getStatusTraining() == StatusTraining.PENDING_APPROVAL
             ).count();
@@ -78,13 +98,13 @@ public class DashboardService {
                     .totalTrainings(teamTrainCount)
                     .totalUsers(managedUserIds.size())
                     .totalSquads(totalSquads)
-                    .totalAssignments(assignments.size())
+                    .totalAssignments(activeAssignments.size())
                     .completedAssignments(completedCount)
                     .pendingAssignments(pendingCount)
                     .scopeName("Statistiques de vos Collaborateurs")
-                    .certificationsByProvider(getScopedProviderCounts(assignments))
+                    .certificationsByProvider(getScopedCollaboratorCounts(activeAssignments))
                     .certificationsBySquad(certificationSquadRepository.countCertificationsBySquad())
-                    .certificationsByDifficulty(getScopedDifficultyCounts(assignments))
+                    .certificationsByDifficulty(getScopedDifficultyCounts(activeAssignments))
                     .build();
         } else if ("SQUAD_LEAD".equals(normalizedRole)) {
             // Scoped stats for Squad Lead's squad
@@ -105,15 +125,20 @@ public class DashboardService {
                 }
             }
 
-            long squadCertCount = assignments.stream().filter(a -> a.getItemType() == ItemType.CERTIFICATION).count();
-            long squadTrainCount = assignments.stream().filter(a -> a.getItemType() == ItemType.TRAINING).count();
+            List<Assignment> activeAssignments = assignments.stream()
+                    .filter(a -> a.getStatusCertification() != StatusCertification.CANCELLED && a.getStatusTraining() != StatusTraining.CANCELLED)
+                    .collect(Collectors.toList());
 
-            long completedCount = assignments.stream().filter(a ->
+            long squadCertCount = activeAssignments.stream().filter(a -> a.getItemType() == ItemType.CERTIFICATION).count();
+            long squadTrainCount = activeAssignments.stream().filter(a -> a.getItemType() == ItemType.TRAINING).count();
+
+            long completedCount = activeAssignments.stream().filter(a ->
                 a.getStatusCertification() == StatusCertification.COMPLETED ||
+                a.getStatusCertification() == StatusCertification.FAILED ||
                 a.getStatusTraining() == StatusTraining.COMPLETED
             ).count();
 
-            long pendingCount = assignments.stream().filter(a ->
+            long pendingCount = activeAssignments.stream().filter(a ->
                 a.getStatusCertification() == StatusCertification.PENDING_APPROVAL ||
                 a.getStatusTraining() == StatusTraining.PENDING_APPROVAL
             ).count();
@@ -125,20 +150,24 @@ public class DashboardService {
                     .totalTrainings(squadTrainCount)
                     .totalUsers(squadUsersCount)
                     .totalSquads(totalSquads)
-                    .totalAssignments(assignments.size())
+                    .totalAssignments(activeAssignments.size())
                     .completedAssignments(completedCount)
                     .pendingAssignments(pendingCount)
                     .scopeName("Statistiques du Squad: " + squadName)
-                    .certificationsByProvider(getScopedProviderCounts(assignments))
+                    .certificationsByProvider(getScopedCollaboratorCounts(activeAssignments))
                     .certificationsBySquad(certificationSquadRepository.countCertificationsBySquad())
-                    .certificationsByDifficulty(getScopedDifficultyCounts(assignments))
+                    .certificationsByDifficulty(getScopedDifficultyCounts(activeAssignments))
                     .build();
         }
 
         // Default / ADMIN / DIRECTOR / TRAINING_MANAGER: Global enterprise metrics
-        List<Assignment> allAssignments = assignmentRepository.findAll();
+        List<Assignment> allAssignments = assignmentRepository.findAll().stream()
+                .filter(a -> a.getStatusCertification() != StatusCertification.CANCELLED && a.getStatusTraining() != StatusTraining.CANCELLED)
+                .collect(Collectors.toList());
+
         long completedCount = allAssignments.stream().filter(a ->
             a.getStatusCertification() == StatusCertification.COMPLETED ||
+            a.getStatusCertification() == StatusCertification.FAILED ||
             a.getStatusTraining() == StatusTraining.COMPLETED
         ).count();
 
@@ -160,6 +189,32 @@ public class DashboardService {
                 .certificationsBySquad(certificationSquadRepository.countCertificationsBySquad())
                 .certificationsByDifficulty(certificationRepository.countCertificationsByDifficulty())
                 .build();
+    }
+
+    private List<ChartDataResponse> getScopedCollaboratorCounts(List<Assignment> assignments) {
+        Map<String, long[]> counts = new HashMap<>(); // [0] = certs, [1] = trainings
+        for (Assignment a : assignments) {
+            if (a.getStatusCertification() == StatusCertification.CANCELLED || a.getStatusTraining() == StatusTraining.CANCELLED) {
+                continue;
+            }
+            if (a.getUser() != null) {
+                String name = a.getUser().getFirstName() + " " + a.getUser().getLastName();
+                counts.putIfAbsent(name, new long[]{0, 0});
+                if (a.getItemType() == ItemType.CERTIFICATION) {
+                    counts.get(name)[0]++;
+                } else if (a.getItemType() == ItemType.TRAINING) {
+                    counts.get(name)[1]++;
+                }
+            }
+        }
+        return counts.entrySet().stream()
+                .map(e -> ChartDataResponse.builder()
+                        .label(e.getKey())
+                        .value(e.getValue()[0] + e.getValue()[1])
+                        .certificationsCount(e.getValue()[0])
+                        .trainingsCount(e.getValue()[1])
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private List<ChartDataResponse> getScopedProviderCounts(List<Assignment> assignments) {

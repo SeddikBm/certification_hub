@@ -79,22 +79,21 @@ public class AssignmentService {
         if ("CAREER_MANAGER".equals(role)) {
             List<AssignmentResponse> filtered = page.getContent().stream()
                     .filter(a -> {
-                        // 1. If assigned directly by this CM: KEEP IT
+                        // 1. If assigned directly by THIS CM: KEEP IT
                         if (a.getAssignedBy() != null && currentUserId.equals(a.getAssignedBy().getId())) {
                             return true;
                         }
-                        // 2. If assigned by someone else (ADMIN, TRAINING_MANAGER, or another CM): HIDE FROM THIS CM
-                        if (a.getAssignedBy() != null && !currentUserId.equals(a.getAssignedBy().getId())) {
-                            return false;
-                        }
-                        // 3. If requested by collaborator targeting a specific CM: ONLY show if targeted to THIS CM
+
+                        // 2. If requested targeting THIS CM in metadata: KEEP IT
                         if (a.getMetadata() != null && a.getMetadata().containsKey("targetManagerId")) {
                             Object tmObj = a.getMetadata().get("targetManagerId");
                             if (tmObj != null && !tmObj.toString().isBlank()) {
                                 return currentUserId.toString().equals(tmObj.toString());
                             }
                         }
-                        return true;
+
+                        // Otherwise (assigned by Admin, Training Manager, or another CM without targeting this CM): HIDE IT
+                        return false;
                     })
                     .map(assignmentMapper::toResponse)
                     .toList();
@@ -213,7 +212,6 @@ public class AssignmentService {
                 .build();
 
         // Management assignments start as APPROVED. Collaborator self-requests start as PENDING_APPROVAL.
-        boolean isDirectManagementAssignment = !currentUserId.equals(collaborator.getId());
 
         if (request.getItemType() == ItemType.CERTIFICATION) {
             if (isDirectManagementAssignment) {

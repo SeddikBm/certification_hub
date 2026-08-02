@@ -12,6 +12,9 @@ import com.example.certificationHub.repository.CertificateRepository;
 import com.example.certificationHub.repository.ManagerAssignmentRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -33,6 +36,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class CertificateService {
+
+    private static final Logger log = LoggerFactory.getLogger(CertificateService.class);
 
     private final NotificationProducer notificationProducer;
     private final CertificateRepository certificateRepository;
@@ -150,5 +155,55 @@ public class CertificateService {
         } catch (MalformedURLException ex) {
             throw new ResourceNotFoundException("Erreur de chemin d'accès au fichier.", ex);
         }
+    }
+
+    @Transactional
+    public Certificate updateCertificateStatus(UUID certificateId, CertificateStatus newStatus, UUID currentUserId, String currentUserRole) {
+        Certificate certificate = certificateRepository.findById(certificateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Certificat introuvable"));
+
+        String cleanRole = currentUserRole != null ? currentUserRole.replace("ROLE_", "").trim() : "";
+
+        boolean isAdminOrTm = List.of("ADMIN", "TRAINING_MANAGER").contains(cleanRole);
+        boolean isManager = false;
+
+        if ("CAREER_MANAGER".equals(cleanRole)) {
+            boolean isGlobalManager = managerAssignmentRepository.existsById(
+                    new ManagerAssignment.Id(currentUserId, certificate.getUser().getId()));
+            boolean isAssignedBy = certificate.getAssignment() != null
+                    && certificate.getAssignment().getAssignedBy() != null
+                    && certificate.getAssignment().getAssignedBy().getId().equals(currentUserId);
+
+            isManager = isGlobalManager || isAssignedBy;
+        }
+
+        if (!isAdminOrTm && !isManager) {
+            // Permit if user is ADMIN, TRAINING_MANAGER or CAREER_MANAGER
+            if (!List.of("ADMIN", "TRAINING_MANAGER", "CAREER_MANAGER").contains(cleanRole)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Seul le Career Manager responsable, un Admin ou Training Manager peut modifier le statut du certificat.");
+            }
+        }
+
+        certificate.setStatus(newStatus);
+        Certificate updated = certificateRepository.save(certificate);
+
+        // Event RabbitMQ (avec Try-Catch pour éviter de faire échouer la transaction si RabbitMQ est indisponible)
+        try {
+            if (notificationProducer != null && certificate.getAssignment() != null) {
+                notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
+                        .userId(certificate.getUser().getId())
+                        .userEmail(certificate.getUser().getEmail())
+                        .userFullName(certificate.getUser().getFirstName() + " " + certificate.getUser().getLastName())
+                        .assignmentId(certificate.getAssignment().getId())
+                        .itemName(certificate.getFileName())
+                        .eventType("CERTIFICATE_STATUS_CHANGED")
+                        .build());
+            }
+        } catch (Exception e) {
+            log.warn("Impossible d'envoyer l'événement RabbitMQ pour le changement de statut du certificat: {}", e.getMessage());
+        }
+
+        return updated;
     }
 }

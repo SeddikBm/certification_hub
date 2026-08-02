@@ -593,20 +593,26 @@ export function MyAssignments() {
                             </span>
                           )}
 
-                          {/* Certificate Download & Upload Buttons */}
-                          {ass.certificateId && (
-                            <button
-                              type="button"
-                              onClick={() => assignmentService.downloadCertificate(ass.certificateId!, ass.certificateFileName)}
-                              className="px-2.5 py-1 text-[11px] font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                              title="Télécharger le certificat officiel PDF"
-                            >
-                              <span className="material-symbols-outlined text-[15px] text-emerald-600">download</span>
-                              <span>Télécharger PDF</span>
-                            </button>
-                          )}
-
-                          {(status === 'COMPLETED' || status === 'EXAM_SCHEDULED' || status === 'IN_PROGRESS' || status === 'FAILED') && (
+                          {/* Certificate Status Badge or Upload Button for Collaborators */}
+                          {ass.certificateId ? (
+                            <span className={clsx(
+                              "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border",
+                              ass.certificateStatus === 'VALID' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                              ass.certificateStatus === 'REJECTED' ? "bg-red-50 text-red-700 border-red-200" :
+                              ass.certificateStatus === 'EXPIRED' ? "bg-orange-50 text-orange-700 border-orange-200" :
+                              "bg-amber-50 text-amber-700 border-amber-200"
+                            )}>
+                              <span className="material-symbols-outlined text-[14px]">
+                                {ass.certificateStatus === 'VALID' ? 'verified' : ass.certificateStatus === 'REJECTED' ? 'cancel' : 'hourglass_top'}
+                              </span>
+                              <span>
+                                {ass.certificateStatus === 'VALID' ? 'Certificat Validé' :
+                                 ass.certificateStatus === 'REJECTED' ? 'Certificat Refusé' :
+                                 ass.certificateStatus === 'EXPIRED' ? 'Certificat Expiré' :
+                                 'Certificat en attente'}
+                              </span>
+                            </span>
+                          ) : (status === 'COMPLETED') && (
                             <button
                               type="button"
                               onClick={() => setUploadModalState({
@@ -614,11 +620,11 @@ export function MyAssignments() {
                                 assignmentId: ass.id,
                                 itemName: ass.itemName || 'Mon parcours'
                               })}
-                              className="px-2 py-1 text-[11px] font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300/70 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
                               title="Déposer votre certificat au format PDF (max 5 MB)"
                             >
                               <span className="material-symbols-outlined text-[14px]">upload_file</span>
-                              <span>{ass.certificateId ? 'Changer PDF' : 'Déposer Certificat'}</span>
+                              <span>Déposer Certificat</span>
                             </button>
                           )}
 

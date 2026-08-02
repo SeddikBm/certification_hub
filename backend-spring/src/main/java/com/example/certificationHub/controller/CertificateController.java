@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+import com.example.certificationHub.entity.Certificate;
+import com.example.certificationHub.enumeration.CertificateStatus;
+
 @RestController
 @RequestMapping("/api/v1/certificates")
 @RequiredArgsConstructor
@@ -38,5 +41,38 @@ public class CertificateController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
                 .body(file);
+    }
+
+    @GetMapping("/{id}/preview")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Resource> previewCertificate(
+            @PathVariable UUID id,
+            Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("user_id"));
+        String currentUserRole = jwt.getClaimAsString("role");
+
+        Resource file = certificateService.downloadCertificate(id, currentUserId, currentUserRole);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                .body(file);
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Certificate> updateCertificateStatus(
+            @PathVariable UUID id,
+            @RequestParam CertificateStatus status,
+            Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("user_id"));
+        String currentUserRole = jwt.getClaimAsString("role");
+
+        Certificate updated = certificateService.updateCertificateStatus(id, status, currentUserId, currentUserRole);
+        return ResponseEntity.ok(updated);
     }
 }

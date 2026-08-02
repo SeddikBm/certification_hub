@@ -105,5 +105,20 @@ export const assignmentService = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  updateCertificateStatus: async (certificateId: string, status: string): Promise<any> => {
+    const response = await api.put(`/certificates/${certificateId}/status`, null, {
+      params: { status }
+    });
+    return response.data;
+  },
+
+  getCertificatePreviewUrl: async (certificateId: string): Promise<string> => {
+    const response = await api.get(`/certificates/${certificateId}/preview`, {
+      responseType: 'blob'
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    return window.URL.createObjectURL(blob);
   }
 };

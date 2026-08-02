@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService, type AssignmentResponse } from '../services/assignment.service';
 import { AssignItemModal } from '../components/AssignItemModal';
+import { ViewCertificateModal } from '../components/ViewCertificateModal';
 import { Pagination } from '../components/ui/Pagination';
 import { useAuth } from '../contexts/AuthContext';
 import { formatStatus, formatPriority, getAssignmentProgressPercentage } from '../utils/enumFormatters';
@@ -20,6 +21,17 @@ export function ManageAssignments() {
 
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [modalPreselectedUser, setModalPreselectedUser] = useState<string | undefined>(undefined);
+  const [viewCertModalState, setViewCertModalState] = useState<{
+    isOpen: boolean;
+    certificateId: string | null;
+    fileName?: string;
+    collaboratorName?: string;
+    itemName?: string;
+    currentStatus?: string;
+  }>({
+    isOpen: false,
+    certificateId: null
+  });
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [collapsedCollaborators, setCollapsedCollaborators] = useState<Record<string, boolean>>({});
@@ -140,6 +152,19 @@ export function ManageAssignments() {
     onError: (err: any) => {
       console.error(err);
       showNotification('error', err.response?.data?.message || 'Échec de la mise à jour.');
+    }
+  });
+
+  const updateCertStatusMutation = useMutation({
+    mutationFn: ({ certId, status }: { certId: string; status: string }) =>
+      assignmentService.updateCertificateStatus(certId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
+      showNotification('success', 'Statut du certificat mis à jour.');
+    },
+    onError: (err: any) => {
+      showNotification('error', err.response?.data?.message || 'Échec de la mise à jour du statut du certificat.');
     }
   });
 
@@ -323,19 +348,53 @@ export function ManageAssignments() {
         )}
 
         {ass.certificateId && (
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-[11px] text-gray-500 font-medium truncate max-w-[150px]" title={ass.certificateFileName}>
-              📄 {ass.certificateFileName || 'Certificat PDF'}
-            </span>
-            <button
-              type="button"
-              onClick={() => assignmentService.downloadCertificate(ass.certificateId!, ass.certificateFileName)}
-              className="px-2 py-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-all flex items-center gap-1 cursor-pointer"
-              title="Télécharger le certificat PDF"
-            >
-              <span className="material-symbols-outlined text-[13px] text-emerald-600">download</span>
-              <span>Télécharger</span>
-            </button>
+          <div className="pt-2 border-t border-gray-100 space-y-2">
+            <div className="flex items-center justify-between bg-red-50/40 p-2 rounded-xl border border-red-100/80">
+              <div className="flex items-center gap-1.5 truncate max-w-[150px]">
+                <span className="material-symbols-outlined text-[16px] text-red-600">picture_as_pdf</span>
+                <span className="text-[11px] font-bold text-gray-800 truncate" title={ass.certificateFileName}>
+                  {ass.certificateFileName || 'Certificat PDF'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setViewCertModalState({
+                  isOpen: true,
+                  certificateId: ass.certificateId!,
+                  fileName: ass.certificateFileName,
+                  collaboratorName: ass.userName,
+                  itemName: ass.itemName,
+                  currentStatus: ass.certificateStatus
+                })}
+                className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Ouvrir le certificat dans l'application et attribuer un statut"
+              >
+                <span className="material-symbols-outlined text-[14px]">visibility</span>
+                <span>Voir & Valider</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between bg-gray-50/90 p-1.5 rounded-lg border border-gray-200/80">
+              <span className="text-[10px] font-extrabold text-gray-600">Statut:</span>
+              {ass.certificateStatus === 'EXPIRED' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200">
+                  <span className="material-symbols-outlined text-[13px]">history</span>
+                  <span>Expiré</span>
+                </span>
+              ) : (
+                <select
+                  value={ass.certificateStatus || 'PENDING_VALIDATION'}
+                  onChange={(e) => updateCertStatusMutation.mutate({ certId: ass.certificateId!, status: e.target.value })}
+                  disabled={updateCertStatusMutation.isPending}
+                  className="text-[10px] font-extrabold bg-white text-gray-800 border border-gray-300 rounded-md px-1.5 py-0.5 outline-none cursor-pointer focus:border-[#b70f30]"
+                >
+                  <option value="PENDING_VALIDATION">En attente de validation</option>
+                  <option value="VALID">Valide</option>
+                  <option value="REJECTED">Refusé</option>
+                </select>
+              )}
+            </div>
           </div>
         )}
 
@@ -786,6 +845,23 @@ export function ManageAssignments() {
         onSuccessNotification={showNotification}
         preselectedUserId={modalPreselectedUser}
         defaultItemType={activeTab}
+      />
+
+      {/* View Certificate Modal */}
+      <ViewCertificateModal
+        isOpen={viewCertModalState.isOpen}
+        onClose={() => setViewCertModalState({ isOpen: false, certificateId: null })}
+        certificateId={viewCertModalState.certificateId}
+        fileName={viewCertModalState.fileName}
+        collaboratorName={viewCertModalState.collaboratorName}
+        itemName={viewCertModalState.itemName}
+        currentStatus={viewCertModalState.currentStatus}
+        onStatusUpdated={(newStatus) => {
+          setViewCertModalState(prev => ({ ...prev, currentStatus: newStatus }));
+          queryClient.invalidateQueries({ queryKey: ['assignments'] });
+          queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
+          showNotification('success', 'Statut du certificat mis à jour avec succès.');
+        }}
       />
 
     </div>

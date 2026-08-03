@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${title}">Notification Devoteam CertificationHub</title>
+    <title th:text="${title}">Félicitations ! - Devoteam CertificationHub</title>
 </head>
 <body style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f4f5f7; margin: 0; padding: 24px;">
 
     <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%"
         style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e5e7eb;">
         
-        <!-- Brand Header with Devoteam Logo -->
+        <!-- Header Devoteam -->
         <tr>
-            <td style="background-color: #ffffff; padding: 24px 32px; border-b: 1px solid #f0f0f0; text-align: left;">
+            <td style="background-color: #ffffff; padding: 24px 32px; border-bottom: 1px solid #f0f0f0;">
                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                         <td align="left" style="vertical-align: middle;">
                             <img alt="Devoteam Logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8P959-H660oXsHEsr0hj50FyfxDsXWtX_57a3dnlLZzAtO8cCW-Lpv2te7_LgnPGnd5xHrS5z7T6KX4mNzTf0zIis2f1dKiqgg9c95wI5CuI6yc8hvA9aCJSYr1Hy-haGkSdGayGDoiSawl0-HS_ou0ZG8Kq7v_4CO6WU4u6nl1hly16CuedfGdxvtEbpQcRRzY2VSxVqtyrX7AAO28EUKLisDgkEtqDcZo0xrPNMMNMkHCkTJwrci4cfwM8XkKXWsAQ" style="height: 38px; display: block; border: 0;" />
                         </td>
                         <td align="right" style="vertical-align: middle;">
-                            <span style="font-size: 14px; font-weight: 800; color: #111827; letter-spacing: -0.3px;">
+                            <span style="font-size: 14px; font-weight: 800; color: #111827;">
                                 Certification<span style="color: #b70f30;">Hub</span>
                             </span>
                         </td>
@@ -28,42 +28,46 @@
             </td>
         </tr>
 
-        <!-- Banner Color Strip -->
+        <!-- Color Strip Emerald -->
         <tr>
-            <td style="height: 4px; background: linear-gradient(90deg, #b70f30 0%, #e60028 100%);"></td>
+            <td style="height: 4px; background: linear-gradient(90deg, #059669 0%, #10b981 100%);"></td>
         </tr>
 
         <!-- Body Content -->
         <tr>
             <td style="padding: 32px 36px; color: #1f2937; line-height: 1.6;">
-                <h2 style="color: #111827; font-size: 20px; font-weight: 800; margin-top: 0; margin-bottom: 16px; tracking-tight: -0.4px;" th:text="${title}">
-                    Notification
+                <div style="display: inline-block; padding: 6px 12px; background-color: #d1fae5; border-radius: 20px; color: #065f46; font-size: 12px; font-weight: 700; margin-bottom: 16px;">
+                    🎉 Parcours Réussi & Certifié !
+                </div>
+
+                <h2 style="color: #065f46; font-size: 22px; font-weight: 800; margin-top: 0; margin-bottom: 16px;" th:text="${title}">
+                    Félicitations pour votre succès !
                 </h2>
 
                 <p style="font-size: 15px; color: #374151; margin-bottom: 20px;">
-                    Bonjour <strong style="color: #111827;" th:text="${fullName}">Collaborateur</strong>,
+                    Bravo <strong style="color: #111827;" th:text="${fullName}">Collaborateur</strong>,
                 </p>
 
-                <div style="background-color: #fef2f2; border-left: 4px solid #b70f30; border-radius: 8px; padding: 18px; margin: 20px 0;">
-                    <p style="font-size: 14px; color: #991b1b; margin: 0; font-weight: 600;" th:text="${message}">
-                        Message de la notification.
+                <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; border-radius: 8px; padding: 18px; margin: 20px 0;">
+                    <p style="font-size: 15px; color: #064e3b; margin: 0; font-weight: 700;" th:text="${message}">
+                        Vous avez validé avec succès ce parcours de certification !
                     </p>
                 </div>
 
-                <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Élément concerné</span>
-                    <strong style="color: #b70f30; font-size: 16px; font-weight: 800;" th:text="${itemName}">Nom de l'item</strong>
+                <!-- Card -->
+                <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; display: block; margin-bottom: 6px;">Certification / Formation Obtenue</span>
+                    <strong style="color: #059669; font-size: 18px; font-weight: 800;" th:text="${itemName}">Nom de la certification</strong>
                 </div>
 
-                <p style="font-size: 14px; color: #4b5563; margin-top: 24px;">
-                    Connectez-vous sur la plateforme Devoteam CertificationHub pour suivre l'avancement et consulter tous les détails.
+                <p style="font-size: 14px; color: #4b5563;">
+                    N'oubliez pas de déposer votre justificatif ou certificat PDF sur la plateforme si ce n'est pas encore fait.
                 </p>
 
-                <!-- Call to Action Button -->
                 <div style="text-align: center; margin-top: 32px; margin-bottom: 16px;">
                     <a th:href="${actionUrl != null ? 'http://localhost:5173' + actionUrl : 'http://localhost:5173/my-assignments'}"
-                        style="background-color: #b70f30; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 4px 12px rgba(183, 15, 48, 0.25);">
-                        Accéder à l'application
+                        style="background-color: #059669; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);">
+                        Déposer mon certificat PDF
                     </a>
                 </div>
             </td>

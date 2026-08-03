@@ -39,4 +39,15 @@ public class NotificationController {
 
         notificationService.markAsRead(id, currentUserId);
     }
+
+    // PUT /api/v1/notifications/read-all (Tout marquer comme lu)
+    @PutMapping("/read-all")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markAllAsRead(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("user_id"));
+
+        notificationService.markAllAsRead(currentUserId);
+    }
 }

@@ -233,13 +233,34 @@ public class AssignmentService {
                 ? certificationRepository.findById(request.getItemId()).map(c -> c.getName()).orElse("Certification")
                 : trainingRepository.findById(request.getItemId()).map(t -> t.getTitle()).orElse("Formation");
 
+        UUID targetUserId = collaborator.getId();
+        String targetUserEmail = collaborator.getEmail();
+        String targetUserFullName = collaborator.getFirstName() + " " + collaborator.getLastName();
+        String actionUrl = "/my-assignments";
+
+        if (!isDirectManagementAssignment) {
+            User targetManager = managerAssignmentRepository.findFirstByCollaboratorId(collaborator.getId())
+                    .map(ManagerAssignment::getManager)
+                    .orElse(null);
+            if (targetManager != null) {
+                targetUserId = targetManager.getId();
+                targetUserEmail = targetManager.getEmail();
+                targetUserFullName = targetManager.getFirstName() + " " + targetManager.getLastName();
+            }
+            actionUrl = "/manage-assignments";
+        }
+
         notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
                 .userId(collaborator.getId())
                 .userEmail(collaborator.getEmail())
                 .userFullName(collaborator.getFirstName() + " " + collaborator.getLastName())
+                .targetUserId(targetUserId)
+                .targetUserEmail(targetUserEmail)
+                .targetUserFullName(targetUserFullName)
                 .assignmentId(savedAssignment.getId())
                 .itemName(itemName)
-                .eventType("CREATED") // Déclenche le template "Nouvelle demande"
+                .eventType("CREATED")
+                .actionUrl(actionUrl)
                 .build());
 
         return assignmentMapper.toResponse(savedAssignment);
@@ -331,28 +352,54 @@ public class AssignmentService {
 
         Assignment updatedAssignment = assignmentRepository.save(assignment);
 
-        if (isNewlyApproved || isNewlyRejected || isNewlyScheduled) {
-            String itemName = assignment.getItemType() == ItemType.CERTIFICATION
-                    ? certificationRepository.findById(assignment.getItemId()).map(c -> c.getName())
-                            .orElse("Certification")
-                    : trainingRepository.findById(assignment.getItemId()).map(t -> t.getTitle()).orElse("Formation");
+        // Détection des événements et notification des cibles (Collaborateur ou Manager selon qui effectue l'action)
+        boolean isUpdatedByCollab = currentUserId.equals(assignment.getUser().getId());
+        User responsibleManager = managerAssignmentRepository.findFirstByCollaboratorId(assignment.getUser().getId())
+                .map(ManagerAssignment::getManager)
+                .orElse(assignment.getAssignedBy());
 
-            String eventType;
-            if (isNewlyApproved) {
-                eventType = "APPROVED";
-            } else if (isNewlyScheduled) {
-                eventType = "EXAM_SCHEDULED";
-            } else {
-                eventType = "REJECTED";
-            }
+        String itemName = assignment.getItemType() == ItemType.CERTIFICATION
+                ? certificationRepository.findById(assignment.getItemId()).map(c -> c.getName()).orElse("Certification")
+                : trainingRepository.findById(assignment.getItemId()).map(t -> t.getTitle()).orElse("Formation");
+
+        String eventType = null;
+        String dateDetail = null;
+
+        if (isNewlyApproved) {
+            eventType = "APPROVED";
+        } else if (isNewlyRejected) {
+            eventType = "REJECTED";
+        } else if (request.getExamAt() != null || isNewlyScheduled) {
+            eventType = "EXAM_SCHEDULED";
+            dateDetail = request.getExamAt() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date.from(request.getExamAt())) : null;
+        } else if (request.getPlannedStartDate() != null) {
+            eventType = "PLANNED";
+            dateDetail = request.getPlannedStartDate();
+        } else if (request.getStatusCertification() == StatusCertification.COMPLETED || request.getStatusTraining() == StatusTraining.COMPLETED) {
+            eventType = "COMPLETED";
+        } else if (request.getStatusCertification() == StatusCertification.FAILED) {
+            eventType = "FAILED";
+        }
+
+        if (eventType != null) {
+            User targetUser = isUpdatedByCollab
+                    ? (responsibleManager != null ? responsibleManager : assignment.getUser())
+                    : assignment.getUser();
+
+            String actionUrl = isUpdatedByCollab ? "/manage-assignments" : "/my-assignments";
 
             notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
                     .userId(assignment.getUser().getId())
                     .userEmail(assignment.getUser().getEmail())
                     .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
+                    .targetUserId(targetUser.getId())
+                    .targetUserEmail(targetUser.getEmail())
+                    .targetUserFullName(targetUser.getFirstName() + " " + targetUser.getLastName())
                     .assignmentId(updatedAssignment.getId())
                     .itemName(itemName)
                     .eventType(eventType)
+                    .details(dateDetail)
+                    .actionUrl(actionUrl)
                     .build());
         }
 

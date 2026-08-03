@@ -155,19 +155,6 @@ export function ManageAssignments() {
     }
   });
 
-  const updateCertStatusMutation = useMutation({
-    mutationFn: ({ certId, status }: { certId: string; status: string }) =>
-      assignmentService.updateCertificateStatus(certId, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
-      showNotification('success', 'Statut du certificat mis à jour.');
-    },
-    onError: (err: any) => {
-      showNotification('error', err.response?.data?.message || 'Échec de la mise à jour du statut du certificat.');
-    }
-  });
-
   // Export Excel Functionality
   const handleExportExcel = () => {
     if (!allAssignments.length) {
@@ -239,6 +226,58 @@ export function ManageAssignments() {
         <span className="material-symbols-outlined text-[13px]">{cfg.icon}</span>
         <span>{cfg.label}</span>
       </span>
+    );
+  };
+
+  const renderCertStatusBadge = (certStatus: string | undefined) => {
+    const status = certStatus || 'PENDING_VALIDATION';
+    if (status === 'VALID') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>Valide</span>
+        </span>
+      );
+    }
+    if (status === 'REJECTED') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+          <span>Refusé</span>
+        </span>
+      );
+    }
+    if (status === 'EXPIRED') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+          <span>Expiré</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+        <span>En attente</span>
+      </span>
+    );
+  };
+
+  const renderNoteBox = (notes?: string, assignedByRole?: string) => {
+    if (!notes || !notes.trim()) return null;
+    const cleanNotes = notes.replace(/^Demande collaborateur:\s*/i, '');
+    const isCollabMotivation = assignedByRole === 'USER' || notes.toLowerCase().includes('demande collaborateur');
+
+    return (
+      <div className="p-2.5 rounded-xl bg-indigo-50/50 border border-indigo-100/80 text-xs space-y-1">
+        <div className="flex items-center gap-1.5 font-extrabold text-indigo-900 text-[10.5px]">
+          <span className="material-symbols-outlined text-[14px] text-indigo-600">sticky_note_2</span>
+          <span>{isCollabMotivation ? 'Motivation du collaborateur' : 'Note du Manager'}</span>
+        </div>
+        <p className="text-gray-700 text-[11px] italic leading-relaxed pl-5 font-medium">
+          "{cleanNotes}"
+        </p>
+      </div>
     );
   };
 
@@ -331,6 +370,9 @@ export function ManageAssignments() {
           </div>
         </div>
 
+        {/* Embedded Note Box (Solution 1) */}
+        {renderNoteBox(ass.notes, ass.assignedByRole)}
+
         {/* Progress Bar (Visible ONLY while IN_PROGRESS) */}
         {status === 'IN_PROGRESS' && (
           <div className="space-y-1 bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
@@ -348,52 +390,35 @@ export function ManageAssignments() {
         )}
 
         {ass.certificateId && (
-          <div className="pt-2 border-t border-gray-100 space-y-2">
-            <div className="flex items-center justify-between bg-red-50/40 p-2 rounded-xl border border-red-100/80">
-              <div className="flex items-center gap-1.5 truncate max-w-[150px]">
-                <span className="material-symbols-outlined text-[16px] text-red-600">picture_as_pdf</span>
+          <div className="pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-between bg-red-50/30 p-2 rounded-xl border border-red-100/70 gap-2">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <span className="material-symbols-outlined text-[16px] text-red-600 shrink-0">picture_as_pdf</span>
                 <span className="text-[11px] font-bold text-gray-800 truncate" title={ass.certificateFileName}>
                   {ass.certificateFileName || 'Certificat PDF'}
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setViewCertModalState({
-                  isOpen: true,
-                  certificateId: ass.certificateId!,
-                  fileName: ass.certificateFileName,
-                  collaboratorName: ass.userName,
-                  itemName: ass.itemName,
-                  currentStatus: ass.certificateStatus
-                })}
-                className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                title="Ouvrir le certificat dans l'application et attribuer un statut"
-              >
-                <span className="material-symbols-outlined text-[14px]">visibility</span>
-                <span>Voir & Valider</span>
-              </button>
-            </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {renderCertStatusBadge(ass.certificateStatus)}
 
-            <div className="flex items-center justify-between bg-gray-50/90 p-1.5 rounded-lg border border-gray-200/80">
-              <span className="text-[10px] font-extrabold text-gray-600">Statut:</span>
-              {ass.certificateStatus === 'EXPIRED' ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200">
-                  <span className="material-symbols-outlined text-[13px]">history</span>
-                  <span>Expiré</span>
-                </span>
-              ) : (
-                <select
-                  value={ass.certificateStatus || 'PENDING_VALIDATION'}
-                  onChange={(e) => updateCertStatusMutation.mutate({ certId: ass.certificateId!, status: e.target.value })}
-                  disabled={updateCertStatusMutation.isPending}
-                  className="text-[10px] font-extrabold bg-white text-gray-800 border border-gray-300 rounded-md px-1.5 py-0.5 outline-none cursor-pointer focus:border-[#b70f30]"
+                <button
+                  type="button"
+                  onClick={() => setViewCertModalState({
+                    isOpen: true,
+                    certificateId: ass.certificateId!,
+                    fileName: ass.certificateFileName,
+                    collaboratorName: ass.userName,
+                    itemName: ass.itemName,
+                    currentStatus: ass.certificateStatus
+                  })}
+                  className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                  title="Ouvrir le certificat dans l'application et attribuer un statut"
                 >
-                  <option value="PENDING_VALIDATION">En attente de validation</option>
-                  <option value="VALID">Valide</option>
-                  <option value="REJECTED">Refusé</option>
-                </select>
-              )}
+                  <span className="material-symbols-outlined text-[13px]">visibility</span>
+                  <span>Voir & Valider</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

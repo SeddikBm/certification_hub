@@ -37,59 +37,120 @@ public class NotificationConsumer {
     public void processAssignmentEvent(AssignmentEvent event) {
         log.info("Événement reçu : {} pour {}", event.getEventType(), event.getUserFullName());
 
-        User user = userRepository.findById(event.getUserId()).orElse(null);
-        if (user == null) return;
+        UUID recipientId = event.getTargetUserId() != null ? event.getTargetUserId() : event.getUserId();
+        User targetUser = userRepository.findById(recipientId).orElse(null);
+        if (targetUser == null) {
+            targetUser = userRepository.findById(event.getUserId()).orElse(null);
+        }
+        if (targetUser == null) return;
 
-        String title = "";
-        String message = "";
+        String title = "Notification CertificationHub";
+        String message = "Événement concernant " + event.getItemName();
         NotificationType type = NotificationType.INFO;
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/my-assignments";
 
-        // Détermination du contenu selon l'événement
         switch (event.getEventType()) {
             case "CREATED":
-                title = "Nouvelle demande";
-                message = "Votre demande pour " + event.getItemName() + " a été soumise et est en attente d'approbation.";
+                if (event.getTargetUserId() != null && !event.getTargetUserId().equals(event.getUserId())) {
+                    title = "Nouvelle demande d'assignation";
+                    message = event.getUserFullName() + " a soumis une demande d'assignation pour " + event.getItemName() + ".";
+                    actionUrl = "/manage-assignments";
+                } else {
+                    title = "Nouvelle assignation reçue";
+                    message = "La certification/formation " + event.getItemName() + " vous a été attribuée par votre responsable.";
+                    actionUrl = "/my-assignments";
+                }
                 type = NotificationType.INFO;
                 break;
             case "APPROVED":
                 title = "Demande approuvée !";
-                message = "Bonne nouvelle, votre demande pour " + event.getItemName() + " a été validée.";
+                message = "Bonne nouvelle, votre demande pour " + event.getItemName() + " a été validée avec succès.";
                 type = NotificationType.SUCCESS;
+                actionUrl = "/my-assignments";
                 break;
             case "REJECTED":
-                title = "Demande refusée";
-                message = "Votre demande pour " + event.getItemName() + " n'a pas pu être validée.";
+                title = "Demande refusée / annulée";
+                message = "Votre demande d'assignation pour " + event.getItemName() + " n'a pas été retenue.";
                 type = NotificationType.ERROR;
+                actionUrl = "/my-assignments";
                 break;
             case "CERTIFICATE_UPLOADED":
-                title = "Certificat validé";
-                message = "Votre certificat pour " + event.getItemName() + " a bien été enregistré. Félicitations !";
-                type = NotificationType.SUCCESS;
-                break;
-            case "EXAM_SCHEDULED":
-                title = "Examen planifié";
-                message = "Votre examen pour " + event.getItemName() + " a été planifié. Préparez-vous bien !";
+                if (event.getTargetUserId() != null && !event.getTargetUserId().equals(event.getUserId())) {
+                    title = "Nouveau certificat à valider";
+                    message = event.getUserFullName() + " a déposé son certificat PDF pour " + event.getItemName() + ".";
+                    actionUrl = "/manage-assignments";
+                } else {
+                    title = "Certificat téléversé";
+                    message = "Votre certificat PDF pour " + event.getItemName() + " a été bien transmis.";
+                    actionUrl = "/my-assignments";
+                }
                 type = NotificationType.INFO;
                 break;
+            case "CERTIFICATE_STATUS_CHANGED":
+                title = "Statut du certificat mis à jour";
+                message = "Le statut de votre certificat pour " + event.getItemName() + " a été mis à jour par votre responsable.";
+                type = NotificationType.SUCCESS;
+                actionUrl = "/my-assignments";
+                break;
+            case "PLANNED":
+                title = "Date de début planifiée";
+                message = event.getUserFullName() + " a fixé la date de démarrage pour " + event.getItemName() + (event.getDetails() != null ? " au " + event.getDetails() : "") + ".";
+                type = NotificationType.INFO;
+                actionUrl = event.getTargetUserId() != null && !event.getTargetUserId().equals(event.getUserId()) ? "/manage-assignments" : "/my-assignments";
+                break;
+            case "EXAM_SCHEDULED":
+                title = "Examen programmé";
+                message = "L'examen pour " + event.getItemName() + " a été planifié" + (event.getDetails() != null ? " pour le " + event.getDetails() : "") + ".";
+                type = NotificationType.INFO;
+                actionUrl = event.getTargetUserId() != null && !event.getTargetUserId().equals(event.getUserId()) ? "/manage-assignments" : "/my-assignments";
+                break;
+            case "COMPLETED":
+                title = "Félicitations ! Parcours Réussi";
+                message = "Le parcours pour " + event.getItemName() + " a été accompli et validé avec succès. Bravo !";
+                type = NotificationType.SUCCESS;
+                actionUrl = "/my-assignments";
+                break;
+            case "FAILED":
+                title = "Résultat d'examen : Échec";
+                message = "L'examen pour " + event.getItemName() + " n'a pas été validé.";
+                type = NotificationType.ERROR;
+                actionUrl = "/my-assignments";
+                break;
             case "DEADLINE_APPROACHING":
-                title = "Attention : Deadline proche !";
-                message = "La date de votre examen pour " + event.getItemName() + " approche à grands pas (J-3).";
+                title = "Rappel : Date cible proche (J-7)";
+                message = "Attention, la date cible pour " + event.getItemName() + " approche dans 7 jours et aucun examen n'est encore planifié.";
                 type = NotificationType.WARNING;
+                actionUrl = "/my-assignments";
+                break;
+            case "EXPIRED":
+                title = "Parcours expiré";
+                message = "La date cible pour " + event.getItemName() + " est dépassée. Le statut a été mis à jour.";
+                type = NotificationType.ERROR;
+                actionUrl = "/my-assignments";
+                break;
+            case "REVIEW_REPORTED":
+            case "REPORT_CREATED":
+                title = "Signalement d'avis soumis";
+                message = "Un signalement d'avis abusif a été émis par " + event.getUserFullName() + " sur " + event.getItemName() + ".";
+                type = NotificationType.WARNING;
+                actionUrl = "/certifications";
                 break;
         }
 
-        // 1. Sauvegarde In-App (Base de données)
+        // 1. Sauvegarde de la Notification In-App
         Notification notification = Notification.builder()
-                .user(user)
+                .user(targetUser)
                 .title(title)
                 .message(message)
                 .type(type)
-                .channel("BOTH") // On indique que ça part sur les deux canaux
+                .channel("BOTH")
+                .isRead(false)
                 .build();
         notificationRepository.save(notification);
 
-        // 2. Délégation de l'envoi d'email à ton service dédié
-        emailService.sendHtmlAssignmentEmail(event, title, message);
+        // 2. Envoi d'email asynchrone sécurisé avec Devoteam Branding
+        String targetEmail = event.getTargetUserEmail() != null ? event.getTargetUserEmail() : targetUser.getEmail();
+        emailService.sendHtmlAssignmentEmail(event, targetEmail, title, message, actionUrl);
     }
 
 }

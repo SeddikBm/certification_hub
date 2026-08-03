@@ -12,10 +12,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AssignmentEvent {
-    private UUID userId;
+    private UUID userId; // Collaborateur concerné
     private String userEmail;
     private String userFullName;
+    
+    private UUID targetUserId; // Destinataire de la notification/email
+    private String targetUserEmail;
+    private String targetUserFullName;
+
     private UUID assignmentId;
     private String itemName; // Nom de la formation ou certification
-    private String eventType; // "CREATED", "APPROVED", "REJECTED", "CERTIFICATE_UPLOADED"
+    private String eventType; // CREATED, APPROVED, REJECTED, CERTIFICATE_UPLOADED, CERTIFICATE_STATUS_CHANGED, DEADLINE_APPROACHING, EXPIRED, REVIEW_REPORTED
+    private String notes;
+    private String actionUrl;
+    private String details;
 }

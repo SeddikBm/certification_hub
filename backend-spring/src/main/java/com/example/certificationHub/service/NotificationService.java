@@ -24,8 +24,8 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public List<NotificationResponse> getMyNotifications(UUID userId) {
-        // Ramène les notifications non lues, les plus récentes en premier
-        return notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId)
+        // Ramène toutes les notifications de l'utilisateur, les plus récentes en premier
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(notificationMapper::toResponse)
                 .collect(Collectors.toList());
@@ -45,4 +45,12 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    @Transactional
+    public void markAllAsRead(UUID currentUserId) {
+        List<Notification> unread = notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(currentUserId);
+        for (Notification n : unread) {
+            n.setIsRead(true);
+        }
+        notificationRepository.saveAll(unread);
+    }
 }

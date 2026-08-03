@@ -189,6 +189,24 @@ export function MyAssignments() {
     return null;
   };
 
+  const renderNoteBox = (notes?: string, assignedByRole?: string) => {
+    if (!notes || !notes.trim()) return null;
+    const cleanNotes = notes.replace(/^Demande collaborateur:\s*/i, '');
+    const isCollabMotivation = assignedByRole === 'USER' || notes.toLowerCase().includes('demande collaborateur');
+
+    return (
+      <div className="mt-1.5 p-2 rounded-lg bg-indigo-50/50 border border-indigo-100/80 text-[11px] max-w-sm">
+        <div className="flex items-center gap-1 font-bold text-indigo-900 text-[10px]">
+          <span className="material-symbols-outlined text-[13px] text-indigo-600">sticky_note_2</span>
+          <span>{isCollabMotivation ? 'Motivation du collaborateur' : 'Note du Manager'}</span>
+        </div>
+        <p className="text-gray-700 text-[10.5px] italic pl-4 font-medium leading-normal mt-0.5">
+          "{cleanNotes}"
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-12 relative">
 
@@ -368,11 +386,12 @@ export function MyAssignments() {
                                 {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
                               </span>
                             </div>
-                            <div>
+                            <div className="space-y-0.5">
                               <div className="font-bold text-gray-900 line-clamp-1">{ass.itemName || '-'}</div>
                               {ass.itemCode ? (
                                 <div className="text-[11px] font-semibold text-gray-500">{ass.itemCode}</div>
                               ) : null}
+                              {renderNoteBox(ass.notes, ass.assignedByRole)}
                             </div>
                           </div>
                         </td>

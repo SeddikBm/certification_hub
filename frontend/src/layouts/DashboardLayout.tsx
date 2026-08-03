@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationDropdown } from '../components/NotificationDropdown';
 import clsx from 'clsx';
 
 export function DashboardLayout() {
@@ -132,6 +133,11 @@ export function DashboardLayout() {
           {/* User Section & Actions */}
           <div className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-3">
+               {/* Notification Bell Dropdown */}
+               <NotificationDropdown />
+
+               <div className="h-5 border-l border-gray-200 mx-0.5 hidden sm:block"></div>
+
                <div className="flex flex-col items-end hidden sm:flex">
                   <span className="text-xs font-bold text-gray-900">{user?.firstName} {user?.lastName || user?.name || user?.email}</span>
                   <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{user?.role}</span>

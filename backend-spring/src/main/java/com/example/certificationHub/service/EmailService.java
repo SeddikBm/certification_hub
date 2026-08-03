@@ -60,36 +60,88 @@ public class EmailService {
         }
     }
 
-    public void sendHtmlAssignmentEmail(AssignmentEvent event, String emailTitle, String emailMessage) {
-        if (!isMailConfigured()) {
-            log.info("[DEV MODE] Email d'assignation simulé pour {} : {}", event.getUserEmail(), emailTitle);
+    public void sendHtmlAssignmentEmail(AssignmentEvent event, String recipientEmail, String emailTitle, String emailMessage, String actionUrl) {
+        String toEmail = recipientEmail != null ? recipientEmail : event.getUserEmail();
+        if (toEmail == null || toEmail.isBlank()) {
+            log.warn("Destinataire manquant pour l'email : {}", emailTitle);
             return;
         }
+
+        if (!isMailConfigured()) {
+            log.info("[DEV MODE] Email simulé pour {} : [{}] - {}", toEmail, emailTitle, emailMessage);
+            return;
+        }
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // 1. Préparer les variables pour Thymeleaf
             Context context = new Context();
-            context.setVariable("fullName", event.getUserFullName());
+            context.setVariable("fullName", event.getTargetUserFullName() != null ? event.getTargetUserFullName() : event.getUserFullName());
+            context.setVariable("collabName", event.getUserFullName());
             context.setVariable("itemName", event.getItemName());
             context.setVariable("title", emailTitle);
             context.setVariable("message", emailMessage);
+            context.setVariable("actionUrl", actionUrl != null ? actionUrl : "/my-assignments");
+            context.setVariable("eventType", event.getEventType());
+            context.setVariable("notes", event.getNotes());
+            context.setVariable("dateDetail", event.getDetails());
 
-            // 2. Générer le HTML à partir du fichier "assignment-email.html"
-            String htmlContent = templateEngine.process("assignment-email", context);
+            String templateName = "assignment-email";
+            String eventType = event.getEventType() != null ? event.getEventType().toUpperCase() : "";
 
-            // 3. Configurer l'email
-            helper.setTo(event.getUserEmail());
-            helper.setSubject(emailTitle + " - CertificationHub");
+            switch (eventType) {
+                case "CREATED":
+                    templateName = "assignment-created";
+                    break;
+                case "APPROVED":
+                case "REJECTED":
+                case "CANCELLED":
+                    templateName = "assignment-status";
+                    break;
+                case "PLANNED":
+                    templateName = "assignment-planned";
+                    break;
+                case "EXAM_SCHEDULED":
+                    templateName = "exam-scheduled";
+                    break;
+                case "COMPLETED":
+                    templateName = "assignment-completed";
+                    break;
+                case "FAILED":
+                    templateName = "assignment-failed";
+                    break;
+                case "CERTIFICATE_UPLOADED":
+                case "CERTIFICATE_STATUS_CHANGED":
+                    templateName = "certificate-event";
+                    break;
+                case "DEADLINE_APPROACHING":
+                    templateName = "deadline-reminder";
+                    break;
+                case "REVIEW_REPORTED":
+                case "REPORT_CREATED":
+                    templateName = "report-alert";
+                    break;
+                default:
+                    templateName = "assignment-email";
+                    break;
+            }
+
+            String htmlContent = templateEngine.process(templateName, context);
+
+            helper.setTo(toEmail);
+            helper.setSubject(emailTitle + " - Devoteam CertificationHub");
             helper.setText(htmlContent, true);
 
-            // 4. Envoyer
             mailSender.send(message);
-            log.info("Email d'assignation envoyé avec succès à {}", event.getUserEmail());
+            log.info("Email [{}] envoyé avec succès à {}", templateName, toEmail);
 
         } catch (Exception e) {
-            log.warn("Notification par email non délivrée à {} (SMTP local non configuré) : {}", event.getUserEmail(), e.getMessage());
+            log.warn("Notification par email non délivrée à {} : {}", toEmail, e.getMessage());
         }
+    }
+
+    public void sendHtmlAssignmentEmail(AssignmentEvent event, String emailTitle, String emailMessage) {
+        sendHtmlAssignmentEmail(event, event.getUserEmail(), emailTitle, emailMessage, "/my-assignments");
     }
 }

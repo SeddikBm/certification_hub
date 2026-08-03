@@ -7,6 +7,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -21,11 +22,25 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
-    @org.springframework.beans.factory.annotation.Value("${spring.mail.password:}")
+    @Value("${spring.mail.password:}")
     private String mailPassword;
+
+    @Value("${app.mail.from:${spring.mail.username:moncompte8314@gmail.com}}")
+    private String fromEmail;
 
     private boolean isMailConfigured() {
         return mailPassword != null && !mailPassword.isBlank() && !mailPassword.contains("CHANGE_ME");
+    }
+
+    private void attachLogoInlineIfAvailable(MimeMessageHelper helper) {
+        try {
+            java.io.File file = new java.io.File("c:/Users/dell/Desktop/certificationHub/image.png");
+            if (file.exists()) {
+                helper.addInline("devoteamLogo", new org.springframework.core.io.FileSystemResource(file));
+            }
+        } catch (Exception e) {
+            log.warn("Impossible d'attacher le logo inline : {}", e.getMessage());
+        }
     }
 
     public void sendHtmlWelcomeEmail(WelcomeEmailEvent event) {
@@ -35,32 +50,32 @@ public class EmailService {
         }
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            // true = on indique que c'est un message multipart (pour supporter le HTML)
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // 1. Préparer les variables pour Thymeleaf
             Context context = new Context();
             context.setVariable("firstName", event.getFirstName());
             context.setVariable("lastName", event.getLastName());
+            context.setVariable("email", event.getEmail());
             context.setVariable("password", event.getRawPassword());
 
-            // 2. Générer le HTML à partir du fichier "welcome-email.html"
             String htmlContent = templateEngine.process("welcome-email", context);
 
-            // 3. Configurer l'email
+            helper.setFrom(fromEmail);
             helper.setTo(event.getEmail());
             helper.setSubject("Bienvenue sur CertificationHub !");
-            helper.setText(htmlContent, true); // true = c'est du HTML
+            helper.setText(htmlContent, true);
+            attachLogoInlineIfAvailable(helper);
 
-            // 4. Envoyer
             mailSender.send(message);
             log.info("Email de bienvenue envoyé avec succès à {}", event.getEmail());
         } catch (Exception e) {
-            log.warn("Notification par email non délivrée à {} (SMTP local non configuré) : {}", event.getEmail(), e.getMessage());
+            log.warn("Notification par email non délivrée à {} (SMTP local non configuré) : {}", event.getEmail(),
+                    e.getMessage());
         }
     }
 
-    public void sendHtmlAssignmentEmail(AssignmentEvent event, String recipientEmail, String emailTitle, String emailMessage, String actionUrl) {
+    public void sendHtmlAssignmentEmail(AssignmentEvent event, String recipientEmail, String emailTitle,
+            String emailMessage, String actionUrl) {
         String toEmail = recipientEmail != null ? recipientEmail : event.getUserEmail();
         if (toEmail == null || toEmail.isBlank()) {
             log.warn("Destinataire manquant pour l'email : {}", emailTitle);
@@ -77,7 +92,8 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             Context context = new Context();
-            context.setVariable("fullName", event.getTargetUserFullName() != null ? event.getTargetUserFullName() : event.getUserFullName());
+            context.setVariable("fullName",
+                    event.getTargetUserFullName() != null ? event.getTargetUserFullName() : event.getUserFullName());
             context.setVariable("collabName", event.getUserFullName());
             context.setVariable("itemName", event.getItemName());
             context.setVariable("title", emailTitle);
@@ -129,9 +145,11 @@ public class EmailService {
 
             String htmlContent = templateEngine.process(templateName, context);
 
+            helper.setFrom(fromEmail);
             helper.setTo(toEmail);
             helper.setSubject(emailTitle + " - Devoteam CertificationHub");
             helper.setText(htmlContent, true);
+            attachLogoInlineIfAvailable(helper);
 
             mailSender.send(message);
             log.info("Email [{}] envoyé avec succès à {}", templateName, toEmail);

@@ -39,11 +39,32 @@ public class GlobalExceptionHandler {
         return Map.of("error", "Erreur de validation", "details", errors);
     }
 
+    // Ressource non trouvée (404)
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleResourceNotFound(ResourceNotFoundException ex) {
+        return Map.of("error", "Introuvable", "message", ex.getMessage() != null ? ex.getMessage() : "Ressource introuvable");
+    }
+
+    // Erreurs d'arguments ou d'état (400)
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleBadRequestExceptions(RuntimeException ex) {
+        return Map.of("error", "Requête invalide", "message", ex.getMessage() != null ? ex.getMessage() : "Données fournies invalides");
+    }
+
     // Gestion des erreurs levées manuellement via ResponseStatusException
     @ExceptionHandler(ResponseStatusException.class)
     public Map<String, String> handleResponseStatusException(ResponseStatusException ex,
             jakarta.servlet.http.HttpServletResponse response) {
         response.setStatus(ex.getStatusCode().value());
-        return Map.of("error", "Erreur", "message", ex.getReason() != null ? ex.getReason() : "Erreur interne");
+        return Map.of("error", "Erreur", "message", ex.getReason() != null ? ex.getReason() : "Erreur requise");
+    }
+
+    // Handler global de secours pour éviter les erreurs 500 brutes
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleGenericException(Exception ex) {
+        return Map.of("error", "Erreur interne", "message", ex.getMessage() != null ? ex.getMessage() : "Une erreur inattendue est survenue");
     }
 }

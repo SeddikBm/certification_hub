@@ -4,11 +4,14 @@ import { assignmentService, type AssignmentResponse } from '../services/assignme
 import { RequestAssignmentModal } from '../components/RequestAssignmentModal';
 import { ScheduleExamModal } from '../components/ScheduleExamModal';
 import { UploadCertificateModal } from '../components/UploadCertificateModal';
+import { NoteModal } from '../components/NoteModal';
 import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
 export function MyAssignments() {
   const queryClient = useQueryClient();
+
+  const [activeNoteModal, setActiveNoteModal] = useState<{ title: string; user?: string; notes: string } | null>(null);
 
   const [activeTab, setActiveTab] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -189,23 +192,7 @@ export function MyAssignments() {
     return null;
   };
 
-  const renderNoteBox = (notes?: string, assignedByRole?: string) => {
-    if (!notes || !notes.trim()) return null;
-    const cleanNotes = notes.replace(/^Demande collaborateur:\s*/i, '');
-    const isCollabMotivation = assignedByRole === 'USER' || notes.toLowerCase().includes('demande collaborateur');
 
-    return (
-      <div className="mt-1.5 p-2 rounded-lg bg-indigo-50/50 border border-indigo-100/80 text-[11px] max-w-sm">
-        <div className="flex items-center gap-1 font-bold text-indigo-900 text-[10px]">
-          <span className="material-symbols-outlined text-[13px] text-indigo-600">sticky_note_2</span>
-          <span>{isCollabMotivation ? 'Motivation du collaborateur' : 'Note du Manager'}</span>
-        </div>
-        <p className="text-gray-700 text-[10.5px] italic pl-4 font-medium leading-normal mt-0.5">
-          "{cleanNotes}"
-        </p>
-      </div>
-    );
-  };
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-12 relative">
@@ -387,11 +374,26 @@ export function MyAssignments() {
                               </span>
                             </div>
                             <div className="space-y-0.5">
-                              <div className="font-bold text-gray-900 line-clamp-1">{ass.itemName || '-'}</div>
+                              <div className="font-bold text-gray-900 line-clamp-1 flex items-center gap-2">
+                                <span>{ass.itemName || '-'}</span>
+                                {ass.notes && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveNoteModal({
+                                      title: ass.itemName || 'Assignation',
+                                      notes: ass.notes!
+                                    })}
+                                    className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-[#b70f30] border border-red-100 hover:bg-red-100 transition-colors flex items-center gap-1 cursor-pointer"
+                                    title="Consulter la note / motivation"
+                                  >
+                                    <span className="material-symbols-outlined text-[13px]">sticky_note_2</span>
+                                    <span>Note</span>
+                                  </button>
+                                )}
+                              </div>
                               {ass.itemCode ? (
                                 <div className="text-[11px] font-semibold text-gray-500">{ass.itemCode}</div>
                               ) : null}
-                              {renderNoteBox(ass.notes, ass.assignedByRole)}
                             </div>
                           </div>
                         </td>
@@ -863,6 +865,14 @@ export function MyAssignments() {
           queryClient.invalidateQueries({ queryKey: ['assignments'] });
           showNotification('success', msg);
         }}
+      />
+
+      <NoteModal
+        isOpen={!!activeNoteModal}
+        onClose={() => setActiveNoteModal(null)}
+        title={activeNoteModal?.title || ''}
+        user={activeNoteModal?.user}
+        notes={activeNoteModal?.notes || ''}
       />
 
     </div>

@@ -22,6 +22,7 @@ public class AssignmentEvent {
 
     private UUID assignmentId;
     private String itemName; // Nom de la formation ou certification
+    private String itemType; // CERTIFICATION ou TRAINING
     private String eventType; // CREATED, APPROVED, REJECTED, CERTIFICATE_UPLOADED, CERTIFICATE_STATUS_CHANGED, DEADLINE_APPROACHING, EXPIRED, REVIEW_REPORTED
     private String notes;
     private String actionUrl;

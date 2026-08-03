@@ -187,11 +187,19 @@ export function NotificationDropdown() {
           </div>
 
           {/* Footer */}
-          {notifications.length > 5 && (
-            <div className="p-2 border-t border-gray-100 bg-gray-50/40 text-center">
-              <span className="text-[10px] text-gray-400 font-medium">Affichage des 5 plus récentes sur {notifications.length}</span>
-            </div>
-          )}
+          <div className="p-2.5 border-t border-gray-100 bg-gray-50/60 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/notifications');
+              }}
+              className="text-xs font-bold text-[#b70f30] hover:text-red-800 hover:underline flex items-center justify-center gap-1 mx-auto cursor-pointer transition-all"
+            >
+              <span>Voir toutes les notifications</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService, type AssignmentResponse } from '../services/assignment.service';
 import { AssignItemModal } from '../components/AssignItemModal';
 import { ViewCertificateModal } from '../components/ViewCertificateModal';
+import { NoteModal } from '../components/NoteModal';
 import { Pagination } from '../components/ui/Pagination';
 import { useAuth } from '../contexts/AuthContext';
 import { formatStatus, formatPriority, getAssignmentProgressPercentage } from '../utils/enumFormatters';
@@ -263,23 +264,7 @@ export function ManageAssignments() {
     );
   };
 
-  const renderNoteBox = (notes?: string, assignedByRole?: string) => {
-    if (!notes || !notes.trim()) return null;
-    const cleanNotes = notes.replace(/^Demande collaborateur:\s*/i, '');
-    const isCollabMotivation = assignedByRole === 'USER' || notes.toLowerCase().includes('demande collaborateur');
 
-    return (
-      <div className="p-2.5 rounded-xl bg-indigo-50/50 border border-indigo-100/80 text-xs space-y-1">
-        <div className="flex items-center gap-1.5 font-extrabold text-indigo-900 text-[10.5px]">
-          <span className="material-symbols-outlined text-[14px] text-indigo-600">sticky_note_2</span>
-          <span>{isCollabMotivation ? 'Motivation du collaborateur' : 'Note du Manager'}</span>
-        </div>
-        <p className="text-gray-700 text-[11px] italic leading-relaxed pl-5 font-medium">
-          "{cleanNotes}"
-        </p>
-      </div>
-    );
-  };
 
   const renderDateWarning = (dateStr: string | undefined, isTraining?: boolean) => {
     if (!dateStr) return null;
@@ -320,6 +305,21 @@ export function ManageAssignments() {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             {renderPriorityBadge(ass.priority, ass.itemType === 'TRAINING')}
+            {ass.notes && (
+              <button
+                type="button"
+                onClick={() => setActiveNoteModal({
+                  title: ass.itemName,
+                  user: ass.userName,
+                  notes: ass.notes!
+                })}
+                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-[#b70f30] border border-red-100 hover:bg-red-100 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Consulter la note / motivation"
+              >
+                <span className="material-symbols-outlined text-[13px]">sticky_note_2</span>
+                <span>Note</span>
+              </button>
+            )}
           </div>
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
             {formatStatus(status, ass.itemType)}
@@ -370,8 +370,7 @@ export function ManageAssignments() {
           </div>
         </div>
 
-        {/* Embedded Note Box (Solution 1) */}
-        {renderNoteBox(ass.notes, ass.assignedByRole)}
+
 
         {/* Progress Bar (Visible ONLY while IN_PROGRESS) */}
         {status === 'IN_PROGRESS' && (
@@ -887,6 +886,14 @@ export function ManageAssignments() {
           queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
           showNotification('success', 'Statut du certificat mis à jour avec succès.');
         }}
+      />
+
+      <NoteModal
+        isOpen={!!activeNoteModal}
+        onClose={() => setActiveNoteModal(null)}
+        title={activeNoteModal?.title || ''}
+        user={activeNoteModal?.user}
+        notes={activeNoteModal?.notes || ''}
       />
 
     </div>

@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -57,7 +59,8 @@ public class NotificationConsumer {
                     actionUrl = "/manage-assignments";
                 } else {
                     title = "Nouvelle assignation reçue";
-                    message = "La certification/formation " + event.getItemName() + " vous a été attribuée par votre responsable.";
+                    String itemLabel = "TRAINING".equalsIgnoreCase(event.getItemType()) ? "La formation " : "La certification ";
+                    message = itemLabel + event.getItemName() + " vous a été attribuée par votre responsable.";
                     actionUrl = "/my-assignments";
                 }
                 type = NotificationType.INFO;
@@ -136,6 +139,8 @@ public class NotificationConsumer {
                 actionUrl = "/certifications";
                 break;
         }
+
+
 
         // 1. Sauvegarde de la Notification In-App
         Notification notification = Notification.builder()

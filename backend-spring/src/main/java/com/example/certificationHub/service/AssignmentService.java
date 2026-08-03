@@ -24,6 +24,7 @@ import com.example.certificationHub.validator.AssignmentWorkflowValidator;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AssignmentService {
@@ -259,7 +261,9 @@ public class AssignmentService {
                 .targetUserFullName(targetUserFullName)
                 .assignmentId(savedAssignment.getId())
                 .itemName(itemName)
+                .itemType(savedAssignment.getCertification() != null ? "CERTIFICATION" : "TRAINING")
                 .eventType("CREATED")
+                .notes(savedAssignment.getNotes() != null ? savedAssignment.getNotes() : request.getNotes())
                 .actionUrl(actionUrl)
                 .build());
 
@@ -374,7 +378,7 @@ public class AssignmentService {
             dateDetail = request.getExamAt() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date.from(request.getExamAt())) : null;
         } else if (request.getPlannedStartDate() != null) {
             eventType = "PLANNED";
-            dateDetail = request.getPlannedStartDate();
+            dateDetail = new java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date.from(request.getPlannedStartDate()));
         } else if (request.getStatusCertification() == StatusCertification.COMPLETED || request.getStatusTraining() == StatusTraining.COMPLETED) {
             eventType = "COMPLETED";
         } else if (request.getStatusCertification() == StatusCertification.FAILED) {
@@ -382,25 +386,33 @@ public class AssignmentService {
         }
 
         if (eventType != null) {
-            User targetUser = isUpdatedByCollab
-                    ? (responsibleManager != null ? responsibleManager : assignment.getUser())
-                    : assignment.getUser();
+            try {
+                User targetUser = isUpdatedByCollab
+                        ? (responsibleManager != null ? responsibleManager : assignment.getUser())
+                        : assignment.getUser();
 
-            String actionUrl = isUpdatedByCollab ? "/manage-assignments" : "/my-assignments";
+                String actionUrl = isUpdatedByCollab ? "/manage-assignments" : "/my-assignments";
 
-            notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
-                    .userId(assignment.getUser().getId())
-                    .userEmail(assignment.getUser().getEmail())
-                    .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
-                    .targetUserId(targetUser.getId())
-                    .targetUserEmail(targetUser.getEmail())
-                    .targetUserFullName(targetUser.getFirstName() + " " + targetUser.getLastName())
-                    .assignmentId(updatedAssignment.getId())
-                    .itemName(itemName)
-                    .eventType(eventType)
-                    .details(dateDetail)
-                    .actionUrl(actionUrl)
-                    .build());
+                if (notificationProducer != null) {
+                    notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
+                            .userId(assignment.getUser().getId())
+                            .userEmail(assignment.getUser().getEmail())
+                            .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
+                            .targetUserId(targetUser != null ? targetUser.getId() : assignment.getUser().getId())
+                            .targetUserEmail(targetUser != null ? targetUser.getEmail() : assignment.getUser().getEmail())
+                            .targetUserFullName(targetUser != null ? (targetUser.getFirstName() + " " + targetUser.getLastName()) : "")
+                            .assignmentId(updatedAssignment.getId())
+                            .itemName(itemName)
+                            .itemType(updatedAssignment.getCertification() != null ? "CERTIFICATION" : "TRAINING")
+                            .eventType(eventType)
+                            .details(dateDetail)
+                            .notes(request.getNotes())
+                            .actionUrl(actionUrl)
+                            .build());
+                }
+            } catch (Exception e) {
+                log.warn("Notification non envoyée suite à une erreur réseau/messaging: {}", e.getMessage());
+            }
         }
 
         return assignmentMapper.toResponse(updatedAssignment);

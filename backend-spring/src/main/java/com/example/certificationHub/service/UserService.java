@@ -73,6 +73,13 @@ public class UserService {
                 pageable).map(userMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getUserById(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+        return userMapper.toResponse(user);
+    }
+
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {

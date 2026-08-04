@@ -94,6 +94,11 @@ public class AuthController {
             // Récupération du rôle réel de l'utilisateur depuis la base
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Utilisateur introuvable"));
+
+            if (user.getStatus() != UserStatus.ACTIVE) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Le compte utilisateur a été désactivé");
+            }
+
             String actualRole = user.getRole().name();
 
             String newAccessToken = jwtService.generateAccessToken(email, userId.toString(), actualRole);

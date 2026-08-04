@@ -36,6 +36,11 @@ export interface UserUpdateRequest {
   hireDate?: string;
 }
 
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export const userService = {
   getUsers: async (params?: {
     role?: string;
@@ -47,6 +52,11 @@ export const userService = {
     sort?: string;
   }): Promise<Page<UserResponse>> => {
     const response = await api.get<Page<UserResponse>>('/users', { params });
+    return response.data;
+  },
+
+  getCurrentUser: async (): Promise<UserResponse> => {
+    const response = await api.get<UserResponse>('/users/me');
     return response.data;
   },
 
@@ -62,5 +72,9 @@ export const userService = {
 
   deleteUser: async (id: string): Promise<void> => {
     await api.delete(`/users/${id}`);
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<void> => {
+    await api.post('/users/change-password', data);
   }
 };

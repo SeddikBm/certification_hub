@@ -383,10 +383,10 @@ export function MyAssignments() {
                                       title: ass.itemName || 'Assignation',
                                       notes: ass.notes!
                                     })}
-                                    className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-[#b70f30] border border-red-100 hover:bg-red-100 transition-colors flex items-center gap-1 cursor-pointer"
+                                    className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 hover:bg-indigo-100 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                                     title="Consulter la note / motivation"
                                   >
-                                    <span className="material-symbols-outlined text-[13px]">sticky_note_2</span>
+                                    <span className="material-symbols-outlined text-[13px] text-indigo-600">sticky_note_2</span>
                                     <span>Note</span>
                                   </button>
                                 )}

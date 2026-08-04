@@ -44,6 +44,18 @@ public class UserController {
         return userService.getUsers(role, squadId, status, search, pageable, currentUserId, currentUserRole);
     }
 
+    @GetMapping("/me")
+    public UserResponse getCurrentUser(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("user_id"));
+        return userService.getUserById(currentUserId);
+    }
+
+    @GetMapping("/{id}")
+    public UserResponse getUserById(@PathVariable UUID id) {
+        return userService.getUserById(id);
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)

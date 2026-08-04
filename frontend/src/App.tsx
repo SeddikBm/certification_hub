@@ -17,6 +17,7 @@ import { RoleGuard } from './components/RoleGuard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 import { Notifications } from './pages/Notifications';
+import { Profile } from './pages/Profile';
 
 const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
@@ -58,6 +59,7 @@ function App() {
               <Route path="/certifications/:id" element={<CertificationDetails />} />
 
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/profile" element={<Profile />} />
 
               {/* Collaborator Only Route */}
               <Route element={<RoleGuard allowedRoles={['COLLABORATOR', 'USER', 'SQUAD_LEAD']} />}>

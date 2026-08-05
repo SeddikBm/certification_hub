@@ -32,7 +32,7 @@ export function AddTraining() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<TrainingFormValues>({
+  } = useForm<any>({
     resolver: zodResolver(trainingSchema),
     defaultValues: {
       title: "",

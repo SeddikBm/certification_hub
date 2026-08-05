@@ -140,6 +140,7 @@ public class AssignmentMapper {
         UUID certificateId = null;
         String certificateFileName = null;
         String certificateStatus = null;
+        java.util.Map<String, Object> validationDetails = null;
 
         var certs = certificateRepository.findByAssignmentId(assignment.getId());
         if (certs != null && !certs.isEmpty()) {
@@ -147,6 +148,7 @@ public class AssignmentMapper {
             certificateId = certObj.getId();
             certificateFileName = certObj.getFileName();
             certificateStatus = certObj.getStatus() != null ? certObj.getStatus().name() : null;
+            validationDetails = certObj.getValidationDetails();
         }
 
         return AssignmentResponse.builder()
@@ -181,6 +183,7 @@ public class AssignmentMapper {
                 .certificateId(certificateId)
                 .certificateFileName(certificateFileName)
                 .certificateStatus(certificateStatus)
+                .validationDetails(validationDetails)
                 .build();
     }
 }

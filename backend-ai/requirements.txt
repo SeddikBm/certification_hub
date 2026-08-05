@@ -1,0 +1,36 @@
+# --- Web framework -----------------------------------------------------
+fastapi>=0.115
+uvicorn[standard]>=0.32
+python-multipart>=0.0.12          # required by FastAPI for UploadFile/Form
+pydantic>=2.9
+pydantic-settings>=2.6
+
+# --- Graph orchestration -------------------------------------------------
+langgraph>=0.2.60
+
+# --- LLM client -----------------------------------------------------------
+groq>=0.11
+
+# --- Document extraction --------------------------------------------------
+pymupdf>=1.24                      # PDF native-text extraction + rasterization
+opencv-python-headless>=4.10       # QR decoding
+pillow>=10.4
+numpy>=1.26
+
+# --- Fuzzy matching ---------------------------------------------------------
+rapidfuzz>=3.10
+
+# --- Web verification agent ---------------------------------------------------
+httpx>=0.27
+beautifulsoup4>=4.12
+
+python-dotenv>=1.0
+
+# --- OCR engine (pick ONE, matching OCR_ENGINE in .env) ------------------------
+# Default engine — best accuracy, built-in layout analysis (see README benchmark).
+paddleocr>=2.9
+paddlepaddle>=2.6
+
+# Lightweight fallback — uncomment if OCR_ENGINE=tesseract instead.
+# Also requires the system package: apt-get install -y tesseract-ocr tesseract-ocr-fra
+# pytesseract>=0.3.13

@@ -25,6 +25,7 @@ public class AssignmentEvent {
     private String itemType; // CERTIFICATION ou TRAINING
     private String eventType; // CREATED, APPROVED, REJECTED, CERTIFICATE_UPLOADED, CERTIFICATE_STATUS_CHANGED, DEADLINE_APPROACHING, EXPIRED, REVIEW_REPORTED
     private String notes;
+    private String noteLabel;
     private String actionUrl;
     private String details;
 }

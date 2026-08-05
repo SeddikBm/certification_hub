@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,9 +18,12 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const successMsg = (location.state as any)?.successMsg;
 
   const {
     register,
@@ -67,6 +70,13 @@ export function Login() {
 
           <form className="w-full space-y-6" onSubmit={handleSubmit(onSubmit)}>
             
+            {successMsg && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
+                <span>{successMsg}</span>
+              </div>
+            )}
+
             {errorMsg && (
               <div className="p-3 rounded-lg bg-error-container text-on-error-container text-sm font-medium">
                 {errorMsg}

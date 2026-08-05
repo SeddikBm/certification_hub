@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -38,4 +39,12 @@ public class Certificate {
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private CertificateStatus status;
-}
+
+    /**
+     * Résultats de la validation IA (FastAPI backend-ai).
+     * Stocke: decision, scores {name, title, date, overall}, reasons[], source, extracted {holder_name, ...}
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "validation_details", columnDefinition = "jsonb")
+    private Map<String, Object> validationDetails;
+}

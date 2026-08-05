@@ -1,6 +1,7 @@
 package com.example.certificationHub.security.controller;
 
 import com.example.certificationHub.entity.User;
+import com.example.certificationHub.enumeration.UserStatus;
 import com.example.certificationHub.repository.UserRepository;
 import com.example.certificationHub.security.dto.AuthResponse;
 import com.example.certificationHub.security.dto.LoginRequest;

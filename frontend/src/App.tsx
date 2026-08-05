@@ -16,7 +16,6 @@ import { Unauthorized } from './pages/Unauthorized';
 import { RoleGuard } from './components/RoleGuard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-import { Notifications } from './pages/Notifications';
 import { Profile } from './pages/Profile';
 
 const ProtectedRoute = () => {
@@ -58,7 +57,6 @@ function App() {
               <Route path="/certifications" element={<Certifications />} />
               <Route path="/certifications/:id" element={<CertificationDetails />} />
 
-              <Route path="/notifications" element={<Notifications />} />
               <Route path="/profile" element={<Profile />} />
 
               {/* Collaborator Only Route */}

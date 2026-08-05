@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { assignmentService } from '../services/assignment.service';
+import { assignmentService, type ValidationDetails } from '../services/assignment.service';
 import clsx from 'clsx';
 
 interface ViewCertificateModalProps {
@@ -11,6 +11,7 @@ interface ViewCertificateModalProps {
   itemName?: string;
   currentStatus?: string;
   onStatusUpdated: (newStatus: string) => void;
+  validationDetails?: ValidationDetails | null;
 }
 
 export function ViewCertificateModal({
@@ -21,7 +22,8 @@ export function ViewCertificateModal({
   collaboratorName,
   itemName,
   currentStatus,
-  onStatusUpdated
+  onStatusUpdated,
+  validationDetails
 }: ViewCertificateModalProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -149,6 +151,44 @@ export function ViewCertificateModal({
           ) : null}
         </div>
 
+        {/* AI Validation Details Panel */}
+        {validationDetails && (
+          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center gap-3">
+            {/* Badge décision IA */}
+            <span className={clsx(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-extrabold border",
+              validationDetails.decision === 'APPROVED'  ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+              validationDetails.decision === 'REJECTED'  ? 'bg-red-50 text-red-800 border-red-200' :
+              'bg-amber-50 text-amber-800 border-amber-200'
+            )}>
+              <span className="material-symbols-outlined text-[14px]">
+                {validationDetails.decision === 'APPROVED' ? 'check_circle' :
+                 validationDetails.decision === 'REJECTED' ? 'cancel' : 'hourglass_top'}
+              </span>
+              IA :{' '}
+              {validationDetails.decision === 'APPROVED' ? 'Approuvé' :
+               validationDetails.decision === 'REJECTED' ? 'Refusé' : 'Revue manuelle'}
+            </span>
+
+            {/* Scores */}
+            {validationDetails.scores && (
+              <div className="flex items-center gap-2">
+                <AiScorePill label="Nom" value={validationDetails.scores.name_score} />
+                <AiScorePill label="Titre" value={validationDetails.scores.title_score} />
+                <AiScorePill label="Date" value={validationDetails.scores.date_score} />
+              </div>
+            )}
+
+            {/* Source */}
+            {validationDetails.source && (
+              <span className="text-[11px] text-gray-400 font-medium ml-auto">
+                {validationDetails.source === 'WEB_VERIFIED' ? '🌐 Vérification web' :
+                 validationDetails.source === 'TEXT_ONLY' ? '📄 Texte seul' : 'Aucune vérification'}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Validation Action Bar */}
         <div className="px-6 py-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-gray-500 font-semibold">
@@ -214,5 +254,21 @@ export function ViewCertificateModal({
 
       </div>
     </div>
+  );
+}
+
+// Score pill mini-component for the validation details panel
+function AiScorePill({ label, value }: { label: string; value: number }) {
+  const pct = Math.round(value * 100);
+  const color = pct >= 80 ? 'emerald' : pct >= 50 ? 'amber' : 'red';
+  return (
+    <span className={clsx(
+      'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border',
+      color === 'emerald' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+      color === 'amber'   ? 'bg-amber-50 text-amber-700 border-amber-200' :
+      'bg-red-50 text-red-700 border-red-200'
+    )}>
+      {label}: {pct}%
+    </span>
   );
 }

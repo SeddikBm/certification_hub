@@ -11,7 +11,7 @@ import clsx from 'clsx';
 export function MyAssignments() {
   const queryClient = useQueryClient();
 
-  const [activeNoteModal, setActiveNoteModal] = useState<{ title: string; user?: string; notes: string } | null>(null);
+  const [activeNoteModal, setActiveNoteModal] = useState<{ title: string; user?: string; authorName?: string; authorRole?: string; notes: string; noteLabel?: string } | null>(null);
 
   const [activeTab, setActiveTab] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -350,7 +350,7 @@ export function MyAssignments() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-                {assignmentsPage.content.length === 0 ? (
+                {!assignmentsPage || assignmentsPage.content.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-12 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center space-y-2">
@@ -360,7 +360,7 @@ export function MyAssignments() {
                     </td>
                   </tr>
                 ) : (
-                  assignmentsPage.content.map((ass) => {
+                  (assignmentsPage?.content || []).map((ass) => {
                     const status = activeTab === 'CERTIFICATION' ? ass.statusCertification : ass.statusTraining;
 
                     return (
@@ -376,20 +376,27 @@ export function MyAssignments() {
                             <div className="space-y-0.5">
                               <div className="font-bold text-gray-900 line-clamp-1 flex items-center gap-2">
                                 <span>{ass.itemName || '-'}</span>
-                                {ass.notes && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveNoteModal({
-                                      title: ass.itemName || 'Assignation',
-                                      notes: ass.notes!
-                                    })}
-                                    className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 hover:bg-indigo-100 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                                    title="Consulter la note / motivation"
-                                  >
-                                    <span className="material-symbols-outlined text-[13px] text-indigo-600">sticky_note_2</span>
-                                    <span>Note</span>
-                                  </button>
-                                )}
+                                {ass.notes && (() => {
+                                  const isManagerNote = ass.assignedById && ass.assignedById !== ass.userId;
+                                  // For Collaborator table: only show Note button if it was assigned by a Manager!
+                                  if (!isManagerNote) return null;
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveNoteModal({
+                                        title: ass.itemName || 'Assignation',
+                                        notes: ass.notes!,
+                                        noteLabel: 'Note du responsable',
+                                        authorName: ass.assignedByName
+                                      })}
+                                      className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 hover:bg-indigo-100 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                                      title="Consulter la Note du responsable"
+                                    >
+                                      <span className="material-symbols-outlined text-[13px] text-indigo-600">sticky_note_2</span>
+                                      <span>Note</span>
+                                    </button>
+                                  );
+                                })()}
                               </div>
                               {ass.itemCode ? (
                                 <div className="text-[11px] font-semibold text-gray-500">{ass.itemCode}</div>
@@ -616,23 +623,46 @@ export function MyAssignments() {
 
                           {/* Certificate Status Badge or Upload Button for Collaborators */}
                           {ass.certificateId ? (
-                            <span className={clsx(
-                              "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border",
-                              ass.certificateStatus === 'VALID' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                              ass.certificateStatus === 'REJECTED' ? "bg-red-50 text-red-700 border-red-200" :
-                              ass.certificateStatus === 'EXPIRED' ? "bg-orange-50 text-orange-700 border-orange-200" :
-                              "bg-amber-50 text-amber-700 border-amber-200"
-                            )}>
-                              <span className="material-symbols-outlined text-[14px]">
-                                {ass.certificateStatus === 'VALID' ? 'verified' : ass.certificateStatus === 'REJECTED' ? 'cancel' : 'hourglass_top'}
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={clsx(
+                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border",
+                                ass.certificateStatus === 'VALID' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                ass.certificateStatus === 'REJECTED' ? "bg-red-50 text-red-700 border-red-200" :
+                                ass.certificateStatus === 'EXPIRED' ? "bg-orange-50 text-orange-700 border-orange-200" :
+                                "bg-amber-50 text-amber-700 border-amber-200"
+                              )}>
+                                {ass.certificateStatus === 'PENDING_VALIDATION' ? (
+                                  <span className="material-symbols-outlined text-[14px] animate-pulse">progress_activity</span>
+                                ) : (
+                                  <span className="material-symbols-outlined text-[14px]">
+                                    {ass.certificateStatus === 'VALID' ? 'verified' : ass.certificateStatus === 'REJECTED' ? 'cancel' : 'hourglass_top'}
+                                  </span>
+                                )}
+                                <span>
+                                  {ass.certificateStatus === 'VALID' ? 'Certificat Validé' :
+                                   ass.certificateStatus === 'REJECTED' ? 'Certificat Refusé' :
+                                   ass.certificateStatus === 'EXPIRED' ? 'Certificat Expiré' :
+                                   'Validation IA en cours…'}
+                                </span>
                               </span>
-                              <span>
-                                {ass.certificateStatus === 'VALID' ? 'Certificat Validé' :
-                                 ass.certificateStatus === 'REJECTED' ? 'Certificat Refusé' :
-                                 ass.certificateStatus === 'EXPIRED' ? 'Certificat Expiré' :
-                                 'Certificat en attente'}
-                              </span>
-                            </span>
+                              {/* AI decision mini-badge */}
+                              {ass.validationDetails?.decision && (
+                                <span
+                                  className={clsx(
+                                    'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold border',
+                                    ass.validationDetails.decision === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                    ass.validationDetails.decision === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
+                                    'bg-amber-50 text-amber-700 border-amber-200'
+                                  )}
+                                  title={`Score nom: ${Math.round((ass.validationDetails.scores?.name_score ?? 0) * 100)}%`}
+                                >
+                                  <span className="material-symbols-outlined text-[11px]">smart_toy</span>
+                                  IA ·{' '}
+                                  {ass.validationDetails.decision === 'APPROVED' ? 'OK' :
+                                   ass.validationDetails.decision === 'REJECTED' ? 'Refusé' : 'Revue'}
+                                </span>
+                              )}
+                            </div>
                           ) : (status === 'COMPLETED') && (
                             <button
                               type="button"
@@ -648,6 +678,7 @@ export function MyAssignments() {
                               <span>Déposer Certificat</span>
                             </button>
                           )}
+
 
                           </div>
                         </div>
@@ -872,7 +903,10 @@ export function MyAssignments() {
         onClose={() => setActiveNoteModal(null)}
         title={activeNoteModal?.title || ''}
         user={activeNoteModal?.user}
+        authorName={activeNoteModal?.authorName}
+        authorRole={activeNoteModal?.authorRole}
         notes={activeNoteModal?.notes || ''}
+        noteLabel={activeNoteModal?.noteLabel}
       />
 
     </div>

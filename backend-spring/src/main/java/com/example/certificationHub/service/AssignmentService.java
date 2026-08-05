@@ -261,9 +261,10 @@ public class AssignmentService {
                 .targetUserFullName(targetUserFullName)
                 .assignmentId(savedAssignment.getId())
                 .itemName(itemName)
-                .itemType(savedAssignment.getCertification() != null ? "CERTIFICATION" : "TRAINING")
+                .itemType(savedAssignment.getItemType() != null ? savedAssignment.getItemType().name() : "CERTIFICATION")
                 .eventType("CREATED")
                 .notes(savedAssignment.getNotes() != null ? savedAssignment.getNotes() : request.getNotes())
+                .noteLabel(isDirectManagementAssignment ? "Note du responsable" : "Motivation du collaborateur")
                 .actionUrl(actionUrl)
                 .build());
 
@@ -387,8 +388,19 @@ public class AssignmentService {
 
         if (eventType != null) {
             try {
+                User targetManager = null;
+                if (isUpdatedByCollab) {
+                    if (assignment.getAssignedBy() != null && !assignment.getAssignedBy().getId().equals(assignment.getUser().getId())) {
+                        targetManager = assignment.getAssignedBy();
+                    } else {
+                        targetManager = managerAssignmentRepository.findFirstByCollaboratorId(assignment.getUser().getId())
+                                .map(ManagerAssignment::getManager)
+                                .orElse(null);
+                    }
+                }
+
                 User targetUser = isUpdatedByCollab
-                        ? (responsibleManager != null ? responsibleManager : assignment.getUser())
+                        ? (targetManager != null ? targetManager : assignment.getUser())
                         : assignment.getUser();
 
                 String actionUrl = isUpdatedByCollab ? "/manage-assignments" : "/my-assignments";
@@ -398,15 +410,16 @@ public class AssignmentService {
                             .userId(assignment.getUser().getId())
                             .userEmail(assignment.getUser().getEmail())
                             .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
-                            .targetUserId(targetUser != null ? targetUser.getId() : assignment.getUser().getId())
-                            .targetUserEmail(targetUser != null ? targetUser.getEmail() : assignment.getUser().getEmail())
-                            .targetUserFullName(targetUser != null ? (targetUser.getFirstName() + " " + targetUser.getLastName()) : "")
+                            .targetUserId(targetUser.getId())
+                            .targetUserEmail(targetUser.getEmail())
+                            .targetUserFullName(targetUser.getFirstName() + " " + targetUser.getLastName())
                             .assignmentId(updatedAssignment.getId())
                             .itemName(itemName)
-                            .itemType(updatedAssignment.getCertification() != null ? "CERTIFICATION" : "TRAINING")
+                            .itemType(updatedAssignment.getItemType() != null ? updatedAssignment.getItemType().name() : "CERTIFICATION")
                             .eventType(eventType)
                             .details(dateDetail)
                             .notes(request.getNotes())
+                            .noteLabel(assignment.getAssignedBy() != null && !assignment.getAssignedBy().getId().equals(assignment.getUser().getId()) ? "Note du responsable" : "Motivation du collaborateur")
                             .actionUrl(actionUrl)
                             .build());
                 }

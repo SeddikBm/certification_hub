@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { assignmentService, type AssignmentResponse } from '../services/assignment.service';
+import { assignmentService, type AssignmentResponse, type ValidationDetails } from '../services/assignment.service';
 import { AssignItemModal } from '../components/AssignItemModal';
 import { ViewCertificateModal } from '../components/ViewCertificateModal';
 import { NoteModal } from '../components/NoteModal';
@@ -29,12 +29,13 @@ export function ManageAssignments() {
     collaboratorName?: string;
     itemName?: string;
     currentStatus?: string;
+    validationDetails?: ValidationDetails | null;
   }>({
     isOpen: false,
     certificateId: null
   });
 
-  const [activeNoteModal, setActiveNoteModal] = useState<{ title: string; user?: string; notes: string } | null>(null);
+  const [activeNoteModal, setActiveNoteModal] = useState<{ title: string; user?: string; notes: string; noteLabel?: string } | null>(null);
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [collapsedCollaborators, setCollapsedCollaborators] = useState<Record<string, boolean>>({});
@@ -307,21 +308,29 @@ export function ManageAssignments() {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             {renderPriorityBadge(ass.priority, ass.itemType === 'TRAINING')}
-            {ass.notes && (
-              <button
-                type="button"
-                onClick={() => setActiveNoteModal({
-                  title: ass.itemName,
-                  user: ass.userName,
-                  notes: ass.notes!
-                })}
-                className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 hover:bg-indigo-100 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                title="Consulter la note / motivation"
-              >
-                <span className="material-symbols-outlined text-[13px] text-indigo-600">sticky_note_2</span>
-                <span>Note</span>
-              </button>
-            )}
+            {ass.notes && (() => {
+              const isManagerNote = ass.assignedById && ass.assignedById !== ass.userId;
+              // If created by CM, note appears ONLY in collaborator's MyAssignments table.
+              // On CM side (ManageAssignments), show ONLY collaborator motivation requests.
+              if (isManagerNote) return null;
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => setActiveNoteModal({
+                    title: ass.itemName || '',
+                    user: ass.userName,
+                    notes: ass.notes!,
+                    noteLabel: "Motivation du collaborateur"
+                  })}
+                  className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 hover:bg-indigo-100 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                  title="Consulter : Motivation du collaborateur"
+                >
+                  <span className="material-symbols-outlined text-[13px] text-indigo-600">sticky_note_2</span>
+                  <span>Motivation</span>
+                </button>
+              );
+            })()}
           </div>
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
             {formatStatus(status, ass.itemType)}
@@ -337,6 +346,7 @@ export function ManageAssignments() {
             )}
             <span>{ass.itemName}</span>
           </h4>
+
           <div className="flex items-center justify-between text-[11px] text-gray-500 mt-2 flex-wrap gap-2">
             <span>Provider: <strong>{ass.provider || '-'}</strong></span>
             {status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED' ? (
@@ -401,6 +411,22 @@ export function ManageAssignments() {
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
+                {/* AI Decision mini-badge */}
+                {ass.validationDetails?.decision && (
+                  <span className={clsx(
+                    'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold border',
+                    ass.validationDetails.decision === 'APPROVED'  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    ass.validationDetails.decision === 'REJECTED'  ? 'bg-red-50 text-red-700 border-red-200' :
+                    'bg-amber-50 text-amber-700 border-amber-200'
+                  )} title={`Score nom: ${Math.round((ass.validationDetails.scores?.name_score ?? 0) * 100)}%`}>
+                    <span className="material-symbols-outlined text-[11px]">
+                      {ass.validationDetails.decision === 'APPROVED' ? 'smart_toy' :
+                       ass.validationDetails.decision === 'REJECTED' ? 'smart_toy' : 'smart_toy'}
+                    </span>
+                    IA
+                  </span>
+                )}
+
                 {renderCertStatusBadge(ass.certificateStatus)}
 
                 <button
@@ -411,7 +437,8 @@ export function ManageAssignments() {
                     fileName: ass.certificateFileName,
                     collaboratorName: ass.userName,
                     itemName: ass.itemName,
-                    currentStatus: ass.certificateStatus
+                    currentStatus: ass.certificateStatus,
+                    validationDetails: ass.validationDetails
                   })}
                   className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                   title="Ouvrir le certificat dans l'application et attribuer un statut"
@@ -882,6 +909,7 @@ export function ManageAssignments() {
         collaboratorName={viewCertModalState.collaboratorName}
         itemName={viewCertModalState.itemName}
         currentStatus={viewCertModalState.currentStatus}
+        validationDetails={viewCertModalState.validationDetails}
         onStatusUpdated={(newStatus) => {
           setViewCertModalState(prev => ({ ...prev, currentStatus: newStatus }));
           queryClient.invalidateQueries({ queryKey: ['assignments'] });
@@ -896,6 +924,7 @@ export function ManageAssignments() {
         title={activeNoteModal?.title || ''}
         user={activeNoteModal?.user}
         notes={activeNoteModal?.notes || ''}
+        noteLabel={activeNoteModal?.noteLabel}
       />
 
     </div>

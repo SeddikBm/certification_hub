@@ -28,15 +28,22 @@ public class EmailService {
     @Value("${app.mail.from:${spring.mail.username:moncompte8314@gmail.com}}")
     private String fromEmail;
 
+    private static final String DEVOTEAM_LOGO_URL = "cid:devoteamLogo";
+
     private boolean isMailConfigured() {
-        return mailPassword != null && !mailPassword.isBlank() && !mailPassword.contains("CHANGE_ME");
+        return mailPassword != null && !mailPassword.isBlank();
     }
 
     private void attachLogoInlineIfAvailable(MimeMessageHelper helper) {
         try {
-            java.io.File file = new java.io.File("c:/Users/dell/Desktop/certificationHub/image.png");
-            if (file.exists()) {
-                helper.addInline("devoteamLogo", new org.springframework.core.io.FileSystemResource(file));
+            org.springframework.core.io.ClassPathResource resource = new org.springframework.core.io.ClassPathResource("static/image.png");
+            if (resource.exists()) {
+                helper.addInline("devoteamLogo", resource);
+            } else {
+                java.io.File file = new java.io.File("c:/Users/dell/Desktop/certificationHub/image.png");
+                if (file.exists()) {
+                    helper.addInline("devoteamLogo", new org.springframework.core.io.FileSystemResource(file));
+                }
             }
         } catch (Exception e) {
             log.warn("Impossible d'attacher le logo inline : {}", e.getMessage());
@@ -57,20 +64,21 @@ public class EmailService {
             context.setVariable("lastName", event.getLastName());
             context.setVariable("email", event.getEmail());
             context.setVariable("password", event.getRawPassword());
+            context.setVariable("logoUrl", DEVOTEAM_LOGO_URL);
 
             String htmlContent = templateEngine.process("welcome-email", context);
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, "Devoteam CertificationHub");
+            helper.setReplyTo(fromEmail);
             helper.setTo(event.getEmail());
-            helper.setSubject("Bienvenue sur CertificationHub !");
+            helper.setSubject("Bienvenue sur Devoteam CertificationHub !");
             helper.setText(htmlContent, true);
             attachLogoInlineIfAvailable(helper);
 
             mailSender.send(message);
             log.info("Email de bienvenue envoyé avec succès à {}", event.getEmail());
         } catch (Exception e) {
-            log.warn("Notification par email non délivrée à {} (SMTP local non configuré) : {}", event.getEmail(),
-                    e.getMessage());
+            log.warn("Notification par email non délivrée à {} : {}", event.getEmail(), e.getMessage());
         }
     }
 
@@ -101,7 +109,9 @@ public class EmailService {
             context.setVariable("actionUrl", actionUrl != null ? actionUrl : "/my-assignments");
             context.setVariable("eventType", event.getEventType());
             context.setVariable("notes", event.getNotes());
+            context.setVariable("noteLabel", event.getNoteLabel() != null ? ("💬 " + event.getNoteLabel()) : "💬 Note / Motivation");
             context.setVariable("dateDetail", event.getDetails());
+            context.setVariable("logoUrl", DEVOTEAM_LOGO_URL);
 
             String templateName = "assignment-email";
             String eventType = event.getEventType() != null ? event.getEventType().toUpperCase() : "";
@@ -145,9 +155,10 @@ public class EmailService {
 
             String htmlContent = templateEngine.process(templateName, context);
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, "Devoteam CertificationHub");
+            helper.setReplyTo(fromEmail);
             helper.setTo(toEmail);
-            helper.setSubject(emailTitle + " - Devoteam CertificationHub");
+            helper.setSubject("[Devoteam] " + emailTitle);
             helper.setText(htmlContent, true);
             attachLogoInlineIfAvailable(helper);
 

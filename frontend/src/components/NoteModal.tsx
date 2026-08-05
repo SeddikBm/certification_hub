@@ -3,14 +3,17 @@ interface NoteModalProps {
   onClose: () => void;
   title: string;
   user?: string;
+  authorName?: string;
   notes: string;
+  noteLabel?: string;
 }
 
-export function NoteModal({ isOpen, onClose, title, user, notes }: NoteModalProps) {
+export function NoteModal({ isOpen, onClose, title, user, authorName, notes, noteLabel }: NoteModalProps) {
   if (!isOpen) return null;
 
-  // Prevent subtitle replication if user and title are the same or similar
   const showUserSubtitle = user && user.trim().toLowerCase() !== title.trim().toLowerCase();
+  const displayName = authorName || (showUserSubtitle ? user : null);
+  const isMotivation = noteLabel?.toLowerCase().includes('motivation');
 
   return (
     <div 
@@ -27,13 +30,17 @@ export function NoteModal({ isOpen, onClose, title, user, notes }: NoteModalProp
             <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center shrink-0 shadow-2xs">
               <span className="material-symbols-outlined text-[22px] text-indigo-600">sticky_note_2</span>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 space-y-0.5">
               <h3 className="text-base font-extrabold text-gray-900 leading-snug truncate" title={title}>
                 {title}
               </h3>
-              {showUserSubtitle && (
-                <p className="text-xs text-gray-500 font-medium truncate">
-                  Collaborateur : <span className="font-bold text-gray-700">{user}</span>
+              
+              {/* Clean name display without role status badge */}
+              {displayName && (
+                <p className="text-xs text-gray-500 font-medium truncate flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px] text-indigo-500">person</span>
+                  <span>{isMotivation ? 'Collaborateur :' : 'Affecté par :'}</span>
+                  <span className="font-bold text-gray-800">{displayName}</span>
                 </p>
               )}
             </div>
@@ -52,7 +59,7 @@ export function NoteModal({ isOpen, onClose, title, user, notes }: NoteModalProp
         <div className="bg-indigo-50/40 rounded-2xl p-4 border border-indigo-100/70 space-y-2">
           <span className="text-[11px] font-mono font-extrabold text-indigo-700 uppercase tracking-wider block flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[15px]">chat</span>
-            <span>Note / Motivation transmise :</span>
+            <span>{noteLabel ? `${noteLabel} :` : 'Note / Motivation transmise :'}</span>
           </span>
           <p className="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
             {notes}

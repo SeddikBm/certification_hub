@@ -117,7 +117,7 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
         priority: data.priority,
         examCostUsd: data.examCostUsd,
         trainingCostUsd: data.trainingCostUsd,
-        validityMonths: data.isPermanent ? null : (data.validityYears ? Number(data.validityYears) * 12 : undefined),
+        validityMonths: data.isPermanent ? undefined : (data.validityYears ? Number(data.validityYears) * 12 : undefined),
         officialUrl: data.officialUrl || undefined,
         examProviderUrl: data.examProviderUrl || undefined,
         metadata: {

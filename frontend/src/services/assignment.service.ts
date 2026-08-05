@@ -1,6 +1,25 @@
 import api from './api';
 import type { Page } from './training.service';
 
+/** Résultats détaillés de la validation IA (backend-ai FastAPI) */
+export interface ValidationDetails {
+  decision?: 'APPROVED' | 'REJECTED' | 'PENDING_REVIEW' | string;
+  source?: 'WEB_VERIFIED' | 'TEXT_ONLY' | 'NONE' | string;
+  scores?: {
+    name_score: number;    // Fuzzy match sur le nom du collaborateur
+    title_score: number;   // Comparaison stricte du titre de certification
+    date_score: number;    // Comparaison exacte avec completedAt
+    overall_score: number;
+  };
+  reasons?: string[];
+  extracted?: {
+    holder_name?: string;
+    certification_title?: string;
+    issue_date?: string;
+    issuer?: string;
+  };
+}
+
 export interface AssignmentResponse {
   id: string;
   itemType: 'CERTIFICATION' | 'TRAINING' | string;
@@ -31,6 +50,8 @@ export interface AssignmentResponse {
   certificateId?: string;
   certificateFileName?: string;
   certificateStatus?: string;
+  /** Résultats de la validation IA stockés en JSONB */
+  validationDetails?: ValidationDetails;
 }
 
 export interface AssignmentCreateRequest {

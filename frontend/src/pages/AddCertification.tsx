@@ -33,7 +33,7 @@ export function AddCertification() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<CertificationFormValues>({
+  } = useForm<any>({
     resolver: zodResolver(certificationSchema),
     defaultValues: {
       code: "",

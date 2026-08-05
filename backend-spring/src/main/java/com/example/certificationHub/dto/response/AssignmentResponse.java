@@ -3,6 +3,7 @@ package com.example.certificationHub.dto.response;
 import lombok.Builder;
 import lombok.Data;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -37,4 +38,10 @@ public class AssignmentResponse {
     private UUID certificateId;
     private String certificateFileName;
     private String certificateStatus;
+    /**
+     * Résultats de la validation IA stockés en JSONB sur le certificat.
+     * Contient: decision, source, scores{name_score, title_score, date_score, overall_score},
+     *           reasons[], extracted{holder_name, certification_title, issue_date, issuer}
+     */
+    private Map<String, Object> validationDetails;
 }

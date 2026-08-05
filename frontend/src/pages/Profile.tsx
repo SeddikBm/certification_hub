@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService, type UserResponse, type UserUpdateRequest } from '../services/user.service';
 import { useAuth } from '../contexts/AuthContext';
 import clsx from 'clsx';
 
 export function Profile() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -82,7 +84,7 @@ export function Profile() {
 
   // Profile Update Mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: UserUpdateRequest) => userService.updateUser(currentUser!.id, data),
+    mutationFn: (data: UserUpdateRequest) => userService.updateUser(currentUser?.id || '', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -104,7 +106,11 @@ export function Profile() {
       setOldPasswordError('');
       setNewPasswordError('');
       setConfirmPasswordError('');
-      showToast('success', 'Mot de passe modifié avec succès !');
+      showToast('success', 'Mot de passe modifié avec succès ! Redirection vers la page de connexion...');
+      setTimeout(() => {
+        logout();
+        navigate('/login', { state: { successMsg: 'Votre mot de passe a été modifié avec succès. Veuillez vous connecter avec votre nouveau mot de passe.' } });
+      }, 1500);
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || err.response?.data?.detail || '';

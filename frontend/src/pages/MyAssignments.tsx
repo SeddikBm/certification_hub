@@ -340,8 +340,9 @@ export function MyAssignments() {
               <thead className="bg-gray-50/80 border-b border-gray-100 text-gray-600 font-bold">
                 <tr>
                   <th className="p-3.5">{activeTab === 'CERTIFICATION' ? 'Certification' : 'Formation'}</th>
-                  <th className="p-3.5 text-center">Provider</th>
+                  <th className="p-3.5 text-left">Provider</th>
                   <th className="p-3.5 text-center">Date Attribution</th>
+
                   <th className="p-3.5 text-center">Statut</th>
                   <th className="p-3.5 text-center">
                     {activeTab === 'CERTIFICATION' ? 'Date Planifiée / Cible / Examen' : 'Date Planifiée / Cible'}
@@ -373,9 +374,10 @@ export function MyAssignments() {
                                 {ass.itemType === 'CERTIFICATION' ? 'verified' : 'school'}
                               </span>
                             </div>
-                            <div className="space-y-0.5">
-                              <div className="font-bold text-gray-900 line-clamp-1 flex items-center gap-2">
-                                <span>{ass.itemName || '-'}</span>
+                            <div className="space-y-0.5 min-w-0 flex-1">
+                              <div className="font-bold text-gray-900 text-xs flex items-center gap-2 max-w-[260px] sm:max-w-[340px] min-w-0">
+                                <span className="truncate min-w-0" title={ass.itemName}>{ass.itemName || '-'}</span>
+
                                 {ass.notes && (() => {
                                   const isManagerNote = ass.assignedById && ass.assignedById !== ass.userId;
                                   // For Collaborator table: only show Note button if it was assigned by a Manager!
@@ -406,11 +408,12 @@ export function MyAssignments() {
                         </td>
 
                         {/* Provider */}
-                        <td className="p-3.5 text-center">
+                        <td className="p-3.5 text-left">
                           <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100/80 text-gray-800 border border-gray-200/60">
                             {ass.provider || '-'}
                           </span>
                         </td>
+
 
                         {/* Assigned At */}
                         <td className="p-3.5 text-center text-gray-500">
@@ -645,8 +648,9 @@ export function MyAssignments() {
                                    'Validation IA en cours…'}
                                 </span>
                               </span>
-                              {/* AI decision mini-badge */}
-                              {ass.validationDetails?.decision && (
+                              {/* AI decision mini-badge: only shown if source is WEB_VERIFIED or TEXT_ONLY */}
+                              {ass.validationDetails?.decision &&
+                               (ass.validationDetails.source === 'WEB_VERIFIED' || ass.validationDetails.source === 'TEXT_ONLY') && (
                                 <span
                                   className={clsx(
                                     'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold border',
@@ -662,6 +666,7 @@ export function MyAssignments() {
                                    ass.validationDetails.decision === 'REJECTED' ? 'Refusé' : 'Revue'}
                                 </span>
                               )}
+
                             </div>
                           ) : (status === 'COMPLETED') && (
                             <button
@@ -904,10 +909,10 @@ export function MyAssignments() {
         title={activeNoteModal?.title || ''}
         user={activeNoteModal?.user}
         authorName={activeNoteModal?.authorName}
-        authorRole={activeNoteModal?.authorRole}
         notes={activeNoteModal?.notes || ''}
         noteLabel={activeNoteModal?.noteLabel}
       />
+
 
     </div>
   );

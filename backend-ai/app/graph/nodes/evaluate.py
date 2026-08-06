@@ -49,20 +49,24 @@ def evaluate_node(state: GraphState) -> dict:
     source = state["source"]
     reasons: list[str] = []
 
-    hard_date_mismatch = scores.date_score == 0.0
-    hard_title_mismatch = scores.title_score < settings.EARLY_REJECT_TITLE_THRESHOLD
-    hard_mismatch = hard_date_mismatch or hard_title_mismatch
+    hard_name_mismatch = scores.name_score < 0.90
+    hard_date_mismatch = scores.date_score < 1.0
+    hard_title_mismatch = scores.title_score < 1.0
+    hard_mismatch = hard_name_mismatch or hard_date_mismatch or hard_title_mismatch
 
+    if hard_name_mismatch:
+        reasons.append(
+            f"Le nom du collaborateur ({scores.name_score:.0%}) est inférieur au seuil fuzzy strict de 90%."
+        )
     if hard_date_mismatch:
         reasons.append(
-            "Certificate issue date predates the assignment start date beyond tolerance."
+            "La date du certificat ne correspond pas exactement à la date de complétion en BDD (comparaison stricte)."
         )
     if hard_title_mismatch:
         reasons.append(
-            f"Certification title similarity ({scores.title_score:.0%}) is below the "
-            f"strict title threshold ({settings.EARLY_REJECT_TITLE_THRESHOLD:.0%}) — this "
-            "looks like a genuine certificate for a different training."
+            "Le titre de la certification ne correspond pas exactement au titre attendu (comparaison stricte)."
         )
+
 
     if state.get("early_reject"):
         reasons.append(f"Web verification was skipped: {state.get('early_reject_reason')}.")

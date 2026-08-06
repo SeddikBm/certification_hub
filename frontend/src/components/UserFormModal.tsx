@@ -21,8 +21,14 @@ const schema = z.object({
   role: z.string().min(1, "Le rôle est requis"),
   status: z.string().default('ACTIVE'),
   squadId: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z.string().optional().refine(val => {
+    if (!val || val.trim() === '') return true;
+    return /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,14}$/.test(val.trim());
+  }, {
+    message: "Numéro de téléphone invalide (ex: +212 612345678)"
+  }),
   hireDate: z.string().optional()
+
 }).refine(data => {
   if (data.role === 'COLLABORATOR' && !data.squadId) {
     return false;
@@ -249,8 +255,10 @@ export function UserFormModal({ isOpen, onClose, userToEdit, onSuccess }: Props)
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Téléphone</label>
-                  <input placeholder="+212 6..." {...register('phone')} className="w-full px-3.5 py-2.5 text-xs font-medium bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30] transition-all" />
+                  <input placeholder="+212 6..." {...register('phone')} className={clsx("w-full px-3.5 py-2.5 text-xs font-medium bg-gray-50/50 border rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30] transition-all", errors.phone ? "border-red-500" : "border-gray-200")} />
+                  {errors.phone && <span className="text-red-600 text-[11px] mt-1 block font-medium">{errors.phone.message}</span>}
                 </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Date d'embauche</label>
                   <input type="date" {...register('hireDate')} className="w-full px-3.5 py-2.5 text-xs font-medium bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b70f30]/10 focus:border-[#b70f30] transition-all" />

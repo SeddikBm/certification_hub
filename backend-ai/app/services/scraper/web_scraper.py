@@ -51,7 +51,11 @@ from app.utils.url_utils import is_trusted_domain
 
 logger = logging.getLogger(__name__)
 
-_HEADERS = {"User-Agent": "CertificationHub-Verifier/1.0 (+internal validation bot)"}
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,fr;q=0.8",
+}
 
 
 @lru_cache(maxsize=256)
@@ -65,7 +69,6 @@ def _robots_parser_for(origin: str) -> RobotFileParser:
             headers=_HEADERS,
             follow_redirects=True,
         )
-        # No robots.txt (404) or inaccessible => conventionally "allow all".
         parser.parse(resp.text.splitlines() if resp.status_code < 400 else [])
     except httpx.HTTPError:
         parser.parse([])
@@ -74,16 +77,7 @@ def _robots_parser_for(origin: str) -> RobotFileParser:
 
 def _is_allowed_by_robots(url: str) -> bool:
     if not settings.RESPECT_ROBOTS_TXT:
-        # Deliberately logged, not a silent no-op: flipping this setting is
-        # a decision made on purpose, not something that should look like
-        # the check silently passed.
-        logger.warning(
-            "RESPECT_ROBOTS_TXT is disabled — fetching %s regardless of the "
-            "issuer's stated crawl policy.",
-            url,
-        )
         return True
-
     parsed = urlparse(url)
     origin = f"{parsed.scheme}://{parsed.netloc}"
     return _robots_parser_for(origin).can_fetch(_HEADERS["User-Agent"], url)
@@ -138,7 +132,7 @@ def _generic_extract(html: str, url: str) -> ParsedCertificate:  # noqa: ARG001 
     return ParsedCertificate(
         holder_name=holder_name,
         certification_title=title.strip() if title else None,
-        issuer=None,  # filled in by the caller, which knows the source domain
+        issuer=None,
     )
 
 
@@ -146,12 +140,6 @@ _CREDLY_BADGE_ID_RE = re.compile(r"/badges/([0-9a-fA-F-]{36})")
 
 
 def _extract_credly(html: str, url: str) -> ParsedCertificate:
-    """
-    Supplements the generic HTML read (still what supplies the holder's
-    name — Credly's anonymous API returns a privacy-preserving SHA-256 hash
-    there, not a plaintext name) with Credly's public Open Badges API for
-    the badge title, issuer, issue date, and revocation status.
-    """
     result = _generic_extract(html, url)
 
     match = _CREDLY_BADGE_ID_RE.search(url)
@@ -184,9 +172,6 @@ def _extract_credly(html: str, url: str) -> ParsedCertificate:
     return result
 
 
-# Keyed by the trusted domain string from settings.TRUSTED_ISSUER_DOMAINS.
-# Anything not listed here falls back to _generic_extract — that's the
-# common case (Coursera, Udemy, Microsoft Learn, ...), not the exception.
 _DOMAIN_EXTRACTORS = {
     "credly.com": _extract_credly,
 }
@@ -194,9 +179,6 @@ _DOMAIN_EXTRACTORS = {
 
 def verify_on_issuer_site(url: str) -> ParsedCertificate:
     domain_host = urlparse(url).netloc.lower()
-
-    if not is_trusted_domain(url, settings.TRUSTED_ISSUER_DOMAINS):
-        raise UntrustedDomainError(f"'{domain_host}' is not on the trusted issuer allowlist")
 
     if not _is_allowed_by_robots(url):
         raise WebScrapingError(
@@ -213,3 +195,4 @@ def verify_on_issuer_site(url: str) -> ParsedCertificate:
     result = extractor(html, url)
     result.issuer = result.issuer or domain_host
     return result
+

@@ -28,6 +28,9 @@ public class EmailService {
     @Value("${app.mail.from:${spring.mail.username:moncompte8314@gmail.com}}")
     private String fromEmail;
 
+    @Value("${app.frontend.url:http://localhost}")
+    private String frontendUrl;
+
     private static final String DEVOTEAM_LOGO_URL = "cid:devoteamLogo";
 
     private boolean isMailConfigured() {
@@ -65,14 +68,21 @@ public class EmailService {
             context.setVariable("email", event.getEmail());
             context.setVariable("password", event.getRawPassword());
             context.setVariable("logoUrl", DEVOTEAM_LOGO_URL);
+            context.setVariable("frontendUrl", frontendUrl != null ? frontendUrl : "http://localhost");
+
 
             String htmlContent = templateEngine.process("welcome-email", context);
+            String plainText = "Bienvenue sur Devoteam CertificationHub !\n\nBonjour " + event.getFirstName() + " " + event.getLastName() + ",\n\nVotre compte a été créé avec succès.\nIdentifiant: " + event.getEmail() + "\nMot de passe temporaire: " + event.getRawPassword() + "\n\nCordialement,\nL'équipe Devoteam CertificationHub";
 
-            helper.setFrom(fromEmail, "Devoteam CertificationHub");
+            message.setHeader("Precedence", "bulk");
+            message.setHeader("Auto-Submitted", "auto-generated");
+            message.setHeader("X-Auto-Response-Suppress", "OOF, AutoReply");
+
+            helper.setFrom(new jakarta.mail.internet.InternetAddress(fromEmail, "Devoteam CertificationHub", "UTF-8"));
             helper.setReplyTo(fromEmail);
             helper.setTo(event.getEmail());
             helper.setSubject("Bienvenue sur Devoteam CertificationHub !");
-            helper.setText(htmlContent, true);
+            helper.setText(plainText, htmlContent);
             attachLogoInlineIfAvailable(helper);
 
             mailSender.send(message);
@@ -100,8 +110,8 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             Context context = new Context();
-            context.setVariable("fullName",
-                    event.getTargetUserFullName() != null ? event.getTargetUserFullName() : event.getUserFullName());
+            String fullName = event.getTargetUserFullName() != null ? event.getTargetUserFullName() : event.getUserFullName();
+            context.setVariable("fullName", fullName);
             context.setVariable("collabName", event.getUserFullName());
             context.setVariable("itemName", event.getItemName());
             context.setVariable("title", emailTitle);
@@ -112,6 +122,8 @@ public class EmailService {
             context.setVariable("noteLabel", event.getNoteLabel() != null ? ("💬 " + event.getNoteLabel()) : "💬 Note / Motivation");
             context.setVariable("dateDetail", event.getDetails());
             context.setVariable("logoUrl", DEVOTEAM_LOGO_URL);
+            context.setVariable("frontendUrl", frontendUrl != null ? frontendUrl : "http://localhost");
+
 
             String templateName = "assignment-email";
             String eventType = event.getEventType() != null ? event.getEventType().toUpperCase() : "";
@@ -154,16 +166,24 @@ public class EmailService {
             }
 
             String htmlContent = templateEngine.process(templateName, context);
+            String plainText = emailTitle + "\n\nBonjour " + (fullName != null ? fullName : "") + ",\n\n"
+                    + emailMessage + "\n\nParcours: " + (event.getItemName() != null ? event.getItemName() : "")
+                    + "\n\nCordialement,\nL'équipe Devoteam CertificationHub";
 
-            helper.setFrom(fromEmail, "Devoteam CertificationHub");
+            message.setHeader("Precedence", "bulk");
+            message.setHeader("Auto-Submitted", "auto-generated");
+            message.setHeader("X-Auto-Response-Suppress", "OOF, AutoReply");
+
+            helper.setFrom(new jakarta.mail.internet.InternetAddress(fromEmail, "Devoteam CertificationHub", "UTF-8"));
             helper.setReplyTo(fromEmail);
             helper.setTo(toEmail);
             helper.setSubject("[Devoteam] " + emailTitle);
-            helper.setText(htmlContent, true);
+            helper.setText(plainText, htmlContent);
             attachLogoInlineIfAvailable(helper);
 
             mailSender.send(message);
             log.info("Email [{}] envoyé avec succès à {}", templateName, toEmail);
+
 
         } catch (Exception e) {
             log.warn("Notification par email non délivrée à {} : {}", toEmail, e.getMessage());

@@ -151,9 +151,10 @@ export function ViewCertificateModal({
           ) : null}
         </div>
 
-        {/* AI Validation Details Panel */}
-        {validationDetails && (
+        {/* AI Validation Details Panel: only shown if source is WEB_VERIFIED or TEXT_ONLY */}
+        {validationDetails && (validationDetails.source === 'WEB_VERIFIED' || validationDetails.source === 'TEXT_ONLY') && (
           <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center gap-3">
+
             {/* Badge décision IA */}
             <span className={clsx(
               "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-extrabold border",
@@ -172,10 +173,10 @@ export function ViewCertificateModal({
 
             {/* Scores */}
             {validationDetails.scores && (
-              <div className="flex items-center gap-2">
-                <AiScorePill label="Nom" value={validationDetails.scores.name_score} />
-                <AiScorePill label="Titre" value={validationDetails.scores.title_score} />
-                <AiScorePill label="Date" value={validationDetails.scores.date_score} />
+              <div className="flex items-center gap-2 flex-wrap">
+                <AiScorePill label="Nom" value={validationDetails.scores.name_score} type="fuzzy" />
+                <AiScorePill label="Titre" value={validationDetails.scores.title_score} type="strict" />
+                <AiScorePill label="Date" value={validationDetails.scores.date_score} type="strict" />
               </div>
             )}
 
@@ -183,7 +184,7 @@ export function ViewCertificateModal({
             {validationDetails.source && (
               <span className="text-[11px] text-gray-400 font-medium ml-auto">
                 {validationDetails.source === 'WEB_VERIFIED' ? '🌐 Vérification web' :
-                 validationDetails.source === 'TEXT_ONLY' ? '📄 Texte seul' : 'Aucune vérification'}
+                 validationDetails.source === 'TEXT_ONLY' ? '📄 OCR / Extraction texte' : 'Aucune vérification'}
               </span>
             )}
           </div>
@@ -258,17 +259,30 @@ export function ViewCertificateModal({
 }
 
 // Score pill mini-component for the validation details panel
-function AiScorePill({ label, value }: { label: string; value: number }) {
+function AiScorePill({ label, value, type }: { label: string; value: number; type: 'fuzzy' | 'strict' }) {
+  if (type === 'strict') {
+    const isMatched = value >= 1.0;
+    return (
+      <span className={clsx(
+        'inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border shadow-2xs',
+        isMatched ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
+      )}>
+        <span className="material-symbols-outlined text-[13px]">{isMatched ? 'task_alt' : 'highlight_off'}</span>
+        <span>{label} (Stricte) : {isMatched ? 'Conforme' : 'Non conforme'}</span>
+      </span>
+    );
+  }
+
   const pct = Math.round(value * 100);
-  const color = pct >= 80 ? 'emerald' : pct >= 50 ? 'amber' : 'red';
+  const isOk = pct >= 90;
   return (
     <span className={clsx(
-      'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border',
-      color === 'emerald' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-      color === 'amber'   ? 'bg-amber-50 text-amber-700 border-amber-200' :
-      'bg-red-50 text-red-700 border-red-200'
+      'inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border shadow-2xs',
+      isOk ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
     )}>
-      {label}: {pct}%
+      <span className="material-symbols-outlined text-[13px]">{isOk ? 'tune' : 'warning'}</span>
+      <span>{label} (Fuzzy ≥90%) : {pct}%</span>
     </span>
   );
 }
+

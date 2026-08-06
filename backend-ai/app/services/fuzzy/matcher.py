@@ -82,46 +82,49 @@ def score_name_field(expected: str | None, actual: str | None) -> float:
     if not expected or not actual:
         return 0.0
     ratio = fuzz.token_sort_ratio(_normalize_name(expected), _normalize_name(actual))
-    return round(ratio / 100, 4)
+    score = round(ratio / 100, 4)
+    # Seuil strict pour le fuzzy matching du nom (score >= 90% / 0.90)
+    if score < 0.90:
+        return 0.0
+    return score
 
 
 def score_title_field(expected: str | None, actual: str | None) -> float:
+    """
+    Comparaison stricte du titre de la certification (pas de fuzzy ratio).
+    Tolère uniquement la normalisation de casse, accents, et ponctuation.
+    """
     if not expected or not actual:
         return 0.0
 
     norm_expected = _normalize_title(expected)
     norm_actual = _normalize_title(actual)
 
-    if norm_expected == norm_actual:
+    if not norm_expected or not norm_actual:
+        return 0.0
+
+    # Comparaison stricte exacte ou inclusion stricte de chaîne
+    if norm_expected == norm_actual or norm_expected in norm_actual or norm_actual in norm_expected:
         return 1.0
 
-    # Order-sensitive on purpose (fuzz.ratio, not token_sort_ratio): word
-    # order in a certification title is never a legitimate variation the
-    # way it can be in a name, so we shouldn't be as forgiving about it.
-    ratio = fuzz.ratio(norm_expected, norm_actual)
-    return round(ratio / 100, 4)
+    return 0.0
 
 
 def score_date_field(
-    expected_not_before: date | None, actual: date | None, tolerance_days: int
+    expected_not_before: date | None, actual: date | None, tolerance_days: int = 0
 ) -> float:
     """
-    We don't have a single "expected date" to diff against (assignments
-    track a *window*, not an exact day) — so this checks plausibility:
-    1.0 if there's no constraint or the cert date respects it, dropping to
-    0.0 if the cert is dated before the assignment even started (a strong
-    fraud signal — reusing someone else's older certificate).
+    Comparaison stricte exacte de la date (date BDD == date certificat).
     """
     if actual is None:
-        return 0.5  # unknown, neither confirms nor denies — stay neutral
+        return 0.0
     if expected_not_before is None:
         return 1.0
-    if actual >= expected_not_before:
+
+    # Strict equality comparison
+    if actual == expected_not_before:
         return 1.0
 
-    days_early = (expected_not_before - actual).days
-    if days_early <= tolerance_days:
-        return 1.0
     return 0.0
 
 
@@ -144,3 +147,4 @@ def compute_scores(expected: ExpectedInfo, actual: ParsedCertificate) -> FieldSc
         date_score=date_score,
         overall_score=round(overall, 4),
     )
+

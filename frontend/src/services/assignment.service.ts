@@ -30,14 +30,17 @@ export interface AssignmentResponse {
   userId: string;
   userName?: string;
   userEmail?: string;
+  squadId?: string;
   squadName?: string;
   managerId?: string;
   managerName?: string;
   assignedById?: string;
   assignedByName?: string;
   assignedByRole?: string;
+  targetManagerId?: string;
   statusCertification?: string;
   statusTraining?: string;
+
   priority?: string;
   assignedAt?: string;
   completedAt?: string;

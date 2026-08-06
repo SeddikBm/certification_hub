@@ -320,9 +320,10 @@ export function CertificationDetails() {
           {description && (
             <div className="mt-6 pt-5 border-t border-gray-100">
               <span className="text-xs font-medium text-gray-400 block mb-1.5">Description</span>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-line">{description}</p>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere]">{description}</p>
             </div>
           )}
+
         </div>
 
         {/* Section 2: Détails d'Examen */}

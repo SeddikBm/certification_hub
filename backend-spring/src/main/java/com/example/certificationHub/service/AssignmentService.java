@@ -241,9 +241,7 @@ public class AssignmentService {
         String actionUrl = "/my-assignments";
 
         if (!isDirectManagementAssignment) {
-            User targetManager = managerAssignmentRepository.findFirstByCollaboratorId(collaborator.getId())
-                    .map(ManagerAssignment::getManager)
-                    .orElse(null);
+            User targetManager = resolveTargetManager(savedAssignment);
             if (targetManager != null) {
                 targetUserId = targetManager.getId();
                 targetUserEmail = targetManager.getEmail();
@@ -287,12 +285,14 @@ public class AssignmentService {
             if ("CAREER_MANAGER".equals(role)) {
                 boolean isManaged = managerAssignmentRepository.existsById(
                         new ManagerAssignment.Id(currentUserId, assignment.getUser().getId()));
-                if (!isManaged)
+                boolean isAssignedBy = assignment.getAssignedBy() != null && assignment.getAssignedBy().getId().equals(currentUserId);
+                if (!isManaged && !isAssignedBy)
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
             } else {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
             }
         }
+
         boolean isNewlyApproved = false;
         boolean isNewlyRejected = false;
         boolean isNewlyScheduled = false;
@@ -316,7 +316,8 @@ public class AssignmentService {
             assignment.setStatusCertification(request.getStatusCertification());
 
             if (request.getStatusCertification() == StatusCertification.COMPLETED
-                    || request.getStatusCertification() == StatusCertification.FAILED) {
+                    || request.getStatusCertification() == StatusCertification.FAILED
+                    || request.getStatusCertification() == StatusCertification.CANCELLED) {
                 assignment.setCompletedAt(Instant.now());
             }
         } else if (assignment.getItemType() == ItemType.TRAINING && request.getStatusTraining() != null) {
@@ -347,7 +348,6 @@ public class AssignmentService {
             assignment.setMetadata(metadata);
         }
 
-        // Mise à jour des autres champs optionnels
         if (request.getExamAt() != null)
             assignment.setExamAt(request.getExamAt());
         if (request.getTrainingProgressPercentage() != null)
@@ -357,11 +357,8 @@ public class AssignmentService {
 
         Assignment updatedAssignment = assignmentRepository.save(assignment);
 
-        // Détection des événements et notification des cibles (Collaborateur ou Manager selon qui effectue l'action)
         boolean isUpdatedByCollab = currentUserId.equals(assignment.getUser().getId());
-        User responsibleManager = managerAssignmentRepository.findFirstByCollaboratorId(assignment.getUser().getId())
-                .map(ManagerAssignment::getManager)
-                .orElse(assignment.getAssignedBy());
+        User responsibleManager = resolveTargetManager(assignment);
 
         String itemName = assignment.getItemType() == ItemType.CERTIFICATION
                 ? certificationRepository.findById(assignment.getItemId()).map(c -> c.getName()).orElse("Certification")
@@ -388,16 +385,7 @@ public class AssignmentService {
 
         if (eventType != null) {
             try {
-                User targetManager = null;
-                if (isUpdatedByCollab) {
-                    if (assignment.getAssignedBy() != null && !assignment.getAssignedBy().getId().equals(assignment.getUser().getId())) {
-                        targetManager = assignment.getAssignedBy();
-                    } else {
-                        targetManager = managerAssignmentRepository.findFirstByCollaboratorId(assignment.getUser().getId())
-                                .map(ManagerAssignment::getManager)
-                                .orElse(null);
-                    }
-                }
+                User targetManager = isUpdatedByCollab ? resolveTargetManager(assignment) : null;
 
                 User targetUser = isUpdatedByCollab
                         ? (targetManager != null ? targetManager : assignment.getUser())
@@ -429,6 +417,37 @@ public class AssignmentService {
         }
 
         return assignmentMapper.toResponse(updatedAssignment);
+    }
+
+    public User resolveTargetManager(Assignment assignment) {
+        if (assignment == null || assignment.getUser() == null) {
+            return null;
+        }
+
+        // 1. Priorité 1 : Le manager qui a créé/attribué l'assignation (assignedBy), s'il s'agit d'un tiers
+        if (assignment.getAssignedBy() != null
+                && !assignment.getAssignedBy().getId().equals(assignment.getUser().getId())) {
+            return assignment.getAssignedBy();
+        }
+
+        // 2. Priorité 2 : Le CM explicitement sélectionné dans les métadonnées (targetManagerId)
+        if (assignment.getMetadata() != null && assignment.getMetadata().containsKey("targetManagerId")) {
+            try {
+                Object tmObj = assignment.getMetadata().get("targetManagerId");
+                if (tmObj != null && !tmObj.toString().isBlank()) {
+                    UUID tmId = UUID.fromString(tmObj.toString());
+                    User tm = userRepository.findById(tmId).orElse(null);
+                    if (tm != null) {
+                        return tm;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 3. Priorité 3 : Fallback vers le manager rattaché dans manager_assignments
+        return managerAssignmentRepository.findFirstByCollaboratorId(assignment.getUser().getId())
+                .map(ManagerAssignment::getManager)
+                .orElse(null);
     }
 
     @Scheduled(fixedRate = 60000)
@@ -469,4 +488,4 @@ public class AssignmentService {
             }
         }
     }
-}
+}

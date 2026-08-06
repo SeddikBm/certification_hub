@@ -59,10 +59,11 @@ function App() {
 
               <Route path="/profile" element={<Profile />} />
 
-              {/* Collaborator Only Route */}
-              <Route element={<RoleGuard allowedRoles={['COLLABORATOR', 'USER', 'SQUAD_LEAD']} />}>
+              {/* My Assignments Route — Accessible to all authenticated users */}
+              <Route element={<RoleGuard allowedRoles={['COLLABORATOR', 'USER', 'SQUAD_LEAD', 'ADMIN', 'CAREER_MANAGER', 'TRAINING_MANAGER', 'DIRECTOR', 'MANAGER']} />}>
                 <Route path="/my-assignments" element={<MyAssignments />} />
               </Route>
+
               
               {/* Restricted Management Routes */}
               <Route element={<RoleGuard allowedRoles={['ADMIN', 'TRAINING_MANAGER']} />}>

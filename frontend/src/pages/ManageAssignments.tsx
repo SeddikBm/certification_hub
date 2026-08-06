@@ -77,6 +77,31 @@ export function ManageAssignments() {
 
   const allAssignments = assignmentsPage?.content || [];
 
+  const isSquadLead = user?.role === 'SQUAD_LEAD';
+
+  const canManageThisAssignment = (ass: AssignmentResponse): boolean => {
+    if (!user || !user.id) return false;
+    if (user.role === 'DIRECTOR' || user.role === 'SQUAD_LEAD') return false;
+
+    const currentId = user.id.toLowerCase();
+    const assignedById = ass.assignedById?.toLowerCase();
+    const targetManagerId = ass.targetManagerId?.toLowerCase();
+    const managerId = ass.managerId?.toLowerCase();
+
+    // 1. Assigné directement par cet utilisateur (Admin, TM ou CM qui a créé l'assignation)
+    if (assignedById && assignedById === currentId) return true;
+
+    // 2. CM cible sélectionné lors d'une auto-demande par le collaborateur
+    if (targetManagerId && targetManagerId === currentId) return true;
+
+    // 3. Career Manager responsable du collaborateur dans l'équipe
+    if (user.role === 'CAREER_MANAGER' && managerId && managerId === currentId) return true;
+
+    return false;
+  };
+
+
+
   // Client-side grouping by Career Manager -> Collaborators
   const groupedManagers = useMemo(() => {
     const term = collabSearch.toLowerCase().trim();
@@ -92,10 +117,20 @@ export function ManageAssignments() {
     }>();
 
     allAssignments.forEach(ass => {
+      // Pour les Squad Leads: filtrer uniquement les assignations de leur propre squad
+      if (isSquadLead) {
+        if (user?.squadId && ass.squadId && ass.squadId !== user.squadId) {
+          return;
+        }
+      }
+
       const uName = ass.userName || 'Inconnu';
       const uEmail = ass.userEmail || '';
       let mName = '';
-      if (user?.role === 'CAREER_MANAGER') {
+
+      if (isSquadLead) {
+        mName = `Membres de la Squad (${ass.squadName || user?.squadName || 'Ma Squad'})`;
+      } else if (user?.role === 'CAREER_MANAGER') {
         mName = `Mon Équipe (${user.name || 'Career Manager'})`;
       } else if (ass.assignedByRole === 'ADMIN' || ass.assignedByRole === 'TRAINING_MANAGER') {
         mName = `Attribué par : ${ass.assignedByName || 'Admin/TM'}`;
@@ -141,7 +176,8 @@ export function ManageAssignments() {
       managerName: m.managerName,
       collaborators: Array.from(m.collaboratorsMap.values())
     }));
-  }, [allAssignments, collabSearch, priorityFilter]);
+  }, [allAssignments, collabSearch, priorityFilter, user, isSquadLead]);
+
 
   // Update Status Mutation (Approuver / Refuser)
   const updateStatusMutation = useMutation({
@@ -338,14 +374,15 @@ export function ManageAssignments() {
         </div>
 
         <div>
-          <h4 className="text-xs font-bold text-gray-900 line-clamp-1 flex items-center gap-1.5 flex-wrap">
+          <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5 min-w-0" title={ass.itemName}>
             {ass.itemCode && (
-              <span className="px-1.5 py-0.5 text-[10px] font-extrabold text-[#b70f30] bg-red-50 rounded border border-red-100 uppercase">
+              <span className="px-1.5 py-0.5 text-[10px] font-extrabold text-[#b70f30] bg-red-50 rounded border border-red-100 uppercase shrink-0">
                 {ass.itemCode}
               </span>
             )}
-            <span>{ass.itemName}</span>
+            <span className="truncate min-w-0">{ass.itemName}</span>
           </h4>
+
 
           <div className="flex items-center justify-between text-[11px] text-gray-500 mt-2 flex-wrap gap-2">
             <span>Provider: <strong>{ass.provider || '-'}</strong></span>
@@ -411,47 +448,48 @@ export function ManageAssignments() {
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
-                {/* AI Decision mini-badge */}
-                {ass.validationDetails?.decision && (
+                {/* AI Decision mini-badge: only shown if source is WEB_VERIFIED or TEXT_ONLY */}
+                {ass.validationDetails?.decision &&
+                 (ass.validationDetails.source === 'WEB_VERIFIED' || ass.validationDetails.source === 'TEXT_ONLY') && (
                   <span className={clsx(
                     'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold border',
                     ass.validationDetails.decision === 'APPROVED'  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                     ass.validationDetails.decision === 'REJECTED'  ? 'bg-red-50 text-red-700 border-red-200' :
                     'bg-amber-50 text-amber-700 border-amber-200'
                   )} title={`Score nom: ${Math.round((ass.validationDetails.scores?.name_score ?? 0) * 100)}%`}>
-                    <span className="material-symbols-outlined text-[11px]">
-                      {ass.validationDetails.decision === 'APPROVED' ? 'smart_toy' :
-                       ass.validationDetails.decision === 'REJECTED' ? 'smart_toy' : 'smart_toy'}
-                    </span>
+                    <span className="material-symbols-outlined text-[11px]">smart_toy</span>
                     IA
                   </span>
                 )}
 
+
                 {renderCertStatusBadge(ass.certificateStatus)}
 
-                <button
-                  type="button"
-                  onClick={() => setViewCertModalState({
-                    isOpen: true,
-                    certificateId: ass.certificateId!,
-                    fileName: ass.certificateFileName,
-                    collaboratorName: ass.userName,
-                    itemName: ass.itemName,
-                    currentStatus: ass.certificateStatus,
-                    validationDetails: ass.validationDetails
-                  })}
-                  className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                  title="Ouvrir le certificat dans l'application et attribuer un statut"
-                >
-                  <span className="material-symbols-outlined text-[13px]">visibility</span>
-                  <span>Voir & Valider</span>
-                </button>
+                {canManageThisAssignment(ass) && (
+                  <button
+                    type="button"
+                    onClick={() => setViewCertModalState({
+                      isOpen: true,
+                      certificateId: ass.certificateId!,
+                      fileName: ass.certificateFileName,
+                      collaboratorName: ass.userName,
+                      itemName: ass.itemName,
+                      currentStatus: ass.certificateStatus,
+                      validationDetails: ass.validationDetails
+                    })}
+                    className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                    title="Ouvrir le certificat dans l'application et attribuer un statut"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">visibility</span>
+                    <span>Voir & Valider</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {isPending && user?.role !== 'DIRECTOR' && user?.role !== 'SQUAD_LEAD' ? (
+        {isPending && canManageThisAssignment(ass) ? (
           <div className="pt-2 border-t border-gray-200 flex items-center justify-end gap-1.5">
             <button
               type="button"
@@ -486,6 +524,7 @@ export function ManageAssignments() {
             <span>Attribué le: {ass.assignedAt ? new Date(ass.assignedAt).toLocaleDateString('fr-FR') : '-'}</span>
           </div>
         )}
+
       </div>
     );
   };
@@ -728,16 +767,19 @@ export function ManageAssignments() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
-                            className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">add</span>
-                            <span>Assigner</span>
-                          </button>
+                          {user?.role !== 'DIRECTOR' && user?.role !== 'SQUAD_LEAD' && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
+                              className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">add</span>
+                              <span>Assigner</span>
+                            </button>
+                          )}
 
                           <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 group-hover:text-[#b70f30] group-hover:border-red-200 transition-all">
+
                             <span className="material-symbols-outlined text-[18px]">
                               {isCollabCollapsed ? 'expand_more' : 'expand_less'}
                             </span>
@@ -843,16 +885,19 @@ export function ManageAssignments() {
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
-                                    className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <span className="material-symbols-outlined text-[16px]">add</span>
-                                    <span>Assigner</span>
-                                  </button>
+                                  {user?.role !== 'DIRECTOR' && user?.role !== 'SQUAD_LEAD' && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setModalPreselectedUser(group.userId); setIsAssignModalOpen(true); }}
+                                      className="px-3 py-1.5 text-xs font-semibold text-[#b70f30] bg-red-50 hover:bg-red-100 rounded-xl border border-red-200/60 transition-colors flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <span className="material-symbols-outlined text-[16px]">add</span>
+                                      <span>Assigner</span>
+                                    </button>
+                                  )}
 
                                   <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 group-hover:text-[#b70f30] group-hover:border-red-200 transition-all">
+
                                     <span className="material-symbols-outlined text-[18px]">
                                       {isCollabCollapsed ? 'expand_more' : 'expand_less'}
                                     </span>

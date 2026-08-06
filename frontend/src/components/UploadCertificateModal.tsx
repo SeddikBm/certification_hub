@@ -52,44 +52,6 @@ export function UploadCertificateModal({
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
-    };
-  }, []);
-
-  if (!isOpen) return null;
-
-  const validateAndSetFile = (selectedFile: File) => {
-    setErrorMessage(null);
-    const isPdf = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
-    if (!isPdf) {
-      setErrorMessage('Seuls les fichiers au format PDF sont autorisés.');
-      setFile(null);
-      return;
-    }
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      setErrorMessage('La taille du fichier ne doit pas dépasser 5 Mo.');
-      setFile(null);
-      return;
-    }
-    setFile(selectedFile);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) validateAndSetFile(e.target.files[0]);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = () => setIsDragging(false);
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files?.[0]) validateAndSetFile(e.dataTransfer.files[0]);
-  };
-
   // Simule l'avancement des étapes pendant que l'IA tourne en arrière-plan
   const animateSteps = useCallback((stepIdx: number) => {
     if (stepIdx >= VALIDATION_STEPS.length - 1) return;
@@ -134,6 +96,44 @@ export function UploadCertificateModal({
       }
     }, 3000);
   }, [assignmentId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+    };
+  }, []);
+
+  if (!isOpen) return null;
+
+  const validateAndSetFile = (selectedFile: File) => {
+    setErrorMessage(null);
+    const isPdf = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      setErrorMessage('Seuls les fichiers au format PDF sont autorisés.');
+      setFile(null);
+      return;
+    }
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      setErrorMessage('La taille du fichier ne doit pas dépasser 5 Mo.');
+      setFile(null);
+      return;
+    }
+    setFile(selectedFile);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) validateAndSetFile(e.target.files[0]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = () => setIsDragging(false);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files?.[0]) validateAndSetFile(e.dataTransfer.files[0]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -4,8 +4,8 @@ import com.example.certificationHub.dto.response.AssignmentResponse;
 import com.example.certificationHub.entity.Assignment;
 import com.example.certificationHub.entity.User;
 import com.example.certificationHub.enumeration.ItemType;
-import com.example.certificationHub.enumeration.UserRole;
 import com.example.certificationHub.repository.CertificationRepository;
+
 import com.example.certificationHub.repository.ManagerAssignmentRepository;
 import com.example.certificationHub.repository.TrainingRepository;
 import com.example.certificationHub.repository.UserRepository;
@@ -61,8 +61,15 @@ public class AssignmentMapper {
             }
         }
 
-        // 1. Resolve manager from metadata.targetManagerId (selected on self-request)
-        if (assignment.getMetadata() != null && assignment.getMetadata().containsKey("targetManagerId")) {
+        // 1. If assignedBy is present and NOT the collaborator himself, assignedBy IS the manager who created/assigned it
+        if (assignment.getAssignedBy() != null && assignment.getUser() != null
+                && !assignment.getAssignedBy().getId().equals(assignment.getUser().getId())) {
+            managerId = assignment.getAssignedBy().getId();
+            managerName = assignment.getAssignedBy().getFirstName() + " " + assignment.getAssignedBy().getLastName();
+        }
+
+        // 2. If self-assigned, check metadata.targetManagerId (selected target CM)
+        if (managerName == null && assignment.getMetadata() != null && assignment.getMetadata().containsKey("targetManagerId")) {
             try {
                 Object tmObj = assignment.getMetadata().get("targetManagerId");
                 if (tmObj != null && !tmObj.toString().isBlank()) {
@@ -76,15 +83,6 @@ public class AssignmentMapper {
             } catch (Exception ignored) {}
         }
 
-        // 2. If no targetManagerId, check if assignedBy is a CAREER_MANAGER, TRAINING_MANAGER or ADMIN
-        if (managerName == null && assignment.getAssignedBy() != null) {
-            UserRole assignerRole = assignment.getAssignedBy().getRole();
-            if (assignerRole == UserRole.CAREER_MANAGER || assignerRole == UserRole.TRAINING_MANAGER || assignerRole == UserRole.ADMIN) {
-                managerId = assignment.getAssignedBy().getId();
-                managerName = assignment.getAssignedBy().getFirstName() + " " + assignment.getAssignedBy().getLastName();
-            }
-        }
-
         // 3. Fallback: Check collaborator's primary linked manager in manager_assignments
         if (managerName == null && assignment.getUser() != null) {
             var ma = managerAssignmentRepository.findFirstByCollaboratorId(assignment.getUser().getId()).orElse(null);
@@ -93,6 +91,7 @@ public class AssignmentMapper {
                 managerName = ma.getManager().getFirstName() + " " + ma.getManager().getLastName();
             }
         }
+
 
         String priority = null;
         if (assignment.getMetadata() != null && assignment.getMetadata().containsKey("priority")) {

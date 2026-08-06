@@ -7,7 +7,10 @@ interface User {
   role?: string;
   firstName?: string;
   lastName?: string;
+  squadId?: string;
+  squadName?: string;
 }
+
 
 interface AuthContextType {
   user: User | null;

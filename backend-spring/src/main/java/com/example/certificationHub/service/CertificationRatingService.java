@@ -121,15 +121,35 @@ public class CertificationRatingService {
             ratingRepository.save(rating);
         }
 
-        // On envoie une notification aux ADMINS pour modération via RabbitMQ
-        notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
-                .userId(reporterId) // Optionnel : l'admin cible
-                .userEmail("admin@certificationhub.com")
-                .userFullName("Administrateur")
-                .itemName(cert.getName())
-                .eventType("REVIEW_REPORTED")
-                .build());
+        // Envoyer une notification UNIQUEMENT aux Training Managers et Admins (et PAS au Directeur ni à la personne qui signale)
+        List<com.example.certificationHub.enumeration.UserRole> targetRoles = List.of(
+                com.example.certificationHub.enumeration.UserRole.TRAINING_MANAGER,
+                com.example.certificationHub.enumeration.UserRole.ADMIN
+        );
+        List<User> managersToNotify = userRepository.findAll().stream()
+                .filter(u -> u.getRole() != null && targetRoles.contains(u.getRole()))
+                .filter(u -> !u.getId().equals(reporterId))
+                .collect(Collectors.toList());
+
+        String certDisplayName = (cert.getCode() != null && !cert.getCode().isBlank() ? (cert.getCode() + " - ") : "") + cert.getName();
+
+        for (User mgr : managersToNotify) {
+            notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
+                    .userId(reporterId)
+                    .userEmail(mgr.getEmail())
+                    .userFullName(mgr.getFirstName() + " " + mgr.getLastName())
+                    .targetUserId(mgr.getId())
+                    .targetUserEmail(mgr.getEmail())
+                    .targetUserFullName(mgr.getFirstName() + " " + mgr.getLastName())
+                    .itemName(certDisplayName)
+                    .eventType("REVIEW_REPORTED")
+                    .details("Un avis sur la certification '" + certDisplayName + "' a été signalé pour modération.")
+                    .actionUrl("/certifications/" + cert.getId())
+                    .build());
+        }
     }
+
+
 
     @Transactional
     public void deleteRating(UUID certId, UUID authorId) {

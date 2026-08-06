@@ -26,11 +26,11 @@ export function NoteModal({ isOpen, onClose, title, user, authorName, notes, not
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center shrink-0 shadow-2xs">
               <span className="material-symbols-outlined text-[22px] text-indigo-600">sticky_note_2</span>
             </div>
-            <div className="min-w-0 space-y-0.5">
+            <div className="min-w-0 flex-1 space-y-0.5">
               <h3 className="text-base font-extrabold text-gray-900 leading-snug truncate" title={title}>
                 {title}
               </h3>
@@ -38,9 +38,9 @@ export function NoteModal({ isOpen, onClose, title, user, authorName, notes, not
               {/* Clean name display without role status badge */}
               {displayName && (
                 <p className="text-xs text-gray-500 font-medium truncate flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px] text-indigo-500">person</span>
-                  <span>{isMotivation ? 'Collaborateur :' : 'Affecté par :'}</span>
-                  <span className="font-bold text-gray-800">{displayName}</span>
+                  <span className="material-symbols-outlined text-[14px] text-indigo-500 shrink-0">person</span>
+                  <span className="shrink-0">{isMotivation ? 'Collaborateur :' : 'Affecté par :'}</span>
+                  <span className="font-bold text-gray-800 truncate">{displayName}</span>
                 </p>
               )}
             </div>
@@ -56,15 +56,16 @@ export function NoteModal({ isOpen, onClose, title, user, authorName, notes, not
         </div>
 
         {/* Content Box */}
-        <div className="bg-indigo-50/40 rounded-2xl p-4 border border-indigo-100/70 space-y-2">
-          <span className="text-[11px] font-mono font-extrabold text-indigo-700 uppercase tracking-wider block flex items-center gap-1.5">
+        <div className="bg-indigo-50/40 rounded-2xl p-4 border border-indigo-100/70 space-y-2 max-h-[50vh] overflow-y-auto">
+          <span className="text-[11px] font-mono font-extrabold text-indigo-700 uppercase tracking-wider block flex items-center gap-1.5 shrink-0">
             <span className="material-symbols-outlined text-[15px]">chat</span>
             <span>{noteLabel ? `${noteLabel} :` : 'Note / Motivation transmise :'}</span>
           </span>
-          <p className="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+          <p className="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
             {notes}
           </p>
         </div>
+
 
         {/* Footer */}
         <div className="flex justify-end pt-1">

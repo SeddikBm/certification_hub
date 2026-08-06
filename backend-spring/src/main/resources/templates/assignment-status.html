@@ -56,7 +56,8 @@
                 </div>
 
                 <div style="text-align: center; margin-top: 32px; margin-bottom: 16px;">
-                    <a th:href="${actionUrl != null ? 'http://localhost:5173' + actionUrl : 'http://localhost:5173/my-assignments'}"
+                    <a th:href="${(frontendUrl != null ? frontendUrl : 'http://localhost') + (actionUrl != null ? actionUrl : '/my-assignments')}" href="http://localhost/my-assignments"
+
                         style="background-color: #b70f30; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-block; box-shadow: 0 4px 12px rgba(183, 15, 48, 0.25);">
                         Accéder à mes parcours
                     </a>

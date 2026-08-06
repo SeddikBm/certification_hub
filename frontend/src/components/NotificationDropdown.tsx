@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationService, type NotificationResponse } from '../services/notification.service';
+import { useAuth } from '../contexts/AuthContext';
 import clsx from 'clsx';
 
 export function NotificationDropdown() {
@@ -9,6 +10,7 @@ export function NotificationDropdown() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Fetch Notifications every 30 seconds or on focus
   const { data: notifications = [] } = useQuery<NotificationResponse[]>({
@@ -50,12 +52,16 @@ export function NotificationDropdown() {
       markReadMutation.mutate(notif.id);
     }
     setIsOpen(false);
-    if (notif.actionUrl) {
-      navigate(notif.actionUrl);
-    } else {
+
+    const isCollaborator = user?.role === 'COLLABORATOR' || user?.role === 'USER';
+    if (isCollaborator) {
       navigate('/my-assignments');
+    } else {
+      const targetUrl = notif.actionUrl || '/manage-assignments';
+      navigate(targetUrl);
     }
   };
+
 
   const formatRelativeTime = (dateStr: string) => {
     if (!dateStr) return '';

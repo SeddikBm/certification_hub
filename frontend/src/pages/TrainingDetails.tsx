@@ -253,10 +253,11 @@ export function TrainingDetails() {
 
           <div className="border-t border-gray-100 pt-4">
             <span className="text-xs font-medium text-gray-400 block mb-1.5">Description & Programme</span>
-            <p className="text-xs font-normal text-gray-600 whitespace-pre-line leading-relaxed">
+            <p className="text-xs font-normal text-gray-600 whitespace-pre-line leading-relaxed break-words [overflow-wrap:anywhere]">
               {description}
             </p>
           </div>
+
         </div>
 
         {/* Section 2: Squads Concernées */}

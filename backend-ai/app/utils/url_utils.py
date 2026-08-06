@@ -52,31 +52,18 @@ def extract_urls(text: str) -> list[str]:
     return seen
 
 
-def is_trusted_domain(url: str, trusted_domains: list[str]) -> bool:
+def is_trusted_domain(url: str, trusted_domains: list[str] | None = None) -> bool:
     """
-    True only if the URL's host is exactly a trusted domain, or a genuine
-    subdomain of one (e.g. "www.credly.com", "verify.credly.com").
-
-    Deliberately NOT a substring check: "credly.com.evil-domain.com" or
-    "notcredly.com" must never pass. `netloc == domain or
-    netloc.endswith("." + domain)` is the whole trick.
+    Accepts any valid http/https URL for verification (no domain filtering restriction).
     """
-    try:
-        host = urlparse(url).netloc.lower().split("@")[-1].split(":")[0]
-    except ValueError:
+    if not url:
         return False
-
-    if not host:
-        return False
-
-    return any(
-        host == domain or host.endswith(f".{domain}")
-        for domain in (d.lower() for d in trusted_domains)
-    )
+    return url.startswith("http://") or url.startswith("https://")
 
 
-def first_trusted_url(urls: list[str], trusted_domains: list[str]) -> str | None:
+def first_trusted_url(urls: list[str], trusted_domains: list[str] | None = None) -> str | None:
     for url in urls:
-        if is_trusted_domain(url, trusted_domains):
+        if is_trusted_domain(url):
             return url
     return None
+

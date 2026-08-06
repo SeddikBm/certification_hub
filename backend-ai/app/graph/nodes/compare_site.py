@@ -1,0 +1,67 @@
+"""
+Étape 5: COMPARAISON CERTIFICAT VS DONNÉES DU SITE.
+Noeud Conditionnel 3: Données du site conformes au certificat ?
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Literal
+
+from app.schemas.state import GraphState
+from app.services.fuzzy.matcher import compute_scores
+
+logger = logging.getLogger(__name__)
+
+
+def compare_site_node(state: GraphState) -> dict:
+    scraped = state.get("scraped")
+    expected = state["expected"]
+    existing_reasons = state.get("reasons", [])
+
+    if scraped is None:
+        logger.warning("[COMPARE_SITE] Impossible de scraper les données du site")
+        return {
+            "site_conform": False,
+            "reasons": existing_reasons + ["Les données du site officiel n'ont pas pu être récupérées."],
+        }
+
+    site_scores = compute_scores(expected, scraped)
+    is_conform = True
+    reasons = list(existing_reasons)
+
+    if site_scores.name_score < 0.90:
+        is_conform = False
+        reasons.append(
+            f"Le nom publié sur le site officiel ({scraped.holder_name!r}) ne correspond pas au nom du collaborateur ({expected.expected_name!r})."
+        )
+
+    if site_scores.title_score < 1.0:
+        is_conform = False
+        reasons.append(
+            f"Le titre publié sur le site officiel ({scraped.certification_title!r}) ne correspond pas au titre de la certification ({expected.expected_certification_title!r})."
+        )
+
+    if site_scores.date_score < 1.0:
+        is_conform = False
+        exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
+        reasons.append(
+            f"La date publiée sur le site officiel ({scraped.issue_date}) ne correspond pas à la date attendue ({exp_date})."
+        )
+
+    logger.info(
+        "[COMPARE_SITE] conform=%s site_name=%.2f site_title=%.2f site_date=%.2f",
+        is_conform,
+        site_scores.name_score,
+        site_scores.title_score,
+        site_scores.date_score,
+    )
+
+    return {
+        "site_conform": is_conform,
+        "reasons": reasons,
+    }
+
+
+def route_after_site(state: GraphState) -> Literal["approved_outcome", "rejected_outcome"]:
+    return "approved_outcome" if state.get("site_conform") else "rejected_outcome"

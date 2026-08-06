@@ -18,17 +18,18 @@ from app.schemas.enums import Decision, SourceType
 
 class ExpectedInfo(BaseModel):
     """
-    "Infos Attendues" — what Spring Boot already knows from the
-    `assignments` table and expects the certificate to confirm.
+    "Infos Attendues" — ce que Spring Boot transmet depuis la BDD assignments.
     """
 
     assignment_id: int
-    expected_name: str = Field(..., description="e.g. 'Alaoui'")
-    expected_certification_title: str = Field(..., description="e.g. 'AZ-204'")
-    expected_not_before: date | None = Field(
+    expected_name: str = Field(..., description="e.g. 'M. Alaoui'")
+    expected_certification_title: str = Field(..., description="Full title e.g. 'Azure AI Associate'")
+    expected_date: date | None = Field(
         default=None,
-        description="Assignment start date — a cert issued before this is suspicious.",
+        alias="expected_not_before",
+        description="Date exacte d'obtention de la certification en BDD",
     )
+
 
 
 class ParsedCertificate(BaseModel):

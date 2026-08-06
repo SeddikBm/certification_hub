@@ -111,29 +111,28 @@ def score_title_field(expected: str | None, actual: str | None) -> float:
 
 
 def score_date_field(
-    expected_not_before: date | None, actual: date | None, tolerance_days: int = 0
+    expected_date: date | None, actual: date | None
 ) -> float:
     """
     Comparaison stricte exacte de la date (date BDD == date certificat).
     """
     if actual is None:
         return 0.0
-    if expected_not_before is None:
+    if expected_date is None:
         return 1.0
 
     # Strict equality comparison
-    if actual == expected_not_before:
+    if actual == expected_date:
         return 1.0
 
     return 0.0
 
 
 def compute_scores(expected: ExpectedInfo, actual: ParsedCertificate) -> FieldScores:
+    exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
     name_score = score_name_field(expected.expected_name, actual.holder_name)
     title_score = score_title_field(expected.expected_certification_title, actual.certification_title)
-    date_score = score_date_field(
-        expected.expected_not_before, actual.issue_date, settings.DATE_TOLERANCE_DAYS
-    )
+    date_score = score_date_field(exp_date, actual.issue_date)
 
     overall = (
         _WEIGHTS["name"] * name_score
@@ -147,4 +146,5 @@ def compute_scores(expected: ExpectedInfo, actual: ParsedCertificate) -> FieldSc
         date_score=date_score,
         overall_score=round(overall, 4),
     )
+
 

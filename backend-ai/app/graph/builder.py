@@ -1,28 +1,13 @@
 """
-Graph assembly.
+Graph assembly matching 1-to-1 with the Architecture Diagram:
 
-Topology:
-
-    scan -> parse -> early_match -+-> detect_trusted_url -+-> scrape -+
-                                  |   (no trusted URL)     |          |
-                                  +----(name mismatch)-----+----------+-> fuzzy_match -> evaluate -> END
-
-early_match runs a cheap, network-free comparison against the expected
-person (from Spring Boot) right after parsing — "comparer d'abord": if the
-extracted name clearly isn't the expected person, there's no point
-spending a network call verifying that someone else's real certificate is
-real, so it skips straight past URL-detection/scraping to fuzzy_match
-(and from there, evaluate — which will see early_reject and explain why).
-Otherwise it proceeds to the normal detect_trusted_url -> scrape path.
-
-We don't attach a checkpointer: each validation run is a single, complete
-request/response — there's no multi-turn conversation or human-in-the-loop
-*inside* the graph to resume (the "manual review" loop in the diagram is a
-separate, outside process — Career Manager acts on the PENDING_REVIEW
-result via the Spring Boot UI, not by resuming this graph). If you later
-want the graph itself to pause and wait for a human decision using
-LangGraph's `interrupt()`, add a PostgresSaver checkpointer here — the node
-functions don't need to change.
+  scan -> parse -> compare_bdd -+--(NON: Mismatch BDD)---------------------------> rejected_outcome -> END
+                                |
+                                +--(OUI: Conforme BDD)--> detect_url -+--(NON: Pas d'URL)--> pending_approval_outcome -> END
+                                                                      |
+                                                                      +--(OUI: URL)--------> scrape -> compare_site -+--(OUI)--> approved_outcome -> END
+                                                                                                                      |
+                                                                                                                      +--(NON)-> rejected_outcome -> END
 """
 
 from __future__ import annotations
@@ -31,11 +16,15 @@ from functools import lru_cache
 
 from langgraph.graph import END, StateGraph
 
-from app.graph.nodes.early_match import early_match_node, route_by_early_match
-from app.graph.nodes.evaluate import evaluate_node
-from app.graph.nodes.fuzzy_match import fuzzy_match_node
+from app.graph.nodes.compare_bdd import compare_bdd_node, route_after_bdd
+from app.graph.nodes.compare_site import compare_site_node, route_after_site
+from app.graph.nodes.outcomes import (
+    approved_outcome_node,
+    pending_approval_outcome_node,
+    rejected_outcome_node,
+)
 from app.graph.nodes.parse import parse_node
-from app.graph.nodes.route import detect_trusted_url_node, route_by_url
+from app.graph.nodes.route import detect_url_node, route_by_url
 from app.graph.nodes.scan import scan_node
 from app.graph.nodes.scrape import scrape_node
 from app.schemas.state import GraphState
@@ -45,29 +34,51 @@ from app.schemas.state import GraphState
 def build_validation_graph():
     graph = StateGraph(GraphState)
 
+    # Core nodes
     graph.add_node("scan", scan_node)
     graph.add_node("parse", parse_node)
-    graph.add_node("early_match", early_match_node)
-    graph.add_node("detect_trusted_url", detect_trusted_url_node)
+    graph.add_node("compare_bdd", compare_bdd_node)
+    graph.add_node("detect_url", detect_url_node)
     graph.add_node("scrape", scrape_node)
-    graph.add_node("fuzzy_match", fuzzy_match_node)
-    graph.add_node("evaluate", evaluate_node)
+    graph.add_node("compare_site", compare_site_node)
 
+    # Outcome terminal nodes
+    graph.add_node("approved_outcome", approved_outcome_node)
+    graph.add_node("pending_approval_outcome", pending_approval_outcome_node)
+    graph.add_node("rejected_outcome", rejected_outcome_node)
+
+    # Sequential edges
     graph.set_entry_point("scan")
     graph.add_edge("scan", "parse")
-    graph.add_edge("parse", "early_match")
+    graph.add_edge("parse", "compare_bdd")
+
+    # Conditional Decision 1: Données conformes ?
     graph.add_conditional_edges(
-        "early_match",
-        route_by_early_match,
-        {"detect_trusted_url": "detect_trusted_url", "fuzzy_match": "fuzzy_match"},
+        "compare_bdd",
+        route_after_bdd,
+        {"detect_url": "detect_url", "rejected_outcome": "rejected_outcome"},
     )
+
+    # Conditional Decision 2: URL officielle détectée ?
     graph.add_conditional_edges(
-        "detect_trusted_url",
+        "detect_url",
         route_by_url,
-        {"scrape": "scrape", "fuzzy_match": "fuzzy_match"},
+        {"scrape": "scrape", "pending_approval_outcome": "pending_approval_outcome"},
     )
-    graph.add_edge("scrape", "fuzzy_match")
-    graph.add_edge("fuzzy_match", "evaluate")
-    graph.add_edge("evaluate", END)
+
+    graph.add_edge("scrape", "compare_site")
+
+    # Conditional Decision 3: Données du site conformes au certificat ?
+    graph.add_conditional_edges(
+        "compare_site",
+        route_after_site,
+        {"approved_outcome": "approved_outcome", "rejected_outcome": "rejected_outcome"},
+    )
+
+    # Terminal edges
+    graph.add_edge("approved_outcome", END)
+    graph.add_edge("pending_approval_outcome", END)
+    graph.add_edge("rejected_outcome", END)
 
     return graph.compile()
+

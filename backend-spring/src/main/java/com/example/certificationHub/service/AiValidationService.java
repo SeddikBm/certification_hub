@@ -93,8 +93,9 @@ public class AiValidationService {
             builder.part("expected_name", expectedName != null ? expectedName : "");
             builder.part("expected_certification_title", expectedTitle != null ? expectedTitle : "");
             if (completedAtDate != null) {
-                builder.part("expected_not_before", completedAtDate.toString()); // YYYY-MM-DD
+                builder.part("expected_date", completedAtDate.toString()); // YYYY-MM-DD
             }
+
 
             AiValidationResponse response = webClient.post()
                     .uri("/api/v1/validate")

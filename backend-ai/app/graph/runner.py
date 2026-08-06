@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from app.graph.builder import build_validation_graph
-from app.schemas.enums import Decision
+from app.schemas.enums import Decision, SourceType
 from app.schemas.state import GraphState
-from app.schemas.validation import ExpectedInfo, ValidationResponse
+from app.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate, ValidationResponse
+
+
 
 
 def run_validation(
@@ -22,13 +24,17 @@ def run_validation(
     graph = build_validation_graph()
     final_state: GraphState = graph.invoke(initial_state)
 
+    decision = final_state.get("decision", Decision.PENDING_REVIEW)
+    requires_review = decision not in (Decision.APPROVED, Decision.REJECTED)
+
     return ValidationResponse(
         assignment_id=expected.assignment_id,
-        decision=final_state["decision"],
-        source=final_state["source"],
-        scores=final_state["scores"],
-        extracted=final_state.get("scraped") or final_state["parsed"],
+        decision=decision,
+        source=final_state.get("source", SourceType.NONE),
+        scores=final_state.get("scores", FieldScores(name_score=0, title_score=0, date_score=0, overall_score=0)),
+        extracted=final_state.get("scraped") or final_state.get("parsed", ParsedCertificate()),
         detected_urls=final_state.get("detected_urls", []),
-        reasons=final_state["reasons"],
-        requires_manual_review=final_state["decision"] != Decision.APPROVED,
+        reasons=final_state.get("reasons", []),
+        requires_manual_review=requires_review,
     )
+

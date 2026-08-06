@@ -56,8 +56,11 @@ async def validate_certificate(
     assignment_id: int = Form(...),
     expected_name: str = Form(...),
     expected_certification_title: str = Form(...),
+    expected_date: date | None = Form(None),
     expected_not_before: date | None = Form(None),
 ) -> ValidationResponse:
+    target_date = expected_date or expected_not_before
+
     if file.content_type not in {SUPPORTED_PDF_TYPE, *SUPPORTED_IMAGE_TYPES}:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,8 +87,9 @@ async def validate_certificate(
         assignment_id=assignment_id,
         expected_name=expected_name,
         expected_certification_title=expected_certification_title,
-        expected_not_before=expected_not_before,
+        expected_date=target_date,
     )
+
 
     try:
         result = run_validation(

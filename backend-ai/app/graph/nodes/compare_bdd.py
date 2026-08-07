@@ -38,12 +38,13 @@ def compare_bdd_node(state: GraphState) -> dict:
             f"Le titre de la certification sur le certificat ({parsed.certification_title!r}) ne correspond pas exactement au titre attendu en BDD ({expected.expected_certification_title!r})."
         )
 
-    if scores.date_score < 1.0:
+    exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
+    if exp_date is not None and scores.date_score < 1.0:
         is_conform = False
-        exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
         reasons.append(
             f"La date du certificat ({parsed.issue_date}) ne correspond pas exactement à la date de complétion enregistrée en BDD ({exp_date})."
         )
+
 
     logger.info(
         "[COMPARE_BDD] conform=%s name=%.2f title=%.2f date=%.2f",

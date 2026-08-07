@@ -112,9 +112,48 @@ def _parse_json_ld(soup: BeautifulSoup) -> dict:
     return {}
 
 
-def _generic_extract(html: str, url: str) -> ParsedCertificate:  # noqa: ARG001 (url kept for a uniform extractor signature)
+_MONTHS_MAP = {
+    "january": 1, "jan": 1,
+    "february": 2, "feb": 2,
+    "march": 3, "mar": 3,
+    "april": 4, "apr": 4,
+    "may": 5,
+    "june": 6, "jun": 6,
+    "july": 7, "jul": 7,
+    "august": 8, "aug": 8,
+    "september": 9, "sep": 9, "sept": 9,
+    "october": 10, "oct": 10,
+    "november": 11, "nov": 11,
+    "december": 12, "dec": 12,
+}
+
+_DATE_RE = re.compile(
+    r"\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s+(\d{4})\b",
+    re.IGNORECASE,
+)
+
+_COMPLETED_BY_RE = re.compile(
+    r"Completed by\s+([A-Za-z\s\-\'\.]+?)(?=\s*(?:\n|\r|September|October|November|December|January|February|March|April|May|June|July|August|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d|\.|Grade|Account|$))",
+    re.IGNORECASE,
+)
+
+
+def _extract_date_from_text(text: str) -> date | None:
+    match = _DATE_RE.search(text)
+    if not match:
+        return None
+    try:
+        month_str, day_str, year_str = match.groups()
+        month_num = _MONTHS_MAP.get(month_str.lower(), 1)
+        return date(int(year_str), month_num, int(day_str))
+    except Exception:
+        return None
+
+
+def _generic_extract(html: str, url: str) -> ParsedCertificate:
     soup = BeautifulSoup(html, "html.parser")
     ld = _parse_json_ld(soup)
+    page_text = soup.get_text(separator=" ")
 
     def meta(prop: str) -> str | None:
         tag = soup.find("meta", attrs={"property": prop}) or soup.find(
@@ -127,13 +166,27 @@ def _generic_extract(html: str, url: str) -> ParsedCertificate:  # noqa: ARG001 
         if isinstance(ld.get("recipient"), dict)
         else ld.get("name")
     )
-    title = meta("og:title") or (soup.title.string if soup.title else None)
+
+    if not holder_name:
+        match = _COMPLETED_BY_RE.search(page_text)
+        if match:
+            holder_name = match.group(1).strip()
+
+    # Search for course title in h1 or og:title
+    h1_tag = soup.find("h1")
+    title = h1_tag.get_text().strip() if h1_tag else (meta("og:title") or (soup.title.string if soup.title else None))
+    if title and " | Coursera" in title:
+        title = title.replace(" | Coursera", "").strip()
+
+    issue_date = _extract_date_from_text(page_text)
 
     return ParsedCertificate(
         holder_name=holder_name,
         certification_title=title.strip() if title else None,
+        issue_date=issue_date,
         issuer=None,
     )
+
 
 
 _CREDLY_BADGE_ID_RE = re.compile(r"/badges/([0-9a-fA-F-]{36})")
@@ -177,6 +230,9 @@ _DOMAIN_EXTRACTORS = {
 }
 
 
+from app.services.llm.groq_client import GroqClient
+
+
 def verify_on_issuer_site(url: str) -> ParsedCertificate:
     domain_host = urlparse(url).netloc.lower()
 
@@ -187,12 +243,47 @@ def verify_on_issuer_site(url: str) -> ParsedCertificate:
         )
 
     html = _fetch(url, domain_host)
+    soup = BeautifulSoup(html, "html.parser")
+    page_text = soup.get_text(separator="\n", strip=True)
 
+    # 1. Utiliser le LLM pour parser universellement le texte de la page web scrapée
+    llm_result: ParsedCertificate | None = None
+    if settings.GROQ_API_KEY:
+        try:
+            groq_client = GroqClient()
+            llm_result = groq_client.extract_fields(page_text[:8000])
+            logger.info(
+                "[SCRAPING-LLM] Extraction LLM réussie sur %s: name=%r title=%r date=%r",
+                url,
+                llm_result.holder_name,
+                llm_result.certification_title,
+                llm_result.issue_date,
+            )
+        except Exception as exc:
+            logger.warning("[SCRAPING-LLM] Échec parsing LLM sur %s: %s", url, exc)
+
+    # 2. Extracteur HTML/JSON-LD générique en secours/complément
     extractor = next(
         (fn for domain, fn in _DOMAIN_EXTRACTORS.items() if domain in domain_host),
         _generic_extract,
     )
-    result = extractor(html, url)
-    result.issuer = result.issuer or domain_host
+    fallback_result = extractor(html, url)
+
+    if llm_result and (llm_result.holder_name or llm_result.certification_title or llm_result.issue_date):
+        holder_name = llm_result.holder_name or fallback_result.holder_name
+        title = llm_result.certification_title or fallback_result.certification_title
+        issue_date = llm_result.issue_date or fallback_result.issue_date
+        issuer = llm_result.issuer or fallback_result.issuer or domain_host
+        result = ParsedCertificate(
+            holder_name=holder_name,
+            certification_title=title,
+            issue_date=issue_date,
+            issuer=issuer,
+        )
+    else:
+        result = fallback_result
+        result.issuer = result.issuer or domain_host
+
     return result
+
 

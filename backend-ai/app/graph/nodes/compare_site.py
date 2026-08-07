@@ -42,12 +42,13 @@ def compare_site_node(state: GraphState) -> dict:
             f"Le titre publié sur le site officiel ({scraped.certification_title!r}) ne correspond pas au titre de la certification ({expected.expected_certification_title!r})."
         )
 
-    if site_scores.date_score < 1.0:
+    exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
+    if exp_date is not None and site_scores.date_score < 1.0:
         is_conform = False
-        exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
         reasons.append(
             f"La date publiée sur le site officiel ({scraped.issue_date}) ne correspond pas à la date attendue ({exp_date})."
         )
+
 
     logger.info(
         "[COMPARE_SITE] conform=%s site_name=%.2f site_title=%.2f site_date=%.2f",

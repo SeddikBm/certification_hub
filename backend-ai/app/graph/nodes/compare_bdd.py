@@ -45,14 +45,13 @@ def compare_bdd_node(state: GraphState) -> dict:
             f"La date du certificat ({parsed.issue_date}) ne correspond pas exactement à la date de complétion enregistrée en BDD ({exp_date})."
         )
 
-
-    logger.info(
-        "[COMPARE_BDD] conform=%s name=%.2f title=%.2f date=%.2f",
-        is_conform,
-        scores.name_score,
-        scores.title_score,
-        scores.date_score,
-    )
+    logger.info("==========================================")
+    logger.info("[NODE 3: COMPARE_BDD] expected_name=%r expected_title=%r expected_date=%r", expected.expected_name, expected.expected_certification_title, exp_date)
+    logger.info("[NODE 3: COMPARE_BDD] actual_name=%r actual_title=%r actual_date=%r", parsed.holder_name, parsed.certification_title, parsed.issue_date)
+    logger.info("[NODE 3: COMPARE_BDD] SCORES -> name=%.2f title=%.2f date=%.2f overall=%.2f | IS_CONFORM=%s", scores.name_score, scores.title_score, scores.date_score, scores.overall_score, is_conform)
+    if reasons:
+        logger.info("[NODE 3: COMPARE_BDD] MISMATCH REASONS: %s", reasons)
+    logger.info("==========================================")
 
     return {
         "scores": scores,

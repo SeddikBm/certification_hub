@@ -76,11 +76,9 @@ def _robots_parser_for(origin: str) -> RobotFileParser:
 
 
 def _is_allowed_by_robots(url: str) -> bool:
-    if not settings.RESPECT_ROBOTS_TXT:
-        return True
-    parsed = urlparse(url)
-    origin = f"{parsed.scheme}://{parsed.netloc}"
-    return _robots_parser_for(origin).can_fetch(_HEADERS["User-Agent"], url)
+    # Always allow scraping official verification pages (Coursera, Udemy, Credly, LinkedIn, etc.)
+    return True
+
 
 
 def _fetch(url: str, domain_host: str) -> str:

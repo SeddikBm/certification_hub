@@ -70,6 +70,12 @@ def scan_node(state: GraphState) -> dict:
         raw_text = extraction.native_text
         logger.info("[SCAN] Using native PDF text (%d chars, no OCR needed)", len(raw_text))
 
+    logger.info("==========================================")
+    logger.info("[SCAN RAW EXTRACTED TEXT RESULT] (used_ocr=%s, length=%d chars)", used_ocr, len(raw_text))
+    logger.info("[SCAN RAW TEXT]:\n%s", raw_text)
+    logger.info("==========================================")
+
+
     urls = extract_urls(raw_text)
     for img in extraction.page_images:
         for qr_payload in detect_qr_urls(img):

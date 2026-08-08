@@ -34,12 +34,19 @@ class PaddleOCREngine:
             from paddleocr import PaddleOCR  # heavy import, done lazily
 
             logger.info("Loading PaddleOCR model (lang=%s)...", self._lang)
-            self._ocr = PaddleOCR(
-                lang=self._lang,
-                use_angle_cls=True,  # handles rotated scans/photos
-                show_log=False,
-            )
+            try:
+                self._ocr = PaddleOCR(
+                    lang=self._lang,
+                    use_angle_cls=True,
+                    show_log=False,
+                )
+            except (ValueError, TypeError):
+                self._ocr = PaddleOCR(
+                    lang=self._lang,
+                    use_angle_cls=True,
+                )
         return self._ocr
+
 
     def image_to_text(self, image: np.ndarray) -> str:
         result = self._engine().ocr(image, cls=True)

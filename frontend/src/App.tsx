@@ -17,8 +17,10 @@ import { RoleGuard } from './components/RoleGuard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 import { Profile } from './pages/Profile';
+import { Notifications } from './pages/Notifications';
 
 const ProtectedRoute = () => {
+
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -58,8 +60,10 @@ function App() {
               <Route path="/certifications/:id" element={<CertificationDetails />} />
 
               <Route path="/profile" element={<Profile />} />
+              <Route path="/notifications" element={<Notifications />} />
 
               {/* My Assignments Route — Accessible to all authenticated users */}
+
               <Route element={<RoleGuard allowedRoles={['COLLABORATOR', 'USER', 'SQUAD_LEAD', 'ADMIN', 'CAREER_MANAGER', 'TRAINING_MANAGER', 'DIRECTOR', 'MANAGER']} />}>
                 <Route path="/my-assignments" element={<MyAssignments />} />
               </Route>

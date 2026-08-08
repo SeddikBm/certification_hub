@@ -42,8 +42,14 @@ public class CertificationService {
         return certificationRepository
                 .findAll(CertificationSpecification.withDynamicFilters(provider, difficulty, priority, search),
                         pageable)
-                .map(certificationMapper::toResponse);
+                .map(cert -> {
+                    Double avgRating = ratingRepository.getAverageRating(cert.getId());
+                    CertificationResponse resp = certificationMapper.toResponse(cert);
+                    resp.setAverageRating(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : null);
+                    return resp;
+                });
     }
+
 
     @Transactional(readOnly = true)
     public List<String> getProviders() {

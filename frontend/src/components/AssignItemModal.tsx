@@ -59,11 +59,13 @@ export function AssignItemModal({
   const { data: adminCollabsPage, isLoading: isLoadingAdminCollabs } = useQuery({
     queryKey: ['adminCollaboratorsList', userSearch],
     queryFn: () => userService.getUsers({
+      role: 'COLLABORATOR',
       search: userSearch || undefined,
       size: 100
     }),
     enabled: isOpen && isAdminOrTM
   });
+
 
   const collaboratorsList = useMemo(() => {
     let list: Array<{ id: string; name: string; email?: string; squadName?: string }> = [];

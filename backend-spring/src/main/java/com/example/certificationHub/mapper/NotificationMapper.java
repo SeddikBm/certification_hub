@@ -13,8 +13,10 @@ public class NotificationMapper {
                 .title(n.getTitle())
                 .message(n.getMessage())
                 .isRead(n.getIsRead())
+                .actionUrl(n.getActionUrl())
                 .createdAt(n.getCreatedAt())
                 .build();
     }
+
 
 }

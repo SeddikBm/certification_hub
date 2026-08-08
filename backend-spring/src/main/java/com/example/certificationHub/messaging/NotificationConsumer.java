@@ -80,21 +80,40 @@ public class NotificationConsumer {
             case "CERTIFICATE_UPLOADED":
                 if (event.getTargetUserId() != null && !event.getTargetUserId().equals(event.getUserId())) {
                     title = "Nouveau certificat à valider";
-                    message = event.getUserFullName() + " a déposé son certificat PDF pour " + event.getItemName() + ".";
+                    message = event.getUserFullName() + " a déposé son certificat pour " + event.getItemName() + ".";
                     actionUrl = "/manage-assignments";
                 } else {
                     title = "Certificat téléversé";
-                    message = "Votre certificat PDF pour " + event.getItemName() + " a été bien transmis.";
+                    message = "Votre certificat pour " + event.getItemName() + " a été transmis.";
                     actionUrl = "/my-assignments";
                 }
                 type = NotificationType.INFO;
                 break;
+            case "CERTIFICATE_VALIDATED":
+                title = "Certificat validé par IA";
+                message = event.getUserFullName() + " a déposé son certificat pour " + event.getItemName() + " et il a été automatiquement validé par l'IA (Conforme).";
+                type = NotificationType.SUCCESS;
+                actionUrl = "/manage-assignments";
+                break;
+            case "CERTIFICATE_REJECTED":
+                title = "Certificat rejeté par l'IA";
+                message = event.getUserFullName() + " a déposé son certificat pour " + event.getItemName() + " et il a été rejeté par l'IA" + (event.getDetails() != null ? " à cause de : " + event.getDetails() : ".");
+                type = NotificationType.ERROR;
+                actionUrl = "/manage-assignments";
+                break;
+            case "CERTIFICATE_PENDING_REVIEW":
+                title = "Certificat en attente de revue manuelle";
+                message = event.getUserFullName() + " a déposé son certificat pour " + event.getItemName() + ". Veuillez vous connecter pour le valider.";
+                type = NotificationType.WARNING;
+                actionUrl = "/manage-assignments";
+                break;
             case "CERTIFICATE_STATUS_CHANGED":
                 title = "Statut du certificat mis à jour";
-                message = "Le statut de votre certificat pour " + event.getItemName() + " a été mis à jour par votre responsable.";
+                message = "Le statut du certificat pour " + event.getItemName() + " a été mis à jour par votre responsable.";
                 type = NotificationType.SUCCESS;
                 actionUrl = "/my-assignments";
                 break;
+
             case "PLANNED":
                 title = "Date de début planifiée";
                 message = event.getUserFullName() + " a fixé la date de démarrage pour " + event.getItemName() + (event.getDetails() != null ? " au " + event.getDetails() : "") + ".";
@@ -103,22 +122,23 @@ public class NotificationConsumer {
                 break;
             case "EXAM_SCHEDULED":
                 title = "Examen programmé";
-                message = "L'examen pour " + event.getItemName() + " a été planifié" + (event.getDetails() != null ? " pour le " + event.getDetails() : "") + ".";
+                message = "L'examen de " + event.getUserFullName() + " pour " + event.getItemName() + " a été planifié" + (event.getDetails() != null ? " pour le " + event.getDetails() : "") + ".";
                 type = NotificationType.INFO;
                 actionUrl = event.getTargetUserId() != null && !event.getTargetUserId().equals(event.getUserId()) ? "/manage-assignments" : "/my-assignments";
                 break;
             case "COMPLETED":
                 title = "Félicitations ! Parcours Réussi";
-                message = "Le parcours pour " + event.getItemName() + " a été accompli et validé avec succès. Bravo !";
+                message = "Le collaborateur " + event.getUserFullName() + " a accompli et validé avec succès le parcours " + event.getItemName() + ". Bravo !";
                 type = NotificationType.SUCCESS;
                 actionUrl = "/my-assignments";
                 break;
             case "FAILED":
                 title = "Résultat d'examen : Échec";
-                message = "L'examen pour " + event.getItemName() + " n'a pas été validé.";
+                message = "Le collaborateur " + event.getUserFullName() + " n'a pas validé l'examen pour " + event.getItemName() + ".";
                 type = NotificationType.ERROR;
                 actionUrl = "/my-assignments";
                 break;
+
             case "DEADLINE_APPROACHING":
                 title = "Rappel : Date cible proche (J-7)";
                 message = "Attention, la date cible pour " + event.getItemName() + " approche dans 7 jours et aucun examen n'est encore planifié.";
@@ -150,8 +170,10 @@ public class NotificationConsumer {
                 .type(type)
                 .channel("BOTH")
                 .isRead(false)
+                .actionUrl(actionUrl)
                 .build();
         notificationRepository.save(notification);
+
 
         // 2. Envoi d'email asynchrone sécurisé avec Devoteam Branding
         String targetEmail = event.getTargetUserEmail() != null ? event.getTargetUserEmail() : targetUser.getEmail();

@@ -29,21 +29,22 @@ def compare_bdd_node(state: GraphState) -> dict:
     if scores.name_score < 0.90:
         is_conform = False
         reasons.append(
-            f"Le nom du collaborateur sur le certificat ({parsed.holder_name!r}) ne correspond pas au nom attendu ({expected.expected_name!r}) avec une similitude >= 90%."
+            f"Le nom du collaborateur sur le certificat « {parsed.holder_name or 'Non détecté'} » ne correspond pas au nom attendu « {expected.expected_name} » (similitude < 90%)."
         )
 
     if scores.title_score < 1.0:
         is_conform = False
         reasons.append(
-            f"Le titre de la certification sur le certificat ({parsed.certification_title!r}) ne correspond pas exactement au titre attendu en BDD ({expected.expected_certification_title!r})."
+            f"Le titre sur le certificat « {parsed.certification_title or 'Non détecté'} » ne correspond pas au titre attendu « {expected.expected_certification_title} »."
         )
 
-    exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
+    exp_date = expected.expected_date
     if exp_date is not None and scores.date_score < 1.0:
         is_conform = False
         reasons.append(
-            f"La date du certificat ({parsed.issue_date}) ne correspond pas exactement à la date de complétion enregistrée en BDD ({exp_date})."
+            f"La date du certificat « {parsed.issue_date or 'Non détectée'} » ne correspond pas à la date de complétion en BDD « {exp_date} »."
         )
+
 
     logger.info("==========================================")
     logger.info("[NODE 3: COMPARE_BDD] expected_name=%r expected_title=%r expected_date=%r", expected.expected_name, expected.expected_certification_title, exp_date)

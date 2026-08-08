@@ -138,11 +138,17 @@ export const assignmentService = {
     return response.data;
   },
 
-  getCertificatePreviewUrl: async (certificateId: string): Promise<string> => {
+  getCertificatePreviewUrl: async (certificateId: string): Promise<{ url: string; mimeType: string }> => {
     const response = await api.get(`/certificates/${certificateId}/preview`, {
       responseType: 'blob'
     });
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    return window.URL.createObjectURL(blob);
+    const contentType = String(response.headers['content-type'] || 'application/pdf');
+    const blob = new Blob([response.data], { type: contentType });
+    return {
+      url: window.URL.createObjectURL(blob),
+      mimeType: contentType
+    };
   }
 };
+
+

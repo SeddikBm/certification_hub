@@ -35,8 +35,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +113,12 @@ public class CertificateService {
             throw new RuntimeException("Erreur lors de l'enregistrement du fichier sur le disque.", ex);
         }
 
+        // Si completedAt n'est pas renseigné, enregistrer la date de complétion
+        if (assignment.getCompletedAt() == null) {
+            assignment.setCompletedAt(Instant.now());
+            assignmentRepository.save(assignment);
+        }
+
         // 4. Création du Certificate en PENDING_VALIDATION (immédiat)
         Certificate certificate = Certificate.builder()
                 .assignment(assignment)
@@ -123,8 +132,8 @@ public class CertificateService {
         Certificate saved = certificateRepository.save(certificate);
 
         // 5. Notification d'upload au manager responsable
-        String itemName = assignment.getItemType() != null && assignment.getItemType().name().equals("CERTIFICATION")
-                ? "votre certification" : "votre formation";
+        String itemName = resolveItemTitle(assignment);
+        if (itemName == null || itemName.isBlank()) itemName = "votre parcours";
         User targetManager = resolveManager(assignment);
         sendUploadNotification(assignment, targetManager, itemName);
 
@@ -151,13 +160,15 @@ public class CertificateService {
 
             String expectedTitle = resolveItemTitle(assignment);
 
-            // Date = completedAt de l'assignment (date exacte qui doit apparaître sur le certificat)
+            // Date = completedAt uniquement de l'assignment
             LocalDate completedAtDate = null;
             if (assignment.getCompletedAt() != null) {
                 completedAtDate = assignment.getCompletedAt().atZone(ZoneOffset.UTC).toLocalDate();
-            } else if (assignment.getAssignedAt() != null) {
-                completedAtDate = assignment.getAssignedAt().atZone(ZoneOffset.UTC).toLocalDate();
             }
+
+
+
+
 
             // Appel au moteur IA (ce thread est déjà asynchrone)
             long assignmentLongId = assignment.getId().getLeastSignificantBits() & Long.MAX_VALUE;
@@ -204,7 +215,7 @@ public class CertificateService {
     // ─── Helpers privés ───────────────────────────────────────────────────────
 
     private String resolveItemTitle(Assignment assignment) {
-        if (assignment.getItemId() == null || assignment.getItemType() == null) return "";
+        if (assignment == null || assignment.getItemId() == null || assignment.getItemType() == null) return "";
         if (assignment.getItemType() == ItemType.CERTIFICATION) {
             return certificationRepository.findById(assignment.getItemId())
                     .map(c -> c.getName()).orElse("");
@@ -254,16 +265,18 @@ public class CertificateService {
 
 
     private void sendUploadNotification(Assignment assignment, User targetManager, String itemName) {
-        if (notificationProducer == null) return;
+        if (notificationProducer == null || assignment == null) return;
         try {
+            User collab = assignment.getUser();
+            User recipient = targetManager != null ? targetManager : collab;
+
             notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
-                    .userId(assignment.getUser().getId())
-                    .userEmail(assignment.getUser().getEmail())
-                    .userFullName(assignment.getUser().getFirstName() + " " + assignment.getUser().getLastName())
-                    .targetUserId(targetManager != null ? targetManager.getId() : assignment.getUser().getId())
-                    .targetUserEmail(targetManager != null ? targetManager.getEmail() : assignment.getUser().getEmail())
-                    .targetUserFullName(targetManager != null
-                            ? (targetManager.getFirstName() + " " + targetManager.getLastName()) : "")
+                    .userId(collab.getId())
+                    .userEmail(collab.getEmail())
+                    .userFullName((collab.getFirstName() != null ? collab.getFirstName() : "") + " " + (collab.getLastName() != null ? collab.getLastName() : ""))
+                    .targetUserId(recipient.getId())
+                    .targetUserEmail(recipient.getEmail())
+                    .targetUserFullName((recipient.getFirstName() != null ? recipient.getFirstName() : "") + " " + (recipient.getLastName() != null ? recipient.getLastName() : ""))
                     .assignmentId(assignment.getId())
                     .itemName(itemName)
                     .eventType("CERTIFICATE_UPLOADED")
@@ -278,18 +291,35 @@ public class CertificateService {
         if (notificationProducer == null || assignment == null) return;
         try {
             User collab = cert.getUser();
+            User targetManager = resolveManager(assignment);
+            User recipient = targetManager != null ? targetManager : collab;
+
             String eventType = switch (aiResult.getDecision()) {
                 case "APPROVED" -> "CERTIFICATE_VALIDATED";
                 case "REJECTED" -> "CERTIFICATE_REJECTED";
                 default         -> "CERTIFICATE_PENDING_REVIEW";
             };
+
+            String itemName = resolveItemTitle(assignment);
+            if (itemName == null || itemName.isBlank()) itemName = cert.getFileName();
+
+            String detailsMsg = null;
+            if ("REJECTED".equalsIgnoreCase(aiResult.getDecision()) && aiResult.getReasons() != null && !aiResult.getReasons().isEmpty()) {
+                detailsMsg = String.join(" ; ", aiResult.getReasons());
+            }
+
             notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
-                    .userId(collab.getId()).userEmail(collab.getEmail())
-                    .userFullName(collab.getFirstName() + " " + collab.getLastName())
-                    .targetUserId(collab.getId()).targetUserEmail(collab.getEmail())
-                    .targetUserFullName(collab.getFirstName() + " " + collab.getLastName())
-                    .assignmentId(assignment.getId()).itemName(cert.getFileName())
-                    .eventType(eventType).actionUrl("/my-assignments")
+                    .userId(collab.getId())
+                    .userEmail(collab.getEmail())
+                    .userFullName((collab.getFirstName() != null ? collab.getFirstName() : "") + " " + (collab.getLastName() != null ? collab.getLastName() : ""))
+                    .targetUserId(recipient.getId())
+                    .targetUserEmail(recipient.getEmail())
+                    .targetUserFullName((recipient.getFirstName() != null ? recipient.getFirstName() : "") + " " + (recipient.getLastName() != null ? recipient.getLastName() : ""))
+                    .assignmentId(assignment.getId())
+                    .itemName(itemName)
+                    .eventType(eventType)
+                    .details(detailsMsg)
+                    .actionUrl("/manage-assignments")
                     .build());
         } catch (Exception e) {
             log.warn("[NOTIF] Validation result notification failed: {}", e.getMessage());
@@ -373,22 +403,48 @@ public class CertificateService {
     public Resource downloadCertificate(UUID certificateId, UUID currentUserId, String currentUserRole) {
         Certificate certificate = findCertificate(certificateId);
 
-        // Seuls le titulaire (owner) ou le manager responsable ont le droit de télécharger/prévisualiser le certificat PDF
         boolean isOwner = certificate.getUser() != null && certificate.getUser().getId().equals(currentUserId);
         boolean isAuthorizedManager = isAuthorizedToManageAssignment(certificate.getAssignment(), currentUserId);
+        boolean isAdminOrTM = "ADMIN".equalsIgnoreCase(currentUserRole) || "TRAINING_MANAGER".equalsIgnoreCase(currentUserRole);
 
-        if (!isOwner && !isAuthorizedManager) {
+        if (!isOwner && !isAuthorizedManager && !isAdminOrTM) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Accès refusé : Seul le titulaire ou le responsable de ce parcours peut consulter ou télécharger le certificat PDF.");
+                    "Accès refusé : Vous ne gérez pas cette assignation et ne pouvez pas consulter ou télécharger ce certificat.");
         }
 
-
         try {
-            Path filePath = Paths.get(certificate.getStoragePath()).toAbsolutePath().normalize();
-            if (!Files.exists(filePath)) {
-                filePath = this.fileStorageLocation.resolve(Paths.get(certificate.getStoragePath()).getFileName()).normalize();
+            String rawPath = certificate.getStoragePath();
+            String cleanFileName = rawPath;
+            if (cleanFileName != null) {
+                int lastSlash = Math.max(cleanFileName.lastIndexOf('/'), cleanFileName.lastIndexOf('\\'));
+                if (lastSlash >= 0) {
+                    cleanFileName = cleanFileName.substring(lastSlash + 1);
+                }
             }
-            Resource resource = new UrlResource(filePath.toUri());
+
+            Path[] candidatePaths = new Path[] {
+                this.fileStorageLocation.resolve(cleanFileName).toAbsolutePath().normalize(),
+                Paths.get("./uploads/certificates").resolve(cleanFileName).toAbsolutePath().normalize(),
+                Paths.get("uploads/certificates").resolve(cleanFileName).toAbsolutePath().normalize(),
+                Paths.get("/app/uploads/certificates").resolve(cleanFileName).toAbsolutePath().normalize(),
+                Paths.get(rawPath).toAbsolutePath().normalize()
+            };
+
+            Path validPath = null;
+            for (Path path : candidatePaths) {
+                if (Files.exists(path) && Files.isReadable(path)) {
+                    validPath = path;
+                    break;
+                }
+            }
+
+
+            if (validPath == null) {
+                log.error("[DOWNLOAD] Fichier introuvable sur le disque pour le certificat {}: path={}", certificateId, certificate.getStoragePath());
+                throw new ResourceNotFoundException("Fichier introuvable sur le disque.");
+            }
+
+            Resource resource = new UrlResource(validPath.toUri());
             if (resource.exists() && resource.isReadable()) return resource;
             throw new ResourceNotFoundException("Fichier introuvable sur le disque ou corrompu.");
         } catch (MalformedURLException ex) {
@@ -402,11 +458,13 @@ public class CertificateService {
         Certificate certificate = findCertificate(certificateId);
 
         boolean isAuthorizedManager = isAuthorizedToManageAssignment(certificate.getAssignment(), currentUserId);
+        boolean isAdminOrTM = "ADMIN".equalsIgnoreCase(currentUserRole) || "TRAINING_MANAGER".equalsIgnoreCase(currentUserRole);
 
-        if (!isAuthorizedManager) {
+        if (!isAuthorizedManager && !isAdminOrTM) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Accès refusé : Seul l'assignateur (assignedBy) ou le manager cible (targetManagerId) peut modifier le statut du certificat.");
+                    "Accès refusé : Seul le manager responsable (ou Admin/TM) peut modifier le statut de ce certificat.");
         }
+
 
         certificate.setStatus(newStatus);
 

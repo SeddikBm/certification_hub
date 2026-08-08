@@ -42,8 +42,11 @@ export function Notifications() {
     }
     if (notif.actionUrl) {
       navigate(notif.actionUrl);
+    } else {
+      navigate('/manage-assignments');
     }
   };
+
 
   const formatFullDate = (dateStr: string) => {
     if (!dateStr) return '';

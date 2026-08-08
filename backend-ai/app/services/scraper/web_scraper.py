@@ -244,6 +244,11 @@ def verify_on_issuer_site(url: str) -> ParsedCertificate:
     soup = BeautifulSoup(html, "html.parser")
     page_text = soup.get_text(separator="\n", strip=True)
 
+    logger.info("==========================================")
+    logger.info("[WEB SCRAPING RAW HTML FETCHED] URL=%s (length=%d bytes, text_length=%d chars)", url, len(html), len(page_text))
+    logger.info("[WEB SCRAPING RAW TEXT FIRST 400 CHARS]:\n%s", page_text[:400])
+    logger.info("==========================================")
+
     # 1. Utiliser le LLM pour parser universellement le texte de la page web scrapée
     llm_result: ParsedCertificate | None = None
     if settings.GROQ_API_KEY:
@@ -259,6 +264,7 @@ def verify_on_issuer_site(url: str) -> ParsedCertificate:
             )
         except Exception as exc:
             logger.warning("[SCRAPING-LLM] Échec parsing LLM sur %s: %s", url, exc)
+
 
     # 2. Extracteur HTML/JSON-LD générique en secours/complément
     extractor = next(

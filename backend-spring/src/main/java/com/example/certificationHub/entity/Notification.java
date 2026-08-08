@@ -41,7 +41,11 @@ public class Notification {
     @Column(length = 50)
     private String channel;
 
+    @Column(name = "action_url")
+    private String actionUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 }
+

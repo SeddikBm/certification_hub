@@ -33,21 +33,22 @@ def compare_site_node(state: GraphState) -> dict:
     if site_scores.name_score < 0.90:
         is_conform = False
         reasons.append(
-            f"Le nom publié sur le site officiel ({scraped.holder_name!r}) ne correspond pas au nom du collaborateur ({expected.expected_name!r})."
+            f"Le nom sur le site officiel « {scraped.holder_name or 'Non détecté'} » ne correspond pas au nom attendu « {expected.expected_name} »."
         )
 
     if site_scores.title_score < 1.0:
         is_conform = False
         reasons.append(
-            f"Le titre publié sur le site officiel ({scraped.certification_title!r}) ne correspond pas au titre de la certification ({expected.expected_certification_title!r})."
+            f"Le titre sur le site officiel « {scraped.certification_title or 'Non détecté'} » ne correspond pas au titre attendu « {expected.expected_certification_title} »."
         )
 
-    exp_date = getattr(expected, "expected_date", None) or getattr(expected, "expected_not_before", None)
+    exp_date = expected.expected_date
     if exp_date is not None and site_scores.date_score < 1.0:
         is_conform = False
         reasons.append(
-            f"La date publiée sur le site officiel ({scraped.issue_date}) ne correspond pas à la date attendue ({exp_date})."
+            f"La date sur le site officiel « {scraped.issue_date or 'Non détectée'} » ne correspond pas à la date attendue « {exp_date} »."
         )
+
 
 
     logger.info(

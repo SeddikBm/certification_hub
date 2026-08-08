@@ -115,12 +115,8 @@ def score_date_field(
 ) -> float:
     """
     Comparaison stricte exacte de la date (date BDD == date certificat).
-    Si aucune date n'est renseignée en BDD, la date est acceptée (1.0).
     """
-    if expected_date is None:
-        return 1.0
-
-    if actual is None:
+    if expected_date is None or actual is None:
         return 0.0
 
     # Strict equality comparison
@@ -128,6 +124,7 @@ def score_date_field(
         return 1.0
 
     return 0.0
+
 
 
 

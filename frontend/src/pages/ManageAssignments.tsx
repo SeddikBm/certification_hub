@@ -344,11 +344,10 @@ export function ManageAssignments() {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             {renderPriorityBadge(ass.priority, ass.itemType === 'TRAINING')}
-            {ass.notes && (() => {
+            {ass.notes && ass.notes.trim().length > 0 && ass.notes.trim() !== 'Demande formulée par le collaborateur' && (() => {
               const isManagerNote = ass.assignedById && ass.assignedById !== ass.userId;
-              // If created by CM, note appears ONLY in collaborator's MyAssignments table.
-              // On CM side (ManageAssignments), show ONLY collaborator motivation requests.
               if (isManagerNote) return null;
+
 
               return (
                 <button
@@ -367,6 +366,7 @@ export function ManageAssignments() {
                 </button>
               );
             })()}
+
           </div>
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
             {formatStatus(status, ass.itemType)}

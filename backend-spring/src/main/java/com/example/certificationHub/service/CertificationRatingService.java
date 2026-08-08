@@ -131,23 +131,27 @@ public class CertificationRatingService {
                 .filter(u -> !u.getId().equals(reporterId))
                 .collect(Collectors.toList());
 
+        User reporter = userRepository.findById(reporterId).orElse(null);
+        String reporterName = reporter != null ? (reporter.getFirstName() + " " + reporter.getLastName()).trim() : "Un utilisateur";
+
         String certDisplayName = (cert.getCode() != null && !cert.getCode().isBlank() ? (cert.getCode() + " - ") : "") + cert.getName();
 
         for (User mgr : managersToNotify) {
             notificationProducer.sendAssignmentEvent(AssignmentEvent.builder()
                     .userId(reporterId)
-                    .userEmail(mgr.getEmail())
-                    .userFullName(mgr.getFirstName() + " " + mgr.getLastName())
+                    .userEmail(reporter != null ? reporter.getEmail() : mgr.getEmail())
+                    .userFullName(reporterName)
                     .targetUserId(mgr.getId())
                     .targetUserEmail(mgr.getEmail())
                     .targetUserFullName(mgr.getFirstName() + " " + mgr.getLastName())
                     .itemName(certDisplayName)
                     .eventType("REVIEW_REPORTED")
-                    .details("Un avis sur la certification '" + certDisplayName + "' a été signalé pour modération.")
+                    .details("Un avis sur la certification '" + certDisplayName + "' a été signalé par " + reporterName + ".")
                     .actionUrl("/certifications/" + cert.getId())
                     .build());
         }
     }
+
 
 
 

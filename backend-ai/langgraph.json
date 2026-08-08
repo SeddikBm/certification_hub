@@ -1,0 +1,9 @@
+{
+    "dependencies": [
+        "."
+    ],
+    "graphs": {
+        "validation_workflow": "./app/graph/builder.py:graph"
+    },
+    "env": ".env"
+}

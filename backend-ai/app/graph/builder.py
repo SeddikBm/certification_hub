@@ -82,3 +82,5 @@ def build_validation_graph():
 
     return graph.compile()
 
+graph = build_validation_graph()
+

@@ -20,19 +20,20 @@ interface ValidationStep {
 }
 
 const VALIDATION_STEPS: ValidationStep[] = [
-  { id: 'ocr',    label: 'Lecture OCR',          sublabel: 'Extraction du texte du PDF…',        icon: 'document_scanner',  durationMs: 8000  },
-  { id: 'parse',  label: 'Analyse LLM',           sublabel: 'Identification des champs…',          icon: 'psychology',        durationMs: 10000 },
-  { id: 'match',  label: 'Vérification identité', sublabel: 'Comparaison avec le collaborateur…',  icon: 'person_check',      durationMs: 6000  },
-  { id: 'web',    label: 'Vérification externe',  sublabel: 'Consultation de la source officielle…',icon: 'travel_explore',   durationMs: 12000 },
-  { id: 'result', label: 'Résultat final',         sublabel: 'Calcul de la décision…',             icon: 'verified',          durationMs: 3000  },
+  { id: 'ocr',    label: 'Lecture OCR',          sublabel: 'Extraction du texte du document…',   icon: 'document_scanner',  durationMs: 1800 },
+  { id: 'parse',  label: 'Analyse LLM',           sublabel: 'Identification des champs…',          icon: 'psychology',        durationMs: 1800 },
+  { id: 'match',  label: 'Vérification identité', sublabel: 'Comparaison avec le collaborateur…',  icon: 'person_check',      durationMs: 1800 },
+  { id: 'web',    label: 'Vérification externe',  sublabel: 'Consultation de la source officielle…',icon: 'travel_explore',   durationMs: 2500 },
+  { id: 'result', label: 'Résultat final',         sublabel: 'Calcul de la décision…',             icon: 'verified',          durationMs: 1000 },
 ];
 
 const DECISION_CONFIG = {
-  APPROVED:       { label: 'Certificat Validé ✅',            color: 'emerald', icon: 'check_circle',   bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800' },
-  REJECTED:       { label: 'Certificat Refusé ❌',            color: 'red',     icon: 'cancel',         bg: 'bg-red-50',     border: 'border-red-200',     text: 'text-red-800'     },
-  PENDING_REVIEW: { label: 'En attente de revue manuelle ⏳', color: 'amber',   icon: 'hourglass_top',  bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-800'   },
-  PENDING_VALIDATION: { label: 'En attente de revue manuelle ⏳', color: 'amber', icon: 'hourglass_top', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800' },
+  APPROVED:       { label: 'Certificat Validé par l\'IA',     color: 'emerald', icon: 'check_circle',   bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800' },
+  REJECTED:       { label: 'Certificat Refusé par l\'IA',     color: 'red',     icon: 'cancel',         bg: 'bg-red-50',     border: 'border-red-200',     text: 'text-red-800'     },
+  PENDING_REVIEW: { label: 'En attente de revue manuelle',    color: 'amber',   icon: 'hourglass_top',  bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-800'   },
+  PENDING_VALIDATION: { label: 'En attente de revue manuelle', color: 'amber', icon: 'hourglass_top', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800' },
 };
+
 
 export function UploadCertificateModal({
   isOpen,
@@ -52,17 +53,17 @@ export function UploadCertificateModal({
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Simule l'avancement des étapes pendant que l'IA tourne en arrière-plan
+  // Simule l'avancement des étapes de manière fluide et progressive
   const animateSteps = useCallback((stepIdx: number) => {
     if (stepIdx >= VALIDATION_STEPS.length - 1) return;
     const step = VALIDATION_STEPS[stepIdx];
     stepTimerRef.current = setTimeout(() => {
-      setCurrentStep(stepIdx + 1);
+      setCurrentStep(prev => Math.max(prev, stepIdx + 1));
       animateSteps(stepIdx + 1);
     }, step.durationMs);
   }, []);
 
-  // Polling toutes les 3 secondes pour voir si le statut a changé
+  // Polling pour récupérer le résultat final et passer de manière fluide jusqu'au dernier step
   const startPolling = useCallback(() => {
     let attempts = 0;
     const maxAttempts = 40; // 40 × 3s = 2 min max
@@ -74,28 +75,41 @@ export function UploadCertificateModal({
         const myAssignment = page.content.find(a => a.id === assignmentId);
 
         if (myAssignment && myAssignment.certificateStatus !== 'PENDING_VALIDATION') {
-          // Validation terminée !
+          // Validation terminée par le backend !
           if (pollingRef.current) clearInterval(pollingRef.current);
           if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
-          setCurrentStep(VALIDATION_STEPS.length - 1);
+
           setFinalCertStatus(myAssignment.certificateStatus ?? null);
           setValidationResult(myAssignment.validationDetails ?? null);
-          setPhase('done');
+
+          // Animation progressive accélérée jusqu'à la fin
+          const finishInterval = setInterval(() => {
+            setCurrentStep(prev => {
+              if (prev < VALIDATION_STEPS.length - 1) {
+                return prev + 1;
+              } else {
+                clearInterval(finishInterval);
+                setTimeout(() => setPhase('done'), 600);
+                return prev;
+              }
+            });
+          }, 400);
+
           return;
         }
 
         if (attempts >= maxAttempts) {
           if (pollingRef.current) clearInterval(pollingRef.current);
-          // Timeout : probablement PENDING_REVIEW (revue manuelle)
           setCurrentStep(VALIDATION_STEPS.length - 1);
           setFinalCertStatus('PENDING_VALIDATION');
           setPhase('done');
         }
       } catch {
-        // Ignore les erreurs réseau pendant le polling
+        // Ignore les erreurs pendant le polling
       }
     }, 3000);
   }, [assignmentId]);
+
 
   // Cleanup on unmount
   useEffect(() => {
@@ -168,22 +182,28 @@ export function UploadCertificateModal({
     if (phase === 'done') {
       onSuccess(
         finalCertStatus === 'VALID'
-          ? '✅ Certificat validé automatiquement par l\'IA !'
+          ? 'Certificat validé automatiquement par l\'IA !'
           : finalCertStatus === 'REJECTED'
-          ? '❌ Certificat refusé par l\'IA. Vérifiez les informations.'
-          : '⏳ Certificat en attente de revue manuelle par votre Career Manager.'
+          ? 'Certificat refusé par l\'IA. Vérifiez les informations.'
+          : 'Certificat en attente de revue manuelle par votre Career Manager.'
       );
     }
     onClose();
   };
 
+  const effectiveKey = finalCertStatus === 'VALID' ? 'APPROVED' :
+                       finalCertStatus === 'REJECTED' ? 'REJECTED' :
+                       (validationResult?.decision ?? 'PENDING_VALIDATION');
+
   const decisionCfg = DECISION_CONFIG[
-    (finalCertStatus as keyof typeof DECISION_CONFIG) ?? 'PENDING_VALIDATION'
+    (effectiveKey as keyof typeof DECISION_CONFIG) ?? 'PENDING_VALIDATION'
   ] ?? DECISION_CONFIG.PENDING_VALIDATION;
+
 
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-5 border border-gray-100">
+
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -342,13 +362,13 @@ export function UploadCertificateModal({
 
             {/* Scores */}
             {validationResult?.scores && (
-              <div className="grid grid-cols-2 gap-2">
-                <ScoreChip label="Nom (fuzzy)" value={validationResult.scores.name_score} />
+              <div className="grid grid-cols-3 gap-2">
+                <ScoreChip label="Nom" value={validationResult.scores.name_score} />
                 <ScoreChip label="Titre" value={validationResult.scores.title_score} />
                 <ScoreChip label="Date" value={validationResult.scores.date_score} />
-                <ScoreChip label="Score global" value={validationResult.scores.overall_score} highlight />
               </div>
             )}
+
 
             {/* Données extraites */}
             {validationResult?.extracted?.holder_name && (
@@ -369,20 +389,29 @@ export function UploadCertificateModal({
               </div>
             )}
 
-            {/* Raisons */}
+            {/* Conformance Message when Approved */}
+            {validationResult?.decision === 'APPROVED' && (
+              <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200/80 text-xs font-semibold">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600 shrink-0">check_circle</span>
+                <span>Toutes les données sont conformes (Certificat + Base + Site).</span>
+              </div>
+            )}
+
+            {/* Raisons en cas de non-conformité */}
             {validationResult?.reasons && validationResult.reasons.length > 0 && (
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-[11px] font-bold text-gray-600 mb-1.5">Détails</p>
+                <p className="text-[11px] font-bold text-gray-600 mb-1.5">Détails de la validation</p>
                 <ul className="space-y-1">
                   {validationResult.reasons.map((r, i) => (
                     <li key={i} className="text-[11px] text-gray-600 flex items-start gap-1.5">
-                      <span className="material-symbols-outlined text-[13px] text-gray-400 flex-shrink-0 mt-0.5">info</span>
-                      {r}
+                      <span className="material-symbols-outlined text-[14px] text-amber-500 flex-shrink-0 mt-0.5">info</span>
+                      <span>{r}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
+
 
             {/* Source */}
             {validationResult?.source && (
@@ -426,10 +455,16 @@ function ScoreChip({ label, value, highlight }: { label: string; value: number; 
 
 function ExtractedRow({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="material-symbols-outlined text-[14px] text-gray-400 flex-shrink-0">{icon}</span>
-      <span className="text-gray-500 font-medium">{label} :</span>
-      <span className="text-gray-800 font-bold truncate">{value}</span>
+    <div className="grid grid-cols-[125px_1fr] items-start gap-2 py-1.5 border-b border-gray-100/60 last:border-0 text-xs">
+      <div className="flex items-center gap-1.5 text-gray-500 font-semibold shrink-0">
+        <span className="material-symbols-outlined text-[16px] text-gray-400 shrink-0">{icon}</span>
+        <span>{label} :</span>
+      </div>
+      <div className="text-gray-900 font-extrabold break-words leading-relaxed">
+        {value}
+      </div>
     </div>
   );
 }
+
+

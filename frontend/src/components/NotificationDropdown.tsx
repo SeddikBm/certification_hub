@@ -53,14 +53,18 @@ export function NotificationDropdown() {
     }
     setIsOpen(false);
 
-    const isCollaborator = user?.role === 'COLLABORATOR' || user?.role === 'USER';
-    if (isCollaborator) {
-      navigate('/my-assignments');
+    if (notif.actionUrl) {
+      navigate(notif.actionUrl);
     } else {
-      const targetUrl = notif.actionUrl || '/manage-assignments';
-      navigate(targetUrl);
+      const isCollaborator = user?.role === 'COLLABORATOR' || user?.role === 'USER';
+      if (isCollaborator) {
+        navigate('/my-assignments');
+      } else {
+        navigate('/manage-assignments');
+      }
     }
   };
+
 
 
   const formatRelativeTime = (dateStr: string) => {
@@ -193,11 +197,21 @@ export function NotificationDropdown() {
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="p-2 border-t border-gray-100 bg-gray-50/40 text-center">
-              <span className="text-[10px] text-gray-400 font-medium">Affichage des notifications récentes ({notifications.length})</span>
-            </div>
-          )}
+          <div className="p-3 border-t border-gray-100 bg-gray-50/60 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/notifications');
+              }}
+              className="text-xs font-bold text-[#b70f30] hover:text-red-800 flex items-center justify-center gap-1.5 w-full cursor-pointer transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[16px] no-underline">visibility</span>
+              <span className="group-hover:underline">Voir toutes les notifications</span>
+            </button>
+          </div>
+
+
         </div>
       )}
     </div>

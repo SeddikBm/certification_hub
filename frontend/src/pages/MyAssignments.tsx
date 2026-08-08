@@ -5,6 +5,7 @@ import { RequestAssignmentModal } from '../components/RequestAssignmentModal';
 import { ScheduleExamModal } from '../components/ScheduleExamModal';
 import { UploadCertificateModal } from '../components/UploadCertificateModal';
 import { NoteModal } from '../components/NoteModal';
+import { ViewCertificateModal } from '../components/ViewCertificateModal';
 import { Pagination } from '../components/ui/Pagination';
 import clsx from 'clsx';
 
@@ -13,7 +14,21 @@ export function MyAssignments() {
 
   const [activeNoteModal, setActiveNoteModal] = useState<{ title: string; user?: string; authorName?: string; authorRole?: string; notes: string; noteLabel?: string } | null>(null);
 
+  const [viewCertModalState, setViewCertModalState] = useState<{
+    isOpen: boolean;
+    certificateId: string | null;
+    fileName?: string;
+    collaboratorName?: string;
+    itemName?: string;
+    currentStatus?: string;
+    validationDetails?: any;
+  }>({
+    isOpen: false,
+    certificateId: null,
+  });
+
   const [activeTab, setActiveTab] = useState<'CERTIFICATION' | 'TRAINING'>('CERTIFICATION');
+
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState<number>(0);
   const pageSize = 25;
@@ -422,8 +437,50 @@ export function MyAssignments() {
 
                         {/* Status */}
                         <td className="p-3.5 text-center">
-                          <div className="flex justify-center">{renderStatusBadge(status)}</div>
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            {ass.certificateId ? (
+                              <>
+                                <span className={clsx(
+                                  "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border shadow-2xs",
+                                  ass.certificateStatus === 'VALID' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                  ass.certificateStatus === 'REJECTED' ? "bg-red-50 text-red-700 border-red-200" :
+                                  ass.certificateStatus === 'EXPIRED' ? "bg-orange-50 text-orange-700 border-orange-200" :
+                                  "bg-amber-50 text-amber-700 border-amber-200"
+                                )}>
+                                  <span className="material-symbols-outlined text-[13px]">
+                                    {ass.certificateStatus === 'VALID' ? 'verified' : ass.certificateStatus === 'REJECTED' ? 'cancel' : 'hourglass_top'}
+                                  </span>
+                                  <span>
+                                    {ass.certificateStatus === 'VALID' ? 'Certificat Validé' :
+                                     ass.certificateStatus === 'REJECTED' ? 'Certificat Refusé' :
+                                     ass.certificateStatus === 'EXPIRED' ? 'Certificat Expiré' :
+                                     'Validation IA'}
+                                  </span>
+                                </span>
+
+                                {ass.validationDetails?.decision &&
+                                 (ass.validationDetails.source === 'WEB_VERIFIED' || ass.validationDetails.source === 'TEXT_ONLY') && (
+                                  <span
+                                    className={clsx(
+                                      'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold border',
+                                      ass.validationDetails.decision === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                      ass.validationDetails.decision === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
+                                      'bg-amber-50 text-amber-700 border-amber-200'
+                                    )}
+                                    title={`Score nom: ${Math.round((ass.validationDetails.scores?.name_score ?? 0) * 100)}%`}
+                                  >
+                                    <span className="material-symbols-outlined text-[11px]">smart_toy</span>
+                                    <span>IA · {ass.validationDetails.decision === 'APPROVED' ? 'OK' : ass.validationDetails.decision === 'REJECTED' ? 'Refusé' : 'Revue'}</span>
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              renderStatusBadge(status)
+                            )}
+                          </div>
                         </td>
+
+
 
                         {/* Date Cible / Examen / Planification Column */}
                         <td className="p-3.5 text-center">
@@ -624,49 +681,44 @@ export function MyAssignments() {
                             </span>
                           )}
 
-                          {/* Certificate Status Badge or Upload Button for Collaborators */}
+                          {/* Certificate Action Buttons ONLY in Actions column */}
                           {ass.certificateId ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <span className={clsx(
-                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border",
-                                ass.certificateStatus === 'VALID' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                                ass.certificateStatus === 'REJECTED' ? "bg-red-50 text-red-700 border-red-200" :
-                                ass.certificateStatus === 'EXPIRED' ? "bg-orange-50 text-orange-700 border-orange-200" :
-                                "bg-amber-50 text-amber-700 border-amber-200"
-                              )}>
-                                {ass.certificateStatus === 'PENDING_VALIDATION' ? (
-                                  <span className="material-symbols-outlined text-[14px] animate-pulse">progress_activity</span>
-                                ) : (
-                                  <span className="material-symbols-outlined text-[14px]">
-                                    {ass.certificateStatus === 'VALID' ? 'verified' : ass.certificateStatus === 'REJECTED' ? 'cancel' : 'hourglass_top'}
-                                  </span>
-                                )}
-                                <span>
-                                  {ass.certificateStatus === 'VALID' ? 'Certificat Validé' :
-                                   ass.certificateStatus === 'REJECTED' ? 'Certificat Refusé' :
-                                   ass.certificateStatus === 'EXPIRED' ? 'Certificat Expiré' :
-                                   'Validation IA en cours…'}
-                                </span>
-                              </span>
-                              {/* AI decision mini-badge: only shown if source is WEB_VERIFIED or TEXT_ONLY */}
-                              {ass.validationDetails?.decision &&
-                               (ass.validationDetails.source === 'WEB_VERIFIED' || ass.validationDetails.source === 'TEXT_ONLY') && (
-                                <span
-                                  className={clsx(
-                                    'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold border',
-                                    ass.validationDetails.decision === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                    ass.validationDetails.decision === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
-                                    'bg-amber-50 text-amber-700 border-amber-200'
-                                  )}
-                                  title={`Score nom: ${Math.round((ass.validationDetails.scores?.name_score ?? 0) * 100)}%`}
-                                >
-                                  <span className="material-symbols-outlined text-[11px]">smart_toy</span>
-                                  IA ·{' '}
-                                  {ass.validationDetails.decision === 'APPROVED' ? 'OK' :
-                                   ass.validationDetails.decision === 'REJECTED' ? 'Refusé' : 'Revue'}
-                                </span>
-                              )}
+                            <div className="flex items-center gap-1.5 justify-center flex-wrap">
+                              {/* Bouton Voir Certificat (thème sombre slate élégant) */}
+                              <button
+                                type="button"
+                                onClick={() => setViewCertModalState({
+                                  isOpen: true,
+                                  certificateId: ass.certificateId!,
+                                  fileName: ass.certificateFileName,
+                                  collaboratorName: ass.userName,
+                                  itemName: ass.itemName,
+                                  currentStatus: ass.certificateStatus,
+                                  validationDetails: ass.validationDetails
+                                })}
+                                className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#1e293b] hover:bg-[#0f172a] rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs border border-slate-700"
+                                title="Visualiser le certificat"
+                              >
+                                <span className="material-symbols-outlined text-[13px] text-slate-300">visibility</span>
+                                <span>Voir Certificat</span>
+                              </button>
 
+                              {/* Si le certificat est refusé ou expiré : bouton Ré-uploader côte à côte en rouge Devoteam */}
+                              {(ass.certificateStatus === 'REJECTED' || ass.certificateStatus === 'EXPIRED') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setUploadModalState({
+                                    isOpen: true,
+                                    assignmentId: ass.id,
+                                    itemName: ass.itemName || 'Mon parcours'
+                                  })}
+                                  className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs border border-red-700"
+                                  title="Ré-uploader un nouveau certificat"
+                                >
+                                  <span className="material-symbols-outlined text-[13px]">upload_file</span>
+                                  <span>Ré-uploader</span>
+                                </button>
+                              )}
                             </div>
                           ) : (status === 'COMPLETED') && (
                             <button
@@ -676,13 +728,15 @@ export function MyAssignments() {
                                 assignmentId: ass.id,
                                 itemName: ass.itemName || 'Mon parcours'
                               })}
-                              className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                              className="px-2.5 py-1 text-[11px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-red-700"
                               title="Déposer votre certificat au format PDF (max 5 MB)"
                             >
                               <span className="material-symbols-outlined text-[14px]">upload_file</span>
                               <span>Déposer Certificat</span>
                             </button>
                           )}
+
+
 
 
                           </div>
@@ -910,10 +964,25 @@ export function MyAssignments() {
         user={activeNoteModal?.user}
         authorName={activeNoteModal?.authorName}
         notes={activeNoteModal?.notes || ''}
-        noteLabel={activeNoteModal?.noteLabel}
+        noteLabel={activeNoteModal?.noteLabel || ''}
       />
 
+      <ViewCertificateModal
+        isOpen={viewCertModalState.isOpen}
+        onClose={() => setViewCertModalState({ isOpen: false, certificateId: null })}
+        certificateId={viewCertModalState.certificateId}
+        fileName={viewCertModalState.fileName}
+        collaboratorName={viewCertModalState.collaboratorName}
+        itemName={viewCertModalState.itemName}
+        currentStatus={viewCertModalState.currentStatus}
+        validationDetails={viewCertModalState.validationDetails}
+        onStatusUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
+          setViewCertModalState({ isOpen: false, certificateId: null });
+        }}
+      />
 
     </div>
   );
 }
+

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from app.schemas.enums import Decision, SourceType
 
@@ -26,9 +26,10 @@ class ExpectedInfo(BaseModel):
     expected_certification_title: str = Field(..., description="Full title e.g. 'Azure AI Associate'")
     expected_date: date | None = Field(
         default=None,
-        alias="expected_not_before",
+        validation_alias=AliasChoices("expected_date", "expected_not_before"),
         description="Date exacte d'obtention de la certification en BDD",
     )
+
 
 
 

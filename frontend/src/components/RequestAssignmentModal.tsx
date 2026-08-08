@@ -67,8 +67,9 @@ export function RequestAssignmentModal({ isOpen, onClose, onSuccessNotification 
         userId: user.id,
         targetManagerId: targetManager,
         priority,
-        notes: notes ? `Demande collaborateur: ${notes}` : 'Demande formulée par le collaborateur'
+        notes: notes && notes.trim() ? notes.trim() : undefined
       });
+
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-assignments'] });

@@ -25,7 +25,7 @@ export function ViewCertificateModal({
   onStatusUpdated,
   validationDetails
 }: ViewCertificateModalProps) {
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<{ url: string; mimeType: string } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
@@ -38,14 +38,14 @@ export function ViewCertificateModal({
       setError(null);
 
       assignmentService.getCertificatePreviewUrl(certificateId)
-        .then((url) => {
-          activeUrl = url;
-          setPdfUrl(url);
+        .then((res) => {
+          activeUrl = res.url;
+          setPreviewData(res);
           setIsLoading(false);
         })
         .catch((err) => {
           console.error(err);
-          setError("Impossible de charger le prévisualisateur du certificat PDF.");
+          setError("Impossible de prévisualiser le fichier directement. Vous pouvez le télécharger via le bouton ci-dessous.");
           setIsLoading(false);
         });
     }
@@ -54,11 +54,14 @@ export function ViewCertificateModal({
       if (activeUrl) {
         window.URL.revokeObjectURL(activeUrl);
       }
-      setPdfUrl(null);
+      setPreviewData(null);
     };
   }, [isOpen, certificateId]);
 
   if (!isOpen || !certificateId) return null;
+
+  const isImage = previewData?.mimeType?.startsWith('image/') ||
+    (fileName && (fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.webp')));
 
   const handleUpdateStatus = async (status: string) => {
     setIsUpdating(true);
@@ -71,6 +74,7 @@ export function ViewCertificateModal({
       setIsUpdating(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -123,12 +127,12 @@ export function ViewCertificateModal({
           </div>
         </div>
 
-        {/* PDF Viewer Body */}
+        {/* PDF / Image Viewer Body */}
         <div className="flex-1 bg-gray-900/90 relative p-2 overflow-hidden flex items-center justify-center">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center space-y-3 text-white">
               <div className="w-9 h-9 border-3 border-red-200 border-t-[#b70f30] rounded-full animate-spin"></div>
-              <p className="text-xs font-semibold text-gray-300">Chargement de l'aperçu PDF...</p>
+              <p className="text-xs font-semibold text-gray-300">Chargement de l'aperçu...</p>
             </div>
           ) : error ? (
             <div className="p-8 text-center bg-white rounded-2xl max-w-md border border-red-100 shadow-xl space-y-3">
@@ -139,56 +143,92 @@ export function ViewCertificateModal({
                 onClick={() => assignmentService.downloadCertificate(certificateId, fileName)}
                 className="px-4 py-2 bg-[#b70f30] text-white text-xs font-bold rounded-xl"
               >
-                Télécharger le PDF directement
+                Télécharger le fichier directement
               </button>
             </div>
-          ) : pdfUrl ? (
-            <iframe
-              src={pdfUrl}
-              className="w-full h-full rounded-xl bg-white border-0 shadow-inner"
-              title="Aperçu du certificat PDF"
-            />
+          ) : previewData ? (
+            isImage ? (
+              <img
+                src={previewData.url}
+                alt="Aperçu du certificat"
+                className="max-h-full max-w-full object-contain rounded-xl shadow-lg bg-white"
+              />
+            ) : (
+              <iframe
+                src={previewData.url}
+                className="w-full h-full rounded-xl bg-white border-0 shadow-inner"
+                title="Aperçu du certificat PDF"
+              />
+            )
           ) : null}
         </div>
 
-        {/* AI Validation Details Panel: only shown if source is WEB_VERIFIED or TEXT_ONLY */}
+        {/* AI Validation Details Panel */}
         {validationDetails && (validationDetails.source === 'WEB_VERIFIED' || validationDetails.source === 'TEXT_ONLY') && (
-          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center gap-3">
-
-            {/* Badge décision IA */}
-            <span className={clsx(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-extrabold border",
-              validationDetails.decision === 'APPROVED'  ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-              validationDetails.decision === 'REJECTED'  ? 'bg-red-50 text-red-800 border-red-200' :
-              'bg-amber-50 text-amber-800 border-amber-200'
-            )}>
-              <span className="material-symbols-outlined text-[14px]">
-                {validationDetails.decision === 'APPROVED' ? 'check_circle' :
-                 validationDetails.decision === 'REJECTED' ? 'cancel' : 'hourglass_top'}
+          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50 space-y-2.5">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Badge décision IA */}
+              <span className={clsx(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-extrabold border",
+                validationDetails.decision === 'APPROVED'  ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                validationDetails.decision === 'REJECTED'  ? 'bg-red-50 text-red-800 border-red-200' :
+                'bg-amber-50 text-amber-800 border-amber-200'
+              )}>
+                <span className="material-symbols-outlined text-[14px]">
+                  {validationDetails.decision === 'APPROVED' ? 'check_circle' :
+                   validationDetails.decision === 'REJECTED' ? 'cancel' : 'hourglass_top'}
+                </span>
+                IA :{' '}
+                {validationDetails.decision === 'APPROVED' ? 'Approuvé' :
+                 validationDetails.decision === 'REJECTED' ? 'Refusé' : 'Revue manuelle'}
               </span>
-              IA :{' '}
-              {validationDetails.decision === 'APPROVED' ? 'Approuvé' :
-               validationDetails.decision === 'REJECTED' ? 'Refusé' : 'Revue manuelle'}
-            </span>
 
-            {/* Scores */}
-            {validationDetails.scores && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <AiScorePill label="Nom" value={validationDetails.scores.name_score} type="fuzzy" />
-                <AiScorePill label="Titre" value={validationDetails.scores.title_score} type="strict" />
-                <AiScorePill label="Date" value={validationDetails.scores.date_score} type="strict" />
+              {/* Scores */}
+              {validationDetails.scores && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <AiScorePill label="Nom" value={validationDetails.scores.name_score} type="fuzzy" />
+                  <AiScorePill label="Titre" value={validationDetails.scores.title_score} type="strict" />
+                  <AiScorePill label="Date" value={validationDetails.scores.date_score} type="strict" />
+                </div>
+              )}
+
+              {/* Source */}
+              {validationDetails.source && (
+                <span className="text-[11px] text-gray-400 font-medium ml-auto">
+                  {validationDetails.source === 'WEB_VERIFIED' ? '🌐 Vérification web' :
+                   validationDetails.source === 'TEXT_ONLY' ? '📄 OCR / Extraction texte' : 'Aucune vérification'}
+                </span>
+              )}
+            </div>
+
+            {/* Conformance banner if decision is APPROVED */}
+            {validationDetails.decision === 'APPROVED' && (
+              <div className="flex items-center gap-2 p-2.5 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200/80 text-xs font-semibold">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600 shrink-0">check_circle</span>
+                <span>Toutes les données sont conformes (Certificat + Base + Site).</span>
               </div>
             )}
 
-            {/* Source */}
-            {validationDetails.source && (
-              <span className="text-[11px] text-gray-400 font-medium ml-auto">
-                {validationDetails.source === 'WEB_VERIFIED' ? '🌐 Vérification web' :
-                 validationDetails.source === 'TEXT_ONLY' ? '📄 OCR / Extraction texte' : 'Aucune vérification'}
-              </span>
+            {/* Reasons / Details */}
+            {validationDetails.reasons && validationDetails.reasons.length > 0 && (
+              <div className="p-3 bg-white rounded-xl border border-gray-100 shadow-2xs space-y-1">
+                <p className="text-[11px] font-bold text-gray-700">Détails de la validation :</p>
+                <ul className="space-y-1">
+                  {validationDetails.reasons.map((r, i) => (
+                    <li key={i} className="text-[11px] text-gray-700 flex items-start gap-1.5 font-medium">
+                      <span className="material-symbols-outlined text-[14px] text-amber-500 flex-shrink-0 mt-0.5">info</span>
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
+
           </div>
         )}
+
+
+
 
         {/* Validation Action Bar */}
         <div className="px-6 py-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -206,21 +246,6 @@ export function ViewCertificateModal({
               <>
                 <button
                   type="button"
-                  disabled={isUpdating || currentStatus === 'PENDING_VALIDATION'}
-                  onClick={() => handleUpdateStatus('PENDING_VALIDATION')}
-                  className={clsx(
-                    "px-3.5 py-2 text-xs font-extrabold rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer",
-                    currentStatus === 'PENDING_VALIDATION'
-                      ? "bg-amber-100 text-amber-800 border-amber-300 opacity-60 cursor-default"
-                      : "bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200"
-                  )}
-                >
-                  <span className="material-symbols-outlined text-[16px]">hourglass_top</span>
-                  <span>En attente</span>
-                </button>
-
-                <button
-                  type="button"
                   disabled={isUpdating || currentStatus === 'REJECTED'}
                   onClick={() => handleUpdateStatus('REJECTED')}
                   className={clsx(
@@ -233,6 +258,7 @@ export function ViewCertificateModal({
                   <span className="material-symbols-outlined text-[16px]">cancel</span>
                   <span>Refuser</span>
                 </button>
+
 
                 <button
                   type="button"
@@ -268,7 +294,7 @@ function AiScorePill({ label, value, type }: { label: string; value: number; typ
         isMatched ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
       )}>
         <span className="material-symbols-outlined text-[13px]">{isMatched ? 'task_alt' : 'highlight_off'}</span>
-        <span>{label} (Stricte) : {isMatched ? 'Conforme' : 'Non conforme'}</span>
+        <span>{label} : {isMatched ? 'Conforme' : 'Non conforme'}</span>
       </span>
     );
   }
@@ -281,8 +307,9 @@ function AiScorePill({ label, value, type }: { label: string; value: number; typ
       isOk ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
     )}>
       <span className="material-symbols-outlined text-[13px]">{isOk ? 'tune' : 'warning'}</span>
-      <span>{label} (Fuzzy ≥90%) : {pct}%</span>
+      <span>{label} : {pct}%</span>
     </span>
   );
 }
+
 

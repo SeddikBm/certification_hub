@@ -20,11 +20,11 @@ interface ValidationStep {
 }
 
 const VALIDATION_STEPS: ValidationStep[] = [
-  { id: 'ocr',    label: 'Lecture OCR',          sublabel: 'Extraction du texte du document…',   icon: 'document_scanner',  durationMs: 1800 },
-  { id: 'parse',  label: 'Analyse LLM',           sublabel: 'Identification des champs…',          icon: 'psychology',        durationMs: 1800 },
-  { id: 'match',  label: 'Vérification identité', sublabel: 'Comparaison avec le collaborateur…',  icon: 'person_check',      durationMs: 1800 },
-  { id: 'web',    label: 'Vérification externe',  sublabel: 'Consultation de la source officielle…',icon: 'travel_explore',   durationMs: 2500 },
-  { id: 'result', label: 'Résultat final',         sublabel: 'Calcul de la décision…',             icon: 'verified',          durationMs: 1000 },
+  { id: 'ocr',    label: 'Lecture OCR',          sublabel: 'Extraction du texte du document…',   icon: 'document_scanner',  durationMs: 1200 },
+  { id: 'parse',  label: 'Analyse LLM',           sublabel: 'Identification des champs…',          icon: 'psychology',        durationMs: 1200 },
+  { id: 'match',  label: 'Vérification identité', sublabel: 'Comparaison avec le collaborateur…',  icon: 'person_check',      durationMs: 1200 },
+  { id: 'web',    label: 'Vérification externe',  sublabel: 'Consultation de la source officielle…',icon: 'travel_explore',   durationMs: 1400 },
+  { id: 'result', label: 'Résultat final',         sublabel: 'Calcul de la décision…',             icon: 'verified',          durationMs: 800 },
 ];
 
 const DECISION_CONFIG = {
@@ -66,7 +66,7 @@ export function UploadCertificateModal({
   // Polling pour récupérer le résultat final et passer de manière fluide jusqu'au dernier step
   const startPolling = useCallback(() => {
     let attempts = 0;
-    const maxAttempts = 40; // 40 × 3s = 2 min max
+    const maxAttempts = 120; // 120 × 1s = 2 min max
 
     pollingRef.current = setInterval(async () => {
       attempts++;
@@ -82,7 +82,7 @@ export function UploadCertificateModal({
           setFinalCertStatus(myAssignment.certificateStatus ?? null);
           setValidationResult(myAssignment.validationDetails ?? null);
 
-          // Animation progressive accélérée jusqu'à la fin
+          // Animation progressive lisible et harmonieuse jusqu'à la fin
           const finishInterval = setInterval(() => {
             setCurrentStep(prev => {
               if (prev < VALIDATION_STEPS.length - 1) {
@@ -93,7 +93,7 @@ export function UploadCertificateModal({
                 return prev;
               }
             });
-          }, 400);
+          }, 700);
 
           return;
         }
@@ -107,9 +107,28 @@ export function UploadCertificateModal({
       } catch {
         // Ignore les erreurs pendant le polling
       }
-    }, 3000);
+    }, 1000);
   }, [assignmentId]);
 
+
+  // Reset modal state whenever modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setFile(null);
+      setIsDragging(false);
+      setPhase('idle');
+      setErrorMessage(null);
+      setCurrentStep(0);
+      setValidationResult(null);
+      setFinalCertStatus(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } else {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+    }
+  }, [isOpen]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -123,9 +142,13 @@ export function UploadCertificateModal({
 
   const validateAndSetFile = (selectedFile: File) => {
     setErrorMessage(null);
-    const isPdf = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
-    if (!isPdf) {
-      setErrorMessage('Seuls les fichiers au format PDF sont autorisés.');
+    const fileNameLower = selectedFile.name.toLowerCase();
+    const isAllowed = selectedFile.type === 'application/pdf' ||
+                      selectedFile.type.startsWith('image/') ||
+                      /\.(pdf|png|jpg|jpeg|webp)$/i.test(fileNameLower);
+
+    if (!isAllowed) {
+      setErrorMessage('Formats autorisés : PDF, PNG, JPG, JPEG, WEBP.');
       setFile(null);
       return;
     }
@@ -152,7 +175,7 @@ export function UploadCertificateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setErrorMessage('Veuillez sélectionner un fichier PDF.');
+      setErrorMessage('Veuillez sélectionner un certificat (PDF ou Image).');
       return;
     }
 
@@ -175,6 +198,7 @@ export function UploadCertificateModal({
       setPhase('idle');
     }
   };
+
 
   const handleClose = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
@@ -251,14 +275,16 @@ export function UploadCertificateModal({
                   : 'border-gray-200 hover:border-red-300 bg-gray-50/50 hover:bg-gray-50'
                 }`}
               >
-                <input ref={fileInputRef} type="file" accept=".pdf,application/pdf" onChange={handleFileChange} className="hidden" />
+                <input ref={fileInputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*" onChange={handleFileChange} className="hidden" />
                 {file ? (
                   <div className="flex flex-col items-center gap-1.5 py-1">
                     <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[28px]">picture_as_pdf</span>
+                      <span className="material-symbols-outlined text-[28px]">
+                        {file.type.startsWith('image/') || /\.(png|jpg|jpeg|webp)$/i.test(file.name) ? 'image' : 'picture_as_pdf'}
+                      </span>
                     </div>
                     <p className="text-xs font-bold text-gray-900 truncate max-w-[280px]">{file.name}</p>
-                    <p className="text-[11px] text-gray-500 font-semibold">{(file.size / (1024 * 1024)).toFixed(2)} MB • PDF</p>
+                    <p className="text-[11px] text-gray-500 font-semibold">{(file.size / (1024 * 1024)).toFixed(2)} MB • {file.name.split('.').pop()?.toUpperCase()}</p>
                     <span className="text-[11px] text-emerald-700 font-bold bg-emerald-100/60 px-2.5 py-0.5 rounded-full mt-1">
                       Fichier prêt à être envoyé
                     </span>
@@ -269,9 +295,9 @@ export function UploadCertificateModal({
                       <span className="material-symbols-outlined text-[26px]">cloud_upload</span>
                     </div>
                     <p className="text-xs font-bold text-gray-800">
-                      Glissez votre certificat PDF ici, ou <span className="text-[#b70f30] underline">parcourez</span>
+                      Glissez votre certificat (PDF ou Image) ici, ou <span className="text-[#b70f30] underline">parcourez</span>
                     </p>
-                    <p className="text-[11px] text-gray-400 font-medium">Format PDF uniquement (Taille max : 5 MB)</p>
+                    <p className="text-[11px] text-gray-400 font-medium">Formats autorisés : PDF, PNG, JPG (Taille max : 5 MB)</p>
                   </>
                 )}
               </div>
@@ -397,20 +423,24 @@ export function UploadCertificateModal({
               </div>
             )}
 
-            {/* Raisons en cas de non-conformité */}
-            {validationResult?.reasons && validationResult.reasons.length > 0 && (
+            {/* Raisons en cas de non-conformité (filtrer le message de conformité pour éviter le doublon) */}
+            {validationResult?.reasons &&
+             validationResult.reasons.filter(r => !r.toLowerCase().includes('données sont conformes')).length > 0 && (
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <p className="text-[11px] font-bold text-gray-600 mb-1.5">Détails de la validation</p>
                 <ul className="space-y-1">
-                  {validationResult.reasons.map((r, i) => (
-                    <li key={i} className="text-[11px] text-gray-600 flex items-start gap-1.5">
-                      <span className="material-symbols-outlined text-[14px] text-amber-500 flex-shrink-0 mt-0.5">info</span>
-                      <span>{r}</span>
-                    </li>
-                  ))}
+                  {validationResult.reasons
+                    .filter(r => !r.toLowerCase().includes('données sont conformes'))
+                    .map((r, i) => (
+                      <li key={i} className="text-[11px] text-gray-600 flex items-start gap-1.5">
+                        <span className="material-symbols-outlined text-[14px] text-amber-500 flex-shrink-0 mt-0.5">info</span>
+                        <span>{r}</span>
+                      </li>
+                    ))}
                 </ul>
               </div>
             )}
+
 
 
             {/* Source */}

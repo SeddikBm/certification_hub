@@ -30,6 +30,7 @@ export function ManageAssignments() {
     itemName?: string;
     currentStatus?: string;
     validationDetails?: ValidationDetails | null;
+    isManagerView?: boolean;
   }>({
     isOpen: false,
     certificateId: null
@@ -82,6 +83,7 @@ export function ManageAssignments() {
   const canManageThisAssignment = (ass: AssignmentResponse): boolean => {
     if (!user || !user.id) return false;
     if (user.role === 'DIRECTOR' || user.role === 'SQUAD_LEAD') return false;
+    if (user.role === 'ADMIN' || user.role === 'TRAINING_MANAGER') return true;
 
     const currentId = user.id.toLowerCase();
     const assignedById = ass.assignedById?.toLowerCase();
@@ -465,7 +467,7 @@ export function ManageAssignments() {
 
                 {renderCertStatusBadge(ass.certificateStatus)}
 
-                {canManageThisAssignment(ass) && (
+                {canManageThisAssignment(ass) ? (
                   <button
                     type="button"
                     onClick={() => setViewCertModalState({
@@ -475,13 +477,33 @@ export function ManageAssignments() {
                       collaboratorName: ass.userName,
                       itemName: ass.itemName,
                       currentStatus: ass.certificateStatus,
-                      validationDetails: ass.validationDetails
+                      validationDetails: ass.validationDetails,
+                      isManagerView: true
                     })}
                     className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                     title="Ouvrir le certificat dans l'application et attribuer un statut"
                   >
                     <span className="material-symbols-outlined text-[13px]">visibility</span>
                     <span>Voir & Valider</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setViewCertModalState({
+                      isOpen: true,
+                      certificateId: ass.certificateId!,
+                      fileName: ass.certificateFileName,
+                      collaboratorName: ass.userName,
+                      itemName: ass.itemName,
+                      currentStatus: ass.certificateStatus,
+                      validationDetails: ass.validationDetails,
+                      isManagerView: false
+                    })}
+                    className="px-2.5 py-1 text-[10px] font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                    title="Visualiser le certificat et l'analyse IA"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">visibility</span>
+                    <span>Voir Certificat</span>
                   </button>
                 )}
               </div>
@@ -955,7 +977,9 @@ export function ManageAssignments() {
         itemName={viewCertModalState.itemName}
         currentStatus={viewCertModalState.currentStatus}
         validationDetails={viewCertModalState.validationDetails}
+        isManagerView={viewCertModalState.isManagerView ?? false}
         onStatusUpdated={(newStatus) => {
+
           setViewCertModalState(prev => ({ ...prev, currentStatus: newStatus }));
           queryClient.invalidateQueries({ queryKey: ['assignments'] });
           queryClient.invalidateQueries({ queryKey: ['my-assignments'] });

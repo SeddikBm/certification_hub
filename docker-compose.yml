@@ -49,15 +49,11 @@ services:
     env_file:
       - ./backend-ai/.env
     restart: unless-stopped
-
-  # 4.1 Outil de développement LangGraph Studio
-  langgraph_studio:
-    build: ./backend-ai
-    env_file:
-      - ./backend-ai/.env
-    command: langgraph dev --host 0.0.0.0 --port 2024
-    ports:
-      - "2024:2024"
+    volumes:
+      - ./uploads:/uploads
+      - paddlex_cache:/root/.paddlex
+    environment:
+      - PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT=0
 
   # 5. Backend Spring Boot Application
   backend-spring:
@@ -104,3 +100,4 @@ services:
 
 volumes:
   postgres_data:
+  paddlex_cache:

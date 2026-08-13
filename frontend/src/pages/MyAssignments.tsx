@@ -7,9 +7,11 @@ import { UploadCertificateModal } from '../components/UploadCertificateModal';
 import { NoteModal } from '../components/NoteModal';
 import { ViewCertificateModal } from '../components/ViewCertificateModal';
 import { Pagination } from '../components/ui/Pagination';
+import { useAuth } from '../contexts/AuthContext';
 import clsx from 'clsx';
 
 export function MyAssignments() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const [activeNoteModal, setActiveNoteModal] = useState<{ title: string; user?: string; authorName?: string; authorRole?: string; notes: string; noteLabel?: string } | null>(null);
@@ -684,7 +686,7 @@ export function MyAssignments() {
                           {/* Certificate Action Buttons ONLY in Actions column */}
                           {ass.certificateId ? (
                             <div className="flex items-center gap-1.5 justify-center flex-wrap">
-                              {/* Bouton Voir Certificat (thème sombre slate élégant) */}
+                              {/* Bouton Voir Certificat (thème doux et harmonieux) */}
                               <button
                                 type="button"
                                 onClick={() => setViewCertModalState({
@@ -696,10 +698,10 @@ export function MyAssignments() {
                                   currentStatus: ass.certificateStatus,
                                   validationDetails: ass.validationDetails
                                 })}
-                                className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#1e293b] hover:bg-[#0f172a] rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs border border-slate-700"
+                                className="px-2.5 py-1 text-[10px] font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                                 title="Visualiser le certificat"
                               >
-                                <span className="material-symbols-outlined text-[13px] text-slate-300">visibility</span>
+                                <span className="material-symbols-outlined text-[13px] text-slate-600">visibility</span>
                                 <span>Voir Certificat</span>
                               </button>
 
@@ -712,7 +714,7 @@ export function MyAssignments() {
                                     assignmentId: ass.id,
                                     itemName: ass.itemName || 'Mon parcours'
                                   })}
-                                  className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs border border-red-700"
+                                  className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-[#b70f30] hover:bg-red-800 border border-red-700/50 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                                   title="Ré-uploader un nouveau certificat"
                                 >
                                   <span className="material-symbols-outlined text-[13px]">upload_file</span>
@@ -720,6 +722,7 @@ export function MyAssignments() {
                                 </button>
                               )}
                             </div>
+
                           ) : (status === 'COMPLETED') && (
                             <button
                               type="button"
@@ -976,6 +979,7 @@ export function MyAssignments() {
         itemName={viewCertModalState.itemName}
         currentStatus={viewCertModalState.currentStatus}
         validationDetails={viewCertModalState.validationDetails}
+        isManagerView={user?.role === 'ADMIN' || user?.role === 'TRAINING_MANAGER' || user?.role === 'CAREER_MANAGER'}
         onStatusUpdated={() => {
           queryClient.invalidateQueries({ queryKey: ['my-assignments'] });
           setViewCertModalState({ isOpen: false, certificateId: null });

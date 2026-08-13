@@ -29,9 +29,14 @@ python-dotenv>=1.0
 
 # --- OCR engine (pick ONE, matching OCR_ENGINE in .env) ------------------------
 # Default engine — best accuracy, built-in layout analysis (see README benchmark).
-paddleocr>=2.9
-paddlepaddle>=2.6
+paddleocr==3.7.0
+paddlepaddle==3.3.1
+paddlex==3.7.2
 
 # Lightweight fallback — uncomment if OCR_ENGINE=tesseract instead.
 # Also requires the system package: apt-get install -y tesseract-ocr tesseract-ocr-fra
 # pytesseract>=0.3.13
+
+# For drawing diagrams
+pygraphviz
+grandalf

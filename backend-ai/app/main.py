@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 
-from app.api.routes import health, validation
+from app.api.routes import chat, health, ingestion, validation
 from app.core.config import settings
 from app.core.logging import new_request_id, setup_logging
 
@@ -30,9 +30,11 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="CertificationHub — Moteur de Validation IA",
-        description="Module 2: automated OCR + fuzzy-logic + web-verification "
-        "certificate validation engine, exposed to the Spring Boot gateway.",
-        version="1.0.0",
+        description="Microservice FastAPI unique hébergeant les modules IA de "
+        "CertificationHub : validation automatique de certificats"
+        "et agent RAG de conseil en certifications, exposés au "
+        "gateway Spring Boot.",
+        version="2.0.0",
         lifespan=lifespan,
     )
 
@@ -45,6 +47,8 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(validation.router)
+    app.include_router(ingestion.router)
+    app.include_router(chat.router)
 
     return app
 

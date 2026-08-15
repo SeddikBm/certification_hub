@@ -80,13 +80,23 @@ public class AiValidationService {
         try {
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
 
-            // Fichier PDF
+            // Fichier (PDF ou Image) - Content-Type dynamique selon l'extension
+            String lowerName = fileName != null ? fileName.toLowerCase() : "";
+            MediaType fileMediaType = MediaType.APPLICATION_PDF;
+            if (lowerName.endsWith(".png")) {
+                fileMediaType = MediaType.IMAGE_PNG;
+            } else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+                fileMediaType = MediaType.IMAGE_JPEG;
+            } else if (lowerName.endsWith(".webp")) {
+                fileMediaType = MediaType.parseMediaType("image/webp");
+            }
+
             builder.part("file", new ByteArrayResource(fileBytes) {
                 @Override
                 public String getFilename() {
                     return fileName != null ? fileName : "certificate.pdf";
                 }
-            }).contentType(MediaType.APPLICATION_PDF);
+            }).contentType(fileMediaType);
 
             // Champs de formulaire
             builder.part("assignment_id", String.valueOf(assignmentId));

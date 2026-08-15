@@ -1,32 +1,23 @@
 """
-Domain exceptions for the validation engine.
+Shared, infrastructure-level exceptions.
 
-Each maps to a specific failure mode in the pipeline so the API layer can
-decide, per exception type, whether to fail the request (400/422/500) or —
-more often, given this is a fraud-sensitive workflow — degrade gracefully
-into a PENDING_REVIEW decision instead of losing the submission.
+These are raised by shared services (app/services/*) that both
+app.certification_validation and app.rag_chat build on. Each module wraps
+these into its own domain-specific exception types where it wants a more
+precise name for its own error taxonomy (e.g.
+certification_validation.exceptions.LLMParsingError) — but the underlying
+"the Groq call itself failed" vs "the LLM answered with garbage" distinction
+is shared, since it's the same Groq client either way.
 """
 
 
-class ValidationEngineError(Exception):
-    """Base class for all engine errors."""
+class AIServiceError(Exception):
+    """Base class for every error raised by this service."""
 
 
-class UnsupportedFileTypeError(ValidationEngineError):
-    """Uploaded file is neither a PDF nor a supported image format."""
+class LLMCallError(AIServiceError):
+    """The LLM API call itself failed: network, auth, rate limit, model retired, timeout..."""
 
 
-class DocumentExtractionError(ValidationEngineError):
-    """Native text extraction and OCR both failed to produce usable text."""
-
-
-class LLMParsingError(ValidationEngineError):
-    """The LLM failed to return a well-formed structured payload."""
-
-
-class WebScrapingError(ValidationEngineError):
-    """The web verification agent could not confirm data on the issuer site."""
-
-
-class UntrustedDomainError(ValidationEngineError):
-    """A URL was found but its domain is not on the trusted issuer allowlist."""
+class LLMResponseParsingError(AIServiceError):
+    """The LLM responded, but the content wasn't usable (e.g. malformed JSON in JSON mode)."""

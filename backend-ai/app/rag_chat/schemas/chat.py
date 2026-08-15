@@ -1,0 +1,43 @@
+"""
+Public data contracts — what Spring Boot / the React widget actually sees
+over HTTP. Keep this file backwards-compatible; it's the contract the
+Java/React side codes against.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.rag_chat.schemas.enums import Intent, RetrievalSource
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=2000)
+    user_id: int
+    squad_id: int | None = None
+    thread_id: str | None = Field(
+        default=None,
+        description="Conversation/session id for multi-turn memory. Omit for a one-off question.",
+    )
+
+
+class RetrievedChunk(BaseModel):
+    certification_id: int
+    certification_title: str
+    section: str | None = None
+    text: str
+    score: float
+    source_url: str | None = None
+
+
+class ChatResponse(BaseModel):
+    thread_id: str
+    on_topic: bool
+    intent: Intent | None = None
+    source: RetrievalSource
+    answer: str
+    grounded: bool
+    retrieved_chunks: list[RetrievedChunk] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list, description="Trace of what happened, for debugging/observability.")
+
+    model_config = ConfigDict(use_enum_values=True)

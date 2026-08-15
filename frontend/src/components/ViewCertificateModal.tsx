@@ -230,26 +230,32 @@ export function ViewCertificateModal({
                     <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">check_circle</span>
                     <span>Toutes les données sont conformes (Certificat + Base + Site).</span>
                   </div>
-                ) : (
-                  validationDetails?.reasons &&
-                  validationDetails.reasons.filter(r => !r.toLowerCase().includes('données sont conformes')).length > 0 && (
-                    <div className="p-4 bg-white rounded-xl border border-gray-200/80 shadow-2xs space-y-2">
-                      <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[15px] text-amber-500">warning</span>
-                        <span>Détails des écarts détectés</span>
-                      </p>
-                      <ul className="space-y-2 pt-1">
-                        {validationDetails.reasons
-                          .filter(r => !r.toLowerCase().includes('données sont conformes'))
-                          .map((r, i) => (
-                            <li key={i} className="text-xs text-gray-700 flex items-start gap-2 bg-amber-50/50 p-2 rounded-lg border border-amber-100/60 font-medium leading-relaxed">
-                              <span className="material-symbols-outlined text-[15px] text-amber-600 shrink-0 mt-0.5">info</span>
-                              <span>{r}</span>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  )
+                ) : (validationDetails?.decision === 'PENDING_REVIEW' || validationDetails?.decision === 'PENDING_APPROVAL') &&
+                    (validationDetails?.scores?.name_score ?? 0) >= 0.9 &&
+                    (validationDetails?.scores?.title_score ?? 0) >= 1.0 &&
+                    (validationDetails?.scores?.date_score ?? 0) >= 1.0 ? (
+                  <div className="p-3.5 bg-indigo-50 text-indigo-950 rounded-xl border border-indigo-200/80 text-xs font-semibold flex items-center gap-2.5 shadow-2xs">
+                    <span className="material-symbols-outlined text-[20px] text-indigo-600 shrink-0">info</span>
+                    <span>Données du certificat 100% conformes à la base (Nom, Titre, Date). Aucune URL de vérification web officielle détectée — Revue manuelle par le Career Manager requise.</span>
+                  </div>
+                ) : null}
+
+                {/* Reasons List */}
+                {validationDetails?.reasons && validationDetails.reasons.length > 0 && (
+                  <div className="p-4 bg-white rounded-xl border border-gray-200/80 shadow-2xs space-y-2">
+                    <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px] text-amber-500">warning</span>
+                      <span>Détails & Motifs d'analyse</span>
+                    </p>
+                    <ul className="space-y-2 pt-1">
+                      {validationDetails.reasons.map((r, i) => (
+                        <li key={i} className="text-xs text-gray-700 flex items-start gap-2 bg-amber-50/50 p-2 rounded-lg border border-amber-100/60 font-medium leading-relaxed">
+                          <span className="material-symbols-outlined text-[15px] text-amber-600 shrink-0 mt-0.5">info</span>
+                          <span>{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
 

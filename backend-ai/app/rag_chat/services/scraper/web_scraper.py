@@ -1,0 +1,55 @@
+"""
+Live web-scraping fallback (Agent Web Scraper — "temps réel").
+
+Only ever called when the Retrieval Grader decides the cached/embedded
+knowledge base is insufficient. Reuses the exact same trust model as
+Module 2's scraper — same TRUSTED_ISSUER_DOMAINS allowlist (an official
+training provider is an official training provider, whether we're
+verifying a certificate against it or fetching its syllabus), same
+robots.txt compliance check (app.utils.robots_utils) — no reason to
+duplicate either.
+"""
+
+from __future__ import annotations
+
+import logging
+
+import httpx
+from bs4 import BeautifulSoup
+
+from app.core.config import settings
+from app.rag_chat.exceptions import ScrapingError
+from app.utils.robots_utils import is_allowed_by_robots
+from app.utils.url_utils import is_trusted_domain
+
+logger = logging.getLogger(__name__)
+
+_HEADERS = {"User-Agent": "CertificationHub-RAGAgent/1.0 (+internal advisory bot)"}
+
+
+def fetch_live_content(url: str) -> str:
+    """Returns readable plain text extracted from the page, or raises ScrapingError."""
+    if not is_trusted_domain(url, settings.TRUSTED_ISSUER_DOMAINS):
+        raise ScrapingError(f"'{url}' is not on the trusted issuer allowlist")
+
+    if not is_allowed_by_robots(url, _HEADERS["User-Agent"]):
+        raise ScrapingError(f"{url} disallows automated access via robots.txt")
+
+    try:
+        with httpx.Client(timeout=settings.SCRAPER_TIMEOUT_S, headers=_HEADERS, follow_redirects=True) as client:
+            resp = client.get(url)
+            resp.raise_for_status()
+            if len(resp.content) > settings.SCRAPER_MAX_BYTES:
+                raise ScrapingError(f"Response from {url} exceeded size guard")
+    except httpx.HTTPError as exc:
+        raise ScrapingError(f"Could not fetch {url}: {exc}") from exc
+
+    return _extract_readable_text(resp.text)
+
+
+def _extract_readable_text(html: str, max_chars: int = 6000) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "header"]):
+        tag.decompose()
+    text = " ".join(soup.get_text(separator=" ").split())
+    return text[:max_chars]

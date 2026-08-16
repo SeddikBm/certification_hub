@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationDropdown } from '../components/NotificationDropdown';
+import { ChatAssistant } from '../components/ChatAssistant';
 import clsx from 'clsx';
 
 export function DashboardLayout() {
@@ -187,6 +188,9 @@ export function DashboardLayout() {
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
+
+      {/* Floating AI RAG Chat Assistant */}
+      <ChatAssistant />
     </div>
   );
 }

@@ -361,7 +361,11 @@ export function CertificationDetails() {
                 </div>
                 <span className="text-xs font-medium text-gray-600">Coût Examen</span>
               </div>
-              <span className="text-xs font-extrabold text-gray-900">{cert.examCostUsd ? `${cert.examCostUsd.toLocaleString()} MAD` : '-'}</span>
+              <span className="text-xs font-extrabold text-gray-900">
+                {cert.metadata?.price_mad != null 
+                  ? `${Number(cert.metadata.price_mad).toLocaleString()} MAD` 
+                  : (cert.examCostUsd ? `${(cert.examCostUsd * 10).toLocaleString()} MAD` : '-')}
+              </span>
             </li>
 
             <li className="flex items-center justify-between">
@@ -441,19 +445,31 @@ export function CertificationDetails() {
 
           {cert.associatedSquads && cert.associatedSquads.length > 0 ? (
             <div className="flex flex-wrap gap-2.5">
-              {cert.associatedSquads.map((sq, idx) => (
-                <div 
-                  key={idx} 
-                  className="px-3 py-1.5 bg-red-50/60 border border-red-100 rounded-xl flex items-center gap-2 text-xs font-medium text-[#b70f30]"
-                >
-                  <span>{sq.name}</span>
-                  {sq.priority && (
-                    <span className="px-1.5 py-0.5 rounded bg-[#b70f30] text-white text-[10px] font-bold">
-                      P{sq.priority}
-                    </span>
-                  )}
-                </div>
-              ))}
+              {cert.associatedSquads.map((sq, idx) => {
+                const sqColor = sq.colorHex || '#0078D4';
+                return (
+                  <div 
+                    key={idx} 
+                    className="px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-semibold border shadow-2xs transition-all"
+                    style={{
+                      borderColor: `${sqColor}40`,
+                      backgroundColor: `${sqColor}12`,
+                      color: sqColor
+                    }}
+                  >
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sqColor }} />
+                    <span>{sq.name}</span>
+                    {sq.priority && (
+                      <span 
+                        className="px-1.5 py-0.5 rounded text-white text-[10px] font-bold"
+                        style={{ backgroundColor: sqColor }}
+                      >
+                        P{sq.priority}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="py-4 text-xs text-gray-400 italic">Aucune squad associée à cette certification.</div>

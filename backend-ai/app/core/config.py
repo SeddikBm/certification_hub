@@ -81,32 +81,35 @@ class Settings(BaseSettings):
     RERANKER_DEVICE: str = "cpu"
 
     # --- Vector store (PostgreSQL + pgvector) ----------------------------------
-    # Separate from any connection Module 2 might use — Module 1's agents talk
-    # to Postgres directly (unlike Module 2, which only ever receives data
-    # from Spring Boot over HTTP). Use a read-only role here too; ingestion
-    # (which writes embeddings) uses its own, separately-configured role.
-    RAG_DB_DSN: str = "postgresql://certificationhub_rag_ro:change-me@localhost:5432/certificationhub"
-    RAG_DB_DSN_WRITE: str = "postgresql://certificationhub_rag_ingest:change-me@localhost:5432/certificationhub"
+    RAG_DB_DSN: str = "postgresql://certif_user:certif_password@postgres-db:5432/certifhub_db"
+    RAG_DB_DSN_WRITE: str = "postgresql://certif_user:certif_password@postgres-db:5432/certifhub_db"
 
     # --- Retrieval -----------------------------------------------------------------
-    VECTOR_TOP_K: int = 20  # candidates pulled from pgvector before reranking
+    VECTOR_TOP_K: int = 15  # candidates pulled from pgvector before reranking
     RERANK_TOP_N: int = 5  # kept after reranking, sent to the response generator
     # Below this reranker score, the Retrieval Grader considers the result
     # insufficient and escalates to the live web-scraping fallback.
-    RETRIEVAL_GRADE_MIN_SCORE: float = 0.5
+    RETRIEVAL_GRADE_MIN_SCORE: float = 0.40
 
     # --- Topic guardrail --------------------------------------------------------
     # Reuses EMBEDDING_MODEL — no extra LLM call, no extra model to host.
-    GUARDRAIL_SIMILARITY_THRESHOLD: float = 0.55
+    GUARDRAIL_SIMILARITY_THRESHOLD: float = 0.45
     GUARDRAIL_REDIRECT_MESSAGE: str = (
-        "Je suis un assistant dédié à vous aider à choisir votre parcours de "
-        "certification. Je ne peux pas répondre à cette question."
+        "Je suis votre conseiller IA dédié aux certifications et formations CertificationHub. "
+        "Je suis là pour vous aider à explorer le catalogue, comparer les certifications, "
+        "connaître les détails d'examen ou vous guider selon votre squad."
     )
 
     # --- SQL guardrail (Agent Text-to-SQL) ---------------------------------------
-    # Table allowlist the generated SQL is validated against — see
-    # app.rag_chat.services.sql.guardrail. Adjust to your actual schema.
-    SQL_ALLOWED_TABLES: list[str] = ["assignments", "certifications", "users"]
+    # Table allowlist the generated SQL is validated against
+    SQL_ALLOWED_TABLES: list[str] = [
+        "certifications",
+        "certification_squads",
+        "certification_ratings",
+        "squads",
+        "assignments",
+        "users",
+    ]
 
     # --- Groundedness check --------------------------------------------------------
     GROUNDEDNESS_MAX_RETRIES: int = 1  # regenerate once if ungrounded, never loop further

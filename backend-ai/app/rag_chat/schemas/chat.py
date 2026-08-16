@@ -13,8 +13,10 @@ from app.rag_chat.schemas.enums import Intent, RetrievalSource
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
-    user_id: int
-    squad_id: int | None = None
+    user_id: str | None = None
+    user_role: str | None = None
+    user_name: str | None = None
+    squad_id: str | None = None
     thread_id: str | None = Field(
         default=None,
         description="Conversation/session id for multi-turn memory. Omit for a one-off question.",
@@ -22,7 +24,8 @@ class ChatRequest(BaseModel):
 
 
 class RetrievedChunk(BaseModel):
-    certification_id: int
+    certification_id: str | None = None
+    certification_code: str | None = None
     certification_title: str
     section: str | None = None
     text: str

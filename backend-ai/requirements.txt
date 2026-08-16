@@ -37,6 +37,11 @@ paddlex==3.7.2
 # Also requires the system package: apt-get install -y tesseract-ocr tesseract-ocr-fra
 # pytesseract>=0.3.13
 
+# --- RAG, Vector Search & SQL --------------------------------------------
+psycopg[binary]>=3.2
+sqlglot>=25.0
+sentence-transformers>=3.0
+
 # For drawing diagrams
 pygraphviz
 grandalf

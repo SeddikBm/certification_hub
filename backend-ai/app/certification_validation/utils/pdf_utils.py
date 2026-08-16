@@ -24,7 +24,7 @@ import fitz  # PyMuPDF
 import numpy as np
 from PIL import Image
 
-from app.exceptions import UnsupportedFileTypeError
+from app.certification_validation.exceptions import UnsupportedFileTypeError
 
 SUPPORTED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
 SUPPORTED_PDF_TYPE = "application/pdf"

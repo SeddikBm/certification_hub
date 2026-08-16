@@ -16,18 +16,18 @@ from functools import lru_cache
 
 from langgraph.graph import END, StateGraph
 
-from app.graph.nodes.compare_bdd import compare_bdd_node, route_after_bdd
-from app.graph.nodes.compare_site import compare_site_node, route_after_site
-from app.graph.nodes.outcomes import (
+from app.certification_validation.graph.nodes.compare_bdd import compare_bdd_node, route_after_bdd
+from app.certification_validation.graph.nodes.compare_site import compare_site_node, route_after_site
+from app.certification_validation.graph.nodes.outcomes import (
     approved_outcome_node,
     pending_approval_outcome_node,
     rejected_outcome_node,
 )
-from app.graph.nodes.parse import parse_node
-from app.graph.nodes.route import detect_url_node, route_by_url
-from app.graph.nodes.scan import scan_node
-from app.graph.nodes.scrape import scrape_node
-from app.schemas.state import GraphState
+from app.certification_validation.graph.nodes.parse import parse_node
+from app.certification_validation.graph.nodes.route import detect_url_node, route_by_url
+from app.certification_validation.graph.nodes.scan import scan_node
+from app.certification_validation.graph.nodes.scrape import scrape_node
+from app.certification_validation.schemas.state import GraphState
 
 
 @lru_cache

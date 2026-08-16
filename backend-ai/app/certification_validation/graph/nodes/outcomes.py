@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import logging
 
-from app.schemas.enums import Decision, SourceType
-from app.schemas.state import GraphState
+from app.certification_validation.schemas.enums import Decision, SourceType
+from app.certification_validation.schemas.state import GraphState
 
 logger = logging.getLogger(__name__)
 

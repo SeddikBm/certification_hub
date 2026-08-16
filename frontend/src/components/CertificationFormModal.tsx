@@ -27,6 +27,7 @@ const schema = z.object({
   squads: z.array(z.object({
     squadId: z.string().min(1),
     squadName: z.string().optional(),
+    colorHex: z.string().optional(),
     priority: z.coerce.number().min(1).max(5)
   })).default([])
 });
@@ -84,6 +85,7 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
           squads: (certificationToEdit.associatedSquads || []).map(s => ({
             squadId: s.id,
             squadName: s.name,
+            colorHex: s.colorHex || squads.find(sq => sq.id === s.id)?.colorHex || '#0078D4',
             priority: s.priority || 3
           }))
         });
@@ -105,7 +107,7 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
         });
       }
     }
-  }, [isOpen, certificationToEdit, reset]);
+  }, [isOpen, certificationToEdit, reset, squads]);
 
   const mutation = useMutation({
     mutationFn: (data: CertificationFormValues) => {
@@ -161,7 +163,12 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
       if (sq) {
         const alreadyAdded = squadFields.some(f => f.squadId === sq.id);
         if (!alreadyAdded) {
-          append({ squadId: sq.id, squadName: sq.name, priority: 3 });
+          append({ 
+            squadId: sq.id, 
+            squadName: sq.name, 
+            colorHex: sq.colorHex || '#0078D4', 
+            priority: 3 
+          });
         }
       } else {
         alert("Cette squad n'existe pas.");
@@ -192,7 +199,7 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
           <button 
             type="button" 
             onClick={onClose} 
-            className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-700"
+            className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-700 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -268,32 +275,52 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Squads Ciblées & Priorité Squad</label>
+                
+                {/* Selected Squads List with Individual Priority and Color Hex */}
                 <div className="min-h-[46px] p-2 bg-gray-50/50 border border-gray-200 rounded-xl focus-within:bg-white focus-within:ring-2 focus-within:ring-[#b70f30]/10 focus-within:border-[#b70f30] transition-all flex flex-wrap gap-2 items-center">
-                  {squadFields.map((field, index) => (
-                    <div key={field.id} className="flex items-center bg-red-50/80 border border-red-100 text-[#b70f30] px-2.5 py-1 rounded-lg text-xs font-semibold gap-1.5 shadow-2xs">
-                      <span>{field.squadName}</span>
-                      <select 
-                        {...register(`squads.${index}.priority`)} 
-                        className="bg-white border border-red-200 rounded px-1 text-[#b70f30] font-bold text-[11px] outline-none cursor-pointer"
-                        title="Priorité squad"
+                  {squadFields.map((field, index) => {
+                    const sqColor = (field as any).colorHex || squads.find(s => s.id === field.squadId)?.colorHex || '#0078D4';
+                    return (
+                      <div 
+                        key={field.id} 
+                        className="flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold gap-1.5 shadow-2xs border transition-all"
+                        style={{
+                          backgroundColor: `${sqColor}15`,
+                          borderColor: `${sqColor}40`,
+                          color: sqColor
+                        }}
                       >
-                        <option value={1}>P1</option>
-                        <option value={2}>P2</option>
-                        <option value={3}>P3</option>
-                        <option value={4}>P4</option>
-                        <option value={5}>P5</option>
-                      </select>
-                      <button type="button" onClick={() => remove(index)} className="hover:text-red-900 focus:outline-none opacity-70 hover:opacity-100">
-                        <span className="material-symbols-outlined text-[15px]">close</span>
-                      </button>
-                    </div>
-                  ))}
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sqColor }} />
+                        <span>{field.squadName}</span>
+                        <select 
+                          {...register(`squads.${index}.priority`)} 
+                          className="bg-white border rounded px-1 font-bold text-[11px] outline-none cursor-pointer"
+                          style={{ borderColor: `${sqColor}60`, color: sqColor }}
+                          title="Priorité squad (P1 = Obligatoire, P3 = Recommandé, P5 = Optionnel)"
+                        >
+                          <option value={1}>P1</option>
+                          <option value={2}>P2</option>
+                          <option value={3}>P3</option>
+                          <option value={4}>P4</option>
+                          <option value={5}>P5</option>
+                        </select>
+                        <button 
+                          type="button" 
+                          onClick={() => remove(index)} 
+                          className="focus:outline-none opacity-70 hover:opacity-100 cursor-pointer"
+                          style={{ color: sqColor }}
+                        >
+                          <span className="material-symbols-outlined text-[15px]">close</span>
+                        </button>
+                      </div>
+                    );
+                  })}
                   <input 
                     type="text" 
                     value={squadSearch}
                     onChange={(e) => setSquadSearch(e.target.value)}
                     onKeyDown={handleSquadKeyDown}
-                    placeholder={squadFields.length === 0 ? "Rechercher et ajouter une squad (ex: Cloud Native, DevOps...)" : "Ajouter..."}
+                    placeholder={squadFields.length === 0 ? "Rechercher et ajouter une squad (ex: .NET Squad, DevOps...)" : "Ajouter..."}
                     className="flex-1 min-w-[180px] bg-transparent border-none outline-none text-xs px-2 placeholder:text-gray-400"
                     list="squad-list"
                   />
@@ -301,7 +328,7 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
                     {squads.map(s => <option key={s.id} value={s.name} />)}
                   </datalist>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-3.5 mb-5 leading-relaxed">Saisissez le nom d'une squad et appuyez sur <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono border border-gray-200 shadow-2xs font-semibold">Entrée</kbd> pour l'ajouter.</p>
+                <p className="text-[11px] text-gray-500 mt-2 mb-4 leading-relaxed">Saisissez le nom d'une squad et appuyez sur <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono border border-gray-200 shadow-2xs font-semibold">Entrée</kbd> pour l'ajouter.</p>
               </div>
 
               <div>
@@ -367,10 +394,10 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
         {/* Footer */}
         <div className="px-8 py-4 border-t border-gray-100 bg-white flex justify-end gap-2.5">
           <button 
-            type="button"
+            type="button" 
             onClick={onClose} 
             disabled={isSubmitting}
-            className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
           >
             Annuler
           </button>
@@ -378,7 +405,7 @@ export function CertificationFormModal({ isOpen, onClose, certificationToEdit, o
             form="cert-form" 
             type="submit" 
             disabled={isSubmitting || mutation.isPending}
-            className="px-5 py-2 text-xs font-semibold text-white bg-[#b70f30] hover:bg-red-800 rounded-xl transition-colors disabled:opacity-70 flex items-center gap-2 shadow-2xs"
+            className="px-5 py-2 text-xs font-semibold text-white bg-[#b70f30] hover:bg-red-800 rounded-xl transition-colors disabled:opacity-70 flex items-center gap-2 shadow-2xs cursor-pointer"
           >
             {(isSubmitting || mutation.isPending) && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
             {certificationToEdit ? 'Enregistrer les modifications' : 'Créer la certification'}

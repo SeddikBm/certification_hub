@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from app.schemas.enums import Decision, SourceType
-from app.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate
+from app.certification_validation.schemas.enums import Decision, SourceType
+from app.certification_validation.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate
 
 
 class GraphState(TypedDict, total=False):

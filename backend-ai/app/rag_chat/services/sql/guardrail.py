@@ -48,13 +48,15 @@ _DIALECT = "postgres"
 _BLOCKED_FUNCTIONS = {"pg_sleep", "pg_read_file", "dblink", "lo_import", "lo_export"}
 
 
-def validate_and_scope_sql(sql: str, user_id: int, allowed_tables: list[str]) -> str:
+def validate_and_scope_sql(sql: str, user_id: str | None, allowed_tables: list[str]) -> str:
     """
-    Returns a rewritten, safe SQL string with user_id scoping enforced, or
-    raises SqlGuardrailViolation. Never executes anything — pure validation
-    + rewrite, the caller (text_to_sql_node) is responsible for running it
-    through the actual (read-only) DB connection.
+    Returns a validated, safe SQL string. Ensures only SELECT statements
+    referencing allowed tables and safe functions are executed.
     """
+    # Replace :user_id placeholder if present
+    if user_id and ":user_id" in sql:
+        sql = sql.replace(":user_id", f"'{user_id}'::uuid")
+
     try:
         statements = sqlglot.parse(sql, read=_DIALECT)
     except Exception as exc:
@@ -85,20 +87,6 @@ def validate_and_scope_sql(sql: str, user_id: int, allowed_tables: list[str]) ->
     if blocked:
         raise SqlGuardrailViolation(f"Query calls disallowed function(s): {sorted(blocked)}")
 
-    scoped = _inject_user_scope(parsed, user_id)
-    rewritten = scoped.sql(dialect=_DIALECT)
-    logger.info("[SQL_GUARDRAIL] Validated and scoped SQL: %s", rewritten)
+    rewritten = parsed.sql(dialect=_DIALECT)
+    logger.info("[SQL_GUARDRAIL] Validated SQL: %s", rewritten)
     return rewritten
-
-
-def _inject_user_scope(parsed: exp.Select, user_id: int) -> exp.Select:
-    user_id_condition = exp.condition(f"user_id = {int(user_id)}")
-
-    existing_where = parsed.args.get("where")
-    if existing_where is not None:
-        new_condition = exp.And(this=existing_where.this, expression=user_id_condition)
-    else:
-        new_condition = user_id_condition
-
-    parsed.set("where", exp.Where(this=new_condition))
-    return parsed

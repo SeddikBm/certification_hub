@@ -39,8 +39,8 @@ from datetime import date
 
 from rapidfuzz import fuzz
 
+from app.certification_validation.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate
 from app.core.config import settings
-from app.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate
 
 # Weights for the overall score. Name and title matter far more than the
 # date for fraud detection — a wrong date alone is usually a typo, a wrong

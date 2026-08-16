@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from app.graph.builder import build_validation_graph
-from app.schemas.enums import Decision, SourceType
-from app.schemas.state import GraphState
-from app.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate, ValidationResponse
+from app.certification_validation.graph.builder import build_validation_graph
+from app.certification_validation.schemas.enums import Decision, SourceType
+from app.certification_validation.schemas.state import GraphState
+from app.certification_validation.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate, ValidationResponse
 
 
 

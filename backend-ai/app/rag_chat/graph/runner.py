@@ -14,6 +14,8 @@ def run_chat(request: ChatRequest) -> ChatResponse:
     initial_state: GraphState = {
         "message": request.message,
         "user_id": request.user_id,
+        "user_role": request.user_role,
+        "user_name": request.user_name,
         "squad_id": request.squad_id,
         "thread_id": thread_id,
         "reasons": [],

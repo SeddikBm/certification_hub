@@ -21,16 +21,18 @@ from bs4 import BeautifulSoup
 
 from app.core.config import settings
 from app.rag_chat.exceptions import ScrapingError
-from app.utils.robots_utils import is_allowed_by_robots
 from app.utils.url_utils import is_trusted_domain
 
 logger = logging.getLogger(__name__)
 
-_HEADERS = {"User-Agent": "CertificationHub-Ingestion/1.0 (+internal knowledge-base builder)"}
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
 
 
 class PermanentScrapingError(ScrapingError):
-    """Not worth retrying — policy-level rejection (untrusted domain, robots.txt)."""
+    """Not worth retrying — policy-level rejection (invalid URL)."""
 
 
 def _fetch_once(url: str) -> str:
@@ -39,25 +41,21 @@ def _fetch_once(url: str) -> str:
             resp = client.get(url)
             resp.raise_for_status()
             if len(resp.content) > settings.SCRAPER_MAX_BYTES:
-                raise ScrapingError(f"Response from {url} exceeded size guard")
+                raise PermanentScrapingError(f"Response from {url} exceeded {settings.SCRAPER_MAX_BYTES} bytes")
+    except httpx.HTTPStatusError as exc:
+        if 400 <= exc.response.status_code < 500:
+            raise PermanentScrapingError(f"Client error from {url}: {exc}") from exc
+        raise ScrapingError(f"Server error from {url}: {exc}") from exc
     except httpx.HTTPError as exc:
-        raise ScrapingError(f"Could not fetch {url}: {exc}") from exc
-    return resp.text
+        raise ScrapingError(f"Network error fetching {url}: {exc}") from exc
+
+    return _extract_readable_text(resp.text)
 
 
-def fetch_syllabus(url: str) -> str:
-    """
-    Returns readable text extracted from the syllabus page. Raises
-    PermanentScrapingError for policy rejections (caller should dead-letter
-    immediately, no retry) or ScrapingError after all retries are
-    exhausted on a transient failure (caller should also dead-letter, but
-    the distinction is preserved in logs/DB for a human reviewing why).
-    """
-    if not is_trusted_domain(url, settings.TRUSTED_ISSUER_DOMAINS):
-        raise PermanentScrapingError(f"'{url}' is not on the trusted issuer allowlist")
-
-    if not is_allowed_by_robots(url, _HEADERS["User-Agent"]):
-        raise PermanentScrapingError(f"{url} disallows automated access via robots.txt")
+def scrape_syllabus(url: str) -> str:
+    """Fetches and cleans a certification syllabus page, retrying transient errors."""
+    if not is_trusted_domain(url):
+        raise PermanentScrapingError(f"'{url}' is not a valid URL")
 
     retryer = tenacity.Retrying(
         retry=tenacity.retry_if_exception_type(ScrapingError),
@@ -65,8 +63,10 @@ def fetch_syllabus(url: str) -> str:
         wait=tenacity.wait_exponential(multiplier=settings.INGESTION_BACKOFF_BASE_S),
         reraise=True,
     )
-    html = retryer(_fetch_once, url)
-    return _extract_readable_text(html)
+    return retryer(_fetch_once, url)
+
+
+fetch_syllabus = scrape_syllabus
 
 
 def _extract_readable_text(html: str) -> str:

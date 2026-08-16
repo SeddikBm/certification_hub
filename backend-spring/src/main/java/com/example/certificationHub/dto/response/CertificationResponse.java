@@ -32,6 +32,7 @@ public class CertificationResponse {
     public static class SquadShortDto {
         private UUID id;
         private String name;
+        private String colorHex;
         private Short priority;
     }
 }

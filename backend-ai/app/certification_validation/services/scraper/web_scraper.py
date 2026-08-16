@@ -267,11 +267,11 @@ from urllib.parse import urlparse
 import httpx
 from bs4 import BeautifulSoup
 
+from app.certification_validation.exceptions import UntrustedDomainError, WebScrapingError
+from app.certification_validation.schemas.validation import ParsedCertificate
+from app.certification_validation.services.llm.field_extractor import CertificateFieldExtractor, GroqClient
 from app.core.config import settings
-from app.exceptions import UntrustedDomainError, WebScrapingError
-from app.schemas.validation import ParsedCertificate
 from app.utils.url_utils import is_trusted_domain
-from app.services.llm.groq_client import GroqClient
 
 logger = logging.getLogger(__name__)
 

@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import logging
 
-from app.exceptions import UntrustedDomainError, WebScrapingError
-from app.schemas.state import GraphState
-from app.services.scraper.web_scraper import verify_on_issuer_site
+from app.certification_validation.exceptions import UntrustedDomainError, WebScrapingError
+from app.certification_validation.schemas.state import GraphState
+from app.certification_validation.services.scraper.web_scraper import verify_on_issuer_site
 
 logger = logging.getLogger(__name__)
 

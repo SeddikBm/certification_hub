@@ -11,8 +11,8 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-from app.schemas.state import GraphState
-from app.services.fuzzy.matcher import compute_scores
+from app.certification_validation.schemas.state import GraphState
+from app.certification_validation.services.fuzzy.matcher import compute_scores
 
 logger = logging.getLogger(__name__)
 

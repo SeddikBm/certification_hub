@@ -6,12 +6,12 @@ from datetime import date
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.api.deps import verify_internal_api_key
+from app.certification_validation.exceptions import UnsupportedFileTypeError
+from app.certification_validation.graph.runner import run_validation
+from app.certification_validation.schemas.enums import Decision, SourceType
+from app.certification_validation.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate, ValidationResponse
+from app.certification_validation.utils.pdf_utils import SUPPORTED_IMAGE_TYPES, SUPPORTED_PDF_TYPE
 from app.core.config import settings
-from app.exceptions import UnsupportedFileTypeError
-from app.graph.runner import run_validation
-from app.schemas.enums import Decision, SourceType
-from app.schemas.validation import ExpectedInfo, FieldScores, ParsedCertificate, ValidationResponse
-from app.utils.pdf_utils import SUPPORTED_IMAGE_TYPES, SUPPORTED_PDF_TYPE
 
 logger = logging.getLogger(__name__)
 

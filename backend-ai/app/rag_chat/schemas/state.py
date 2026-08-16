@@ -1,9 +1,6 @@
 """
 Graph state definition — the shared blackboard every node in the chat
-graph reads/writes. Mirrors the same pattern as
-app.certification_validation.schemas.state.GraphState: a TypedDict (what
-LangGraph's StateGraph expects natively), with Pydantic objects living
-inside it where validation/typing matters (RetrievedChunk, etc.).
+graph reads/writes.
 """
 
 from __future__ import annotations
@@ -17,8 +14,10 @@ from app.rag_chat.schemas.enums import Intent, RetrievalSource
 class GraphState(TypedDict, total=False):
     # --- input ---------------------------------------------------------
     message: str
-    user_id: int
-    squad_id: int | None
+    user_id: str | None
+    user_role: str | None
+    user_name: str | None
+    squad_id: str | None
     thread_id: str
 
     # --- after guardrail_node ------------------------------------------------

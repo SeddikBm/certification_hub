@@ -13,7 +13,7 @@ from datetime import date
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
-from app.schemas.enums import Decision, SourceType
+from app.certification_validation.schemas.enums import Decision, SourceType
 
 
 class ExpectedInfo(BaseModel):

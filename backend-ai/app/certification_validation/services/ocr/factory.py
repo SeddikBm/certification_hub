@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from app.certification_validation.services.ocr.base import OCREngine
 from app.core.config import settings
-from app.services.ocr.base import OCREngine
 
 
 @lru_cache
@@ -16,12 +16,12 @@ def get_ocr_engine(engine_name: str | None = None) -> OCREngine:
     name = (engine_name or settings.OCR_ENGINE).lower()
 
     if name == "paddleocr":
-        from app.services.ocr.paddle_engine import PaddleOCREngine
+        from app.certification_validation.services.ocr.paddle_engine import PaddleOCREngine
 
         return PaddleOCREngine(languages=settings.OCR_LANGUAGES)
 
     if name == "tesseract":
-        from app.services.ocr.tesseract_engine import TesseractOCREngine
+        from app.certification_validation.services.ocr.tesseract_engine import TesseractOCREngine
 
         return TesseractOCREngine(languages=settings.OCR_LANGUAGES)
 

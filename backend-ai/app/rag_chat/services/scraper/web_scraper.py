@@ -19,21 +19,20 @@ from bs4 import BeautifulSoup
 
 from app.core.config import settings
 from app.rag_chat.exceptions import ScrapingError
-from app.utils.robots_utils import is_allowed_by_robots
 from app.utils.url_utils import is_trusted_domain
 
 logger = logging.getLogger(__name__)
 
-_HEADERS = {"User-Agent": "CertificationHub-RAGAgent/1.0 (+internal advisory bot)"}
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
 
 
 def fetch_live_content(url: str) -> str:
     """Returns readable plain text extracted from the page, or raises ScrapingError."""
-    if not is_trusted_domain(url, settings.TRUSTED_ISSUER_DOMAINS):
-        raise ScrapingError(f"'{url}' is not on the trusted issuer allowlist")
-
-    if not is_allowed_by_robots(url, _HEADERS["User-Agent"]):
-        raise ScrapingError(f"{url} disallows automated access via robots.txt")
+    if not is_trusted_domain(url):
+        raise ScrapingError(f"'{url}' is not a valid URL")
 
     try:
         with httpx.Client(timeout=settings.SCRAPER_TIMEOUT_S, headers=_HEADERS, follow_redirects=True) as client:

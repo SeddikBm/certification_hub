@@ -45,6 +45,7 @@ public class CertificationMapper {
                     .map(cs -> CertificationResponse.SquadShortDto.builder()
                             .id(cs.getSquad().getId())
                             .name(cs.getSquad().getName())
+                            .colorHex(cs.getSquad().getColorHex())
                             .priority(cs.getPriority())
                             .build())
                     .toList();

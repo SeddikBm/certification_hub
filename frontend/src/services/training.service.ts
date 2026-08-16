@@ -22,6 +22,7 @@ export interface TrainingRequest {
 export interface SquadShortDto {
   id: string;
   name: string;
+  colorHex?: string;
   priority: number;
 }
 

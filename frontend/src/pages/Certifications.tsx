@@ -390,7 +390,9 @@ export function Certifications() {
             {certsPage?.content && certsPage.content.length > 0 && (
               <tbody className="text-sm divide-y divide-outline-variant/20 relative">
                 {certsPage.content.map((cert) => {
-                  const totalCost = (cert.examCostUsd || 0) + (cert.trainingCostUsd || 0);
+                  const priceMad = cert.metadata?.price_mad != null
+                    ? Number(cert.metadata.price_mad)
+                    : ((cert.examCostUsd || 0) > 0 ? cert.examCostUsd * 10 : 0);
                   const pConfig = getProviderConfig(cert.provider || '');
                   
                   return (
@@ -431,7 +433,7 @@ export function Certifications() {
                         </div>
                       </td>
                       <td className="p-3.5 font-semibold text-gray-800 text-xs">
-                        {totalCost > 0 ? `${totalCost.toLocaleString()} MAD` : <span className="text-gray-300">-</span>}
+                        {priceMad > 0 ? `${priceMad.toLocaleString()} MAD` : <span className="text-gray-300">-</span>}
                       </td>
                       <td className="p-3.5">
                         {cert.averageRating ? (

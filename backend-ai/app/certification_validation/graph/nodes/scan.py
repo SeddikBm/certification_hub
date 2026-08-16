@@ -24,12 +24,12 @@ from __future__ import annotations
 
 import logging
 
+from app.certification_validation.exceptions import DocumentExtractionError, UnsupportedFileTypeError
+from app.certification_validation.schemas.state import GraphState
+from app.certification_validation.services.ocr.factory import get_ocr_engine
+from app.certification_validation.services.qr.qr_extractor import detect_qr_urls
+from app.certification_validation.utils.pdf_utils import extract_document
 from app.core.config import settings
-from app.exceptions import DocumentExtractionError, UnsupportedFileTypeError
-from app.schemas.state import GraphState
-from app.services.ocr.factory import get_ocr_engine
-from app.services.qr.qr_extractor import detect_qr_urls
-from app.utils.pdf_utils import extract_document
 from app.utils.url_utils import extract_urls
 
 logger = logging.getLogger(__name__)

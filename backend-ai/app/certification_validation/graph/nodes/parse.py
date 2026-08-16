@@ -13,17 +13,17 @@ from __future__ import annotations
 import logging
 from functools import lru_cache
 
+from app.certification_validation.exceptions import LLMParsingError
+from app.certification_validation.schemas.state import GraphState
+from app.certification_validation.services.llm.field_extractor import CertificateFieldExtractor
 from app.core.config import settings
-from app.exceptions import LLMParsingError
-from app.schemas.state import GraphState
-from app.services.llm.groq_client import GroqClient
 
 logger = logging.getLogger(__name__)
 
 
 @lru_cache
-def _client() -> GroqClient:
-    return GroqClient()
+def _client() -> CertificateFieldExtractor:
+    return CertificateFieldExtractor()
 
 
 def parse_node(state: GraphState) -> dict:

@@ -16,22 +16,45 @@ from app.exceptions import LLMCallError
 from app.rag_chat.exceptions import SqlGenerationError
 from app.services.llm.groq_client import GroqChatClient
 
-_SYSTEM_PROMPT = """You translate a question about IT certifications into a \
-single read-only PostgreSQL SELECT query.
+_SYSTEM_PROMPT = """Tu es un expert SQL PostgreSQL pour la plateforme CertificationHub.
+Tu traduis une question en une SEULE requête SQL SELECT en lecture seule.
 
-Schema (only these tables/columns exist — never reference anything else):
-- assignments(id, user_id, certification_id, status, assigned_at, completed_at)
-- certifications(id, title, provider, level)
-- users(id, full_name, squad_id)
+Schéma de la base de données PostgreSQL (utilise UNIQUEMENT ces tables et colonnes) :
+- certifications (
+    id UUID, 
+    code VARCHAR(100), 
+    name VARCHAR(255), 
+    provider VARCHAR(100), 
+    difficulty VARCHAR(50), -- 'FOUNDATIONAL', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'
+    priority VARCHAR(50),   -- 'MANDATORY', 'HIGH', 'NORMAL'
+    exam_cost_usd NUMERIC, 
+    training_cost_usd NUMERIC, 
+    validity_months INTEGER, -- NULL si permanente
+    official_url TEXT, 
+    exam_provider_url TEXT,
+    metadata JSONB -- ex: metadata->>'price_mad', metadata->>'preparation_hours', metadata->>'business_value'
+  )
+- squads (id UUID, name VARCHAR(255), description TEXT, color_hex VARCHAR(7))
+- certification_squads (certification_id UUID, squad_id UUID, priority SMALLINT) -- priority: 1 (P1), 3 (P3), 5 (P5)
+- certification_ratings (certification_id UUID, user_id UUID, rating SMALLINT, comment TEXT, would_recommend BOOLEAN)
+- assignments (
+    id UUID, 
+    item_type VARCHAR(50), -- 'CERTIFICATION', 'TRAINING'
+    item_id UUID, -- référence certifications(id) quand item_type='CERTIFICATION'
+    user_id UUID, 
+    status_certification VARCHAR(50), -- 'PENDING_APPROVAL', 'APPROVED', 'PLANNED', 'IN_PROGRESS', 'EXAM_SCHEDULED', 'COMPLETED', 'FAILED'
+    assigned_at TIMESTAMPTZ, 
+    completed_at TIMESTAMPTZ
+  )
+- users (id UUID, email VARCHAR(255), first_name VARCHAR(100), last_name VARCHAR(100), role VARCHAR(50), squad_id UUID)
 
-Rules:
-- Output ONLY the raw SQL, no markdown fences, no explanation.
-- Exactly one SELECT statement. Never write INSERT/UPDATE/DELETE/DROP/ALTER.
-- Never write a WHERE clause on user_id yourself — it is added \
-automatically afterward. Focus only on the rest of the question's logic \
-(status filters, counts, date ranges, joins to certifications for titles).
-- If the question cannot be answered from this schema, output exactly: \
-NOT_ANSWERABLE
+Règles strictes :
+- Renvoie UNIQUEMENT la requête SQL brute, sans balises markdown ```sql, sans explication.
+- Exactement UN seul SELECT. Aucun INSERT/UPDATE/DELETE/DROP/ALTER.
+- Fais des jointures appropriées (ex: INNER JOIN certification_squads cs ON c.id = cs.certification_id INNER JOIN squads s ON s.id = cs.squad_id).
+- Si la question porte sur les certifications de l'utilisateur connecté ("mes certifications", "combien j'ai validé"), fais une jointure sur assignments (a.item_type = 'CERTIFICATION' AND a.item_id = c.id) avec filtre a.user_id = :user_id.
+- Utilise ILIKE pour les recherches textuelles insensibles à la casse (ex: provider ILIKE '%AWS%' ou name ILIKE '%Scrum%').
+- Si la question est purement pédagogique/théorique et ne peut pas être répondue par des données SQL, renvoie exactement: NOT_ANSWERABLE
 """
 
 

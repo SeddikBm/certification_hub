@@ -23,6 +23,25 @@ async def lifespan(app: FastAPI):
         settings.OCR_ENGINE,
         settings.GROQ_PARSER_MODEL,
     )
+
+    # Check and seed RAG certification chunks in background thread if needed
+    def _check_and_seed():
+        try:
+            import psycopg
+            with psycopg.connect(settings.RAG_DB_DSN) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT count(*) FROM certification_chunks")
+                    cnt = cur.fetchone()[0]
+                    if cnt == 0:
+                        logger.info("certification_chunks is empty. Seeding initial embeddings...")
+                        from app.rag_chat.ingestion.seed_chunks import seed_certification_chunks
+                        seed_certification_chunks()
+        except Exception as exc:
+            logger.warning("Could not auto-seed certification_chunks on startup: %s", exc)
+
+    import threading
+    threading.Thread(target=_check_and_seed, daemon=True).start()
+
     yield
     logger.info("Shutting down %s", settings.APP_NAME)
 

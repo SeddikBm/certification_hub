@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS certification_chunks (
     section VARCHAR(255),
     chunk_text TEXT NOT NULL,
     source_url TEXT,
-    embedding vector(384),
+    embedding vector(1024),
     text_search tsvector GENERATED ALWAYS AS (to_tsvector('french', chunk_text)) STORED,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

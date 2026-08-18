@@ -39,11 +39,19 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
     except Exception as exc:
         logger.error("[API] Chat execution failed: %s", exc, exc_info=True)
         # Return a polite, helpful fallback response instead of a raw 500
+        fallback_msg = "Je rencontre actuellement une indisponibilité technique temporaire pour répondre à votre question. Veuillez réessayer dans quelques instants."
         return ChatResponse(
             thread_id=request.thread_id or uuid.uuid4().hex,
             on_topic=True,
             source=RetrievalSource.NONE,
-            answer="Je rencontre actuellement une indisponibilité technique temporaire pour répondre à votre question. Veuillez réessayer dans quelques instants.",
+            answer=fallback_msg,
+            response=fallback_msg,
+            sources=[],
+            suggestedActions=[
+                "Quel est le format de l'examen PSM I ?",
+                "Quelles sont les certifications prioritaires pour ma squad ?",
+            ],
+            latencyMs=0,
             grounded=False,
             retrieved_chunks=[],
             reasons=[f"[CHAT_ERROR] {type(exc).__name__}: {str(exc)}"],

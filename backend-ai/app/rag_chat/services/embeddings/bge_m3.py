@@ -30,21 +30,36 @@ class BGEM3EmbeddingEngine:
 
     def _engine(self):
         if self._model is None:
-            from FlagEmbedding import BGEM3FlagModel  # heavy import, done lazily
+            try:
+                from FlagEmbedding import BGEM3FlagModel  # heavy import, done lazily
 
-            logger.info("Loading BGE-M3 (device=%s)...", self._device)
-            self._model = BGEM3FlagModel(
-                self.name,
-                use_fp16=self._device == "cuda",
-                device=self._device,
-            )
+                logger.info("Loading BGE-M3 (device=%s)...", self._device)
+                self._model = BGEM3FlagModel(
+                    self.name,
+                    use_fp16=self._device == "cuda",
+                    device=self._device,
+                )
+            except Exception as exc:
+                logger.warning("FlagEmbedding not available (%s), loading BAAI/bge-m3 via SentenceTransformer", exc)
+                from sentence_transformers import SentenceTransformer
+                self._model = SentenceTransformer(self.name, device=self._device)
         return self._model
 
     def embed_dense(self, texts: list[str]) -> list[list[float]]:
-        output = self._engine().encode(
-            texts, return_dense=True, return_sparse=False, return_colbert_vecs=False
-        )
-        return output["dense_vecs"].tolist()
+        if not texts:
+            return []
+        engine = self._engine()
+        if hasattr(engine, "encode"):
+            if type(engine).__name__ == "BGEM3FlagModel":
+                output = engine.encode(
+                    texts, return_dense=True, return_sparse=False, return_colbert_vecs=False
+                )
+                return output["dense_vecs"].tolist()
+            else:
+                # SentenceTransformer
+                res = engine.encode(texts, convert_to_numpy=True)
+                return res.tolist()
+        return []
 
     def embed_hybrid(self, texts: list[str]) -> list[dict]:
         output = self._engine().encode(

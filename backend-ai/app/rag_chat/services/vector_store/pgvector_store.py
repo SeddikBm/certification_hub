@@ -103,7 +103,7 @@ class PgVectorStore:
         ordered_ids = sorted(rrf_scores, key=lambda cid: rrf_scores[cid], reverse=True)[:top_k]
         return [
             RetrievedChunk(
-                certification_id=chunk_by_id[cid]["certification_id"],
+                certification_id=str(chunk_by_id[cid]["certification_id"]) if chunk_by_id[cid].get("certification_id") is not None else None,
                 certification_title=chunk_by_id[cid]["certification_title"],
                 section=chunk_by_id[cid]["section"],
                 text=chunk_by_id[cid]["chunk_text"],

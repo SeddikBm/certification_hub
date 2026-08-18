@@ -51,16 +51,16 @@ public class AiValidationResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AiScores {
         @JsonProperty("name_score")
-        private double nameScore;
+        private Double nameScore;
 
         @JsonProperty("title_score")
-        private double titleScore;
+        private Double titleScore;
 
         @JsonProperty("date_score")
-        private double dateScore;
+        private Double dateScore;
 
         @JsonProperty("overall_score")
-        private double overallScore;
+        private Double overallScore;
     }
 
     @Data

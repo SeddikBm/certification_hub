@@ -23,8 +23,11 @@ class ChatRequest(BaseModel):
     )
 
 
+from typing import Any
+
+
 class RetrievedChunk(BaseModel):
-    certification_id: str | None = None
+    certification_id: Any | None = None
     certification_code: str | None = None
     certification_title: str
     section: str | None = None
@@ -33,14 +36,26 @@ class RetrievedChunk(BaseModel):
     source_url: str | None = None
 
 
+class SourceInfo(BaseModel):
+    type: str = "vector_db"
+    title: str
+    url: str | None = None
+    score: float = 0.0
+
+
 class ChatResponse(BaseModel):
     thread_id: str
     on_topic: bool
     intent: Intent | None = None
     source: RetrievalSource
     answer: str
+    response: str | None = None
+    sources: list[SourceInfo] = Field(default_factory=list)
+    suggestedActions: list[str] = Field(default_factory=list)
+    latencyMs: int = 0
     grounded: bool
     retrieved_chunks: list[RetrievedChunk] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list, description="Trace of what happened, for debugging/observability.")
 
     model_config = ConfigDict(use_enum_values=True)
+

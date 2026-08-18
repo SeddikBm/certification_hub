@@ -19,7 +19,7 @@ def get_embedding_engine() -> EmbeddingEngine:
 
             return BGEM3EmbeddingEngine(device=settings.EMBEDDING_DEVICE)
         except Exception as exc:
-            logger.warning("Could not load BGEM3FlagModel (%s), falling back to SentenceTransformer", exc)
+            logger.warning("Could not load BGEM3EmbeddingEngine (%s), using SentenceTransformer", exc)
 
     from app.rag_chat.services.embeddings.sentence_transformer import SentenceTransformerEmbeddingEngine
 

@@ -1,14 +1,14 @@
-from __future__ import annotations
-
+import time
 import uuid
 
 from app.rag_chat.graph.builder import build_chat_graph
-from app.rag_chat.schemas.chat import ChatRequest, ChatResponse
-from app.rag_chat.schemas.enums import RetrievalSource
+from app.rag_chat.schemas.chat import ChatRequest, ChatResponse, SourceInfo
+from app.rag_chat.schemas.enums import Intent, RetrievalSource
 from app.rag_chat.schemas.state import GraphState
 
 
 def run_chat(request: ChatRequest) -> ChatResponse:
+    start_time = time.time()
     thread_id = request.thread_id or uuid.uuid4().hex
 
     initial_state: GraphState = {
@@ -24,13 +24,68 @@ def run_chat(request: ChatRequest) -> ChatResponse:
     graph = build_chat_graph()
     final_state: GraphState = graph.invoke(initial_state)
 
+    answer = final_state.get("answer", "Je n'ai pas pu obtenir de réponse.")
+    chunks = final_state.get("vector_chunks", [])
+    
+    # Map sources
+    sources: list[SourceInfo] = []
+    for c in chunks:
+        title = c.certification_title
+        if c.section:
+            title = f"{title} - {c.section}"
+        sources.append(
+            SourceInfo(
+                type="vector_db",
+                title=title,
+                url=c.source_url,
+                score=c.score,
+            )
+        )
+
+    if final_state.get("sql_rows"):
+        sources.append(
+            SourceInfo(
+                type="sql_database",
+                title="Base CertificationHub (SQL)",
+                score=1.0,
+            )
+        )
+
+    if final_state.get("scraped_content"):
+        sources.append(
+            SourceInfo(
+                type="web_scraper",
+                title="Page officielle en temps réel",
+                score=0.9,
+            )
+        )
+
+    # Dynamic suggestions
+    suggestions = [
+        "Quelles certifications sont prioritaires pour ma squad ?",
+        "Quel est le format de l'examen PSM I ?",
+        "Combien coûte la certification AZ-204 ?",
+    ]
+    if final_state.get("intent") == Intent.ANALYTIQUE:
+        suggestions = [
+            "Combien de certifications ai-je validées ?",
+            "Quelles certifications en cours dans ma squad ?",
+            "Quels sont les examens planifiés ?",
+        ]
+
+    latency_ms = int((time.time() - start_time) * 1000)
+
     return ChatResponse(
         thread_id=thread_id,
         on_topic=final_state.get("on_topic", True),
         intent=final_state.get("intent"),
         source=final_state.get("source", RetrievalSource.NONE),
-        answer=final_state["answer"],
+        answer=answer,
+        response=answer,
+        sources=sources,
+        suggestedActions=suggestions,
+        latencyMs=latency_ms,
         grounded=final_state.get("grounded", False),
-        retrieved_chunks=final_state.get("vector_chunks", []),
+        retrieved_chunks=chunks,
         reasons=final_state.get("reasons", []),
     )

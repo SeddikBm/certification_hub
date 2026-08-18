@@ -41,6 +41,7 @@ paddlex==3.7.2
 psycopg[binary]>=3.2
 sqlglot>=25.0
 sentence-transformers>=3.0
+FlagEmbedding>=1.2.0
 
 # For drawing diagrams
 pygraphviz

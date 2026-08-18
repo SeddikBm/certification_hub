@@ -73,8 +73,7 @@ class Settings(BaseSettings):
 
     # --- Embeddings & reranking (open-source, self-hosted — no OpenAI) --------
     # BGE-M3: MIT license, hybrid dense+sparse+multi-vector retrieval in one
-    # model, 100+ languages including French. See README benchmark for why
-    # this over Qwen3-Embedding or a proprietary API.
+    # model, 100+ languages including French, 1024-dimension embeddings.
     EMBEDDING_MODEL: str = "BAAI/bge-m3"
     EMBEDDING_DEVICE: str = "cpu"  # "cpu" | "cuda"
     RERANKER_MODEL: str = "BAAI/bge-reranker-v2-m3"

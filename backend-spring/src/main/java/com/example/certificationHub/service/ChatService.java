@@ -80,13 +80,31 @@ public class ChatService {
 
         try {
             log.info("[CHAT] Envoi requête IA pour utilisateur {} (squad={})", currentUserId, payload.get("squad_id"));
-            return webClient.post()
+            ChatMessageResponseDto result = webClient.post()
                     .uri("/api/v1/chat")
                     .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(ChatMessageResponseDto.class)
                     .timeout(Duration.ofSeconds(60))
                     .block();
+
+            if (result != null) {
+                if (result.getResponse() == null || result.getResponse().isBlank()) {
+                    result.setResponse("Voici les informations trouvées pour votre demande.");
+                }
+                if (result.getSuggestedActions() == null || result.getSuggestedActions().isEmpty()) {
+                    result.setSuggestedActions(List.of("Quel est le format de l'examen PSM I ?", "Quelles certifications prioritaires pour ma squad ?"));
+                }
+                if (result.getSources() == null) {
+                    result.setSources(List.of());
+                }
+                if (result.getLatencyMs() == null) {
+                    result.setLatencyMs(0L);
+                }
+                return result;
+            }
+
+            throw new IllegalStateException("Réponse vide reçue du moteur IA");
         } catch (Exception e) {
             log.error("[CHAT] Erreur lors de l'appel au moteur IA backend-ai: {}", e.getMessage(), e);
             return ChatMessageResponseDto.builder()

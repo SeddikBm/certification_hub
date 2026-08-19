@@ -6,26 +6,24 @@ import {
   Send, 
   X, 
   Sparkles, 
-  Trash2, 
   ExternalLink, 
   Layers, 
   Database, 
   Globe, 
   CheckCircle2, 
   Clock, 
-  MessageSquare,
-  ChevronDown,
-  ArrowRight
+  Cpu,
+  Search,
+  Check
 } from 'lucide-react';
 
 interface FormattedMessageProps {
   content: string | null | undefined;
 }
 
-// Simple lightweight markdown parser for bold, headers, lists, code, and links
+// Simple lightweight markdown parser for bold, headers, tables, lists, code, and links
 function MarkdownView({ content }: FormattedMessageProps) {
   const formatText = (text: string) => {
-    // Process lines
     const lines = (text || '').split('\n');
     return lines.map((line, idx) => {
       // Heading
@@ -57,6 +55,30 @@ function MarkdownView({ content }: FormattedMessageProps) {
           </div>
         );
       }
+      // Quote
+      if (line.trim().startsWith('>')) {
+        return (
+          <div key={idx} className="border-l-2 border-[#b70f30]/40 pl-2.5 py-0.5 my-1 text-xs text-gray-600 italic bg-gray-50/50 rounded-r">
+            {renderInlineMarkdown(line.trim().substring(1).trim())}
+          </div>
+        );
+      }
+      // Table row (simple display)
+      if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+        const cells = line.split('|').filter(c => c.trim() !== '');
+        if (cells.every(c => c.includes('---'))) {
+          return null; // separator
+        }
+        return (
+          <div key={idx} className="flex items-center gap-2 py-0.5 text-xs text-gray-800 font-mono bg-gray-50/70 px-2 rounded my-0.5 overflow-x-auto">
+            {cells.map((cell, cIdx) => (
+              <span key={cIdx} className="min-w-[80px] flex-1 truncate">
+                {renderInlineMarkdown(cell.trim())}
+              </span>
+            ))}
+          </div>
+        );
+      }
       // Empty line
       if (!line.trim()) {
         return <div key={idx} className="h-1.5" />;
@@ -71,9 +93,42 @@ function MarkdownView({ content }: FormattedMessageProps) {
   };
 
   const renderInlineMarkdown = (text: string) => {
-    // Bold: **text**
-    const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
-    return parts.map((part, i) => {
+    // Links: [label](url)
+    const linkRegex = /\[(.*?)\]\((.*?)\)/g;
+    const parts: (string | React.ReactNode)[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(parseBoldAndCode(text.substring(lastIndex, match.index)));
+      }
+      const label = match[1];
+      const url = match[2];
+      parts.push(
+        <a
+          key={match.index}
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-[#b70f30] hover:underline font-semibold inline-flex items-center gap-0.5"
+        >
+          {label}
+          <ExternalLink className="w-2.5 h-2.5 ml-0.5 inline opacity-80" />
+        </a>
+      );
+      lastIndex = linkRegex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      parts.push(parseBoldAndCode(text.substring(lastIndex)));
+    }
+
+    return parts;
+  };
+
+  const parseBoldAndCode = (segment: string) => {
+    const rawParts = segment.split(/(\*\*.*?\*\*|`.*?`)/g);
+    return rawParts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <strong key={i} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>;
       }
@@ -113,33 +168,80 @@ function ResearchTrace({ trace }: { trace: ChatTraceItem[] }) {
   );
 }
 
-const STARTER_FAQS = [
-  {
-    icon: 'verified',
-    title: 'Format PSM I',
-    query: "Quel est le format de l'examen PSM I ?",
-  },
-  {
-    icon: 'groups',
-    title: 'Priorités Squad',
-    query: "Quelles sont les certifications prioritaires pour ma squad ?",
-  },
-  {
-    icon: 'school',
-    title: 'Débuter en Cloud',
-    query: "Quelles certifications me conseilles-tu pour débuter dans le Cloud ?",
-  },
-  {
-    icon: 'payments',
-    title: 'Prix & Budget',
-    query: "Combien coûte la certification Microsoft AZ-204 en MAD et USD ?",
-  },
-];
+// Modern live Thinking / Reflection component shown during generation
+function ModernThinkingIndicator() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  const steps = [
+    { label: "Analyse de la question & reformulation...", icon: Search },
+    { label: "Routage d'intention (SQL analytique / RAG hybride)...", icon: Cpu },
+    { label: "Interrogation de la base de données & index pgvector...", icon: Database },
+    { label: "Vérification d'ancrage & synthèse de la réponse...", icon: Sparkles },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
+    }, 1100);
+    return () => clearInterval(timer);
+  }, [steps.length]);
+
+  return (
+    <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#b70f30] to-[#ff4d6d] text-white flex items-center justify-center shadow-xs shrink-0 mt-0.5">
+        <Bot className="w-4 h-4 animate-pulse" />
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-xs p-3.5 shadow-xs max-w-[90%] w-full space-y-2.5">
+        <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b70f30] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#b70f30]"></span>
+            </span>
+            <span>Réflexion en cours...</span>
+          </div>
+          <span className="text-[10px] font-mono text-gray-400">LangGraph Agent</span>
+        </div>
+
+        <div className="space-y-1.5">
+          {steps.map((step, idx) => {
+            const Icon = step.icon;
+            const isCompleted = idx < activeStep;
+            const isCurrent = idx === activeStep;
+
+            return (
+              <div 
+                key={idx} 
+                className={`flex items-center gap-2 text-[11px] transition-all duration-300 ${
+                  isCurrent 
+                    ? 'text-gray-900 font-semibold translate-x-1' 
+                    : isCompleted 
+                    ? 'text-gray-400' 
+                    : 'text-gray-300 opacity-60'
+                }`}
+              >
+                {isCompleted ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                ) : isCurrent ? (
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-[#b70f30] border-t-transparent animate-spin shrink-0" />
+                ) : (
+                  <Icon className="w-3.5 h-3.5 shrink-0 opacity-40" />
+                )}
+                <span className="truncate">{step.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
-  const [messages, setMessages] = useState<Array<ChatMessage & { sources?: SourceInfo[]; suggestedActions?: string[]; latencyMs?: number; trace?: ChatTraceItem[] }>>([]);
+  const [messages, setMessages] = useState<Array<ChatMessage & { sources?: SourceInfo[]; latencyMs?: number; trace?: ChatTraceItem[] }>>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -167,7 +269,6 @@ export function ChatAssistant() {
     setLoading(true);
 
     try {
-      // Build history for backend
       const historyPayload: ChatMessage[] = newHistory.map(m => ({
         role: m.role,
         content: m.content,
@@ -184,7 +285,6 @@ export function ChatAssistant() {
           role: 'assistant',
           content: res.response || "Je n'ai pas pu obtenir de réponse.",
           sources: res.sources || [],
-          suggestedActions: res.suggestedActions || [],
           latencyMs: res.latencyMs,
           trace: res.trace || [],
         },
@@ -195,7 +295,6 @@ export function ChatAssistant() {
         {
           role: 'assistant',
           content: "⚠️ Une erreur est survenue lors de la communication avec l'assistant intelligent. Assurez-vous que le serveur backend IA est bien actif.",
-          suggestedActions: ["Quel est le format de l'examen PSM I ?", "Quelles certifs prioritaires pour ma squad ?"],
         },
       ]);
     } finally {
@@ -210,10 +309,6 @@ export function ChatAssistant() {
     }
   };
 
-  const clearChat = () => {
-    setMessages([]);
-  };
-
   const getSourceIcon = (type?: string | null) => {
     const normalizedType = (type || '').toLowerCase();
     if (normalizedType.includes('sql') || normalizedType.includes('db')) {
@@ -225,6 +320,10 @@ export function ChatAssistant() {
     return <Layers className="w-3.5 h-3.5 text-[#b70f30]" />;
   };
 
+  const userNameDisplay = user?.firstName
+    ? `Bonjour ${user.firstName} ${user.lastName || ''}`.trim()
+    : 'Bonjour';
+
   return (
     <>
       {/* Floating Trigger Button */}
@@ -233,13 +332,13 @@ export function ChatAssistant() {
           {/* Subtle Tooltip Label */}
           <div className="hidden md:flex items-center gap-1.5 mr-3 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg border border-red-100 text-xs font-semibold text-gray-800 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100">
             <Sparkles className="w-3.5 h-3.5 text-[#b70f30] animate-pulse" />
-            <span>Assistant IA CertifHub</span>
+            <span>Assistant IA</span>
           </div>
 
           <button
             onClick={() => setIsOpen(true)}
             className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-[#b70f30] via-[#c9184a] to-[#ff4d6d] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-white/60 focus:outline-none focus:ring-4 focus:ring-[#b70f30]/20"
-            title="Ouvrir l'assistant intelligent CertifHub"
+            title="Ouvrir l'assistant intelligent"
           >
             <div className="absolute -top-1 -right-1 flex h-4 w-4">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -263,28 +362,13 @@ export function ChatAssistant() {
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm text-white tracking-tight">Assistant CertifHub</h3>
-                  <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
-                    RAG IA
-                  </span>
-                </div>
-                <p className="text-[11px] text-white/80 font-medium">
-                  {user?.firstName ? `Bonjour ${user.firstName}` : 'Guide Certifications & Squads'}
-                </p>
+                <h3 className="font-bold text-sm text-white tracking-tight">
+                  {userNameDisplay}
+                </h3>
               </div>
             </div>
 
             <div className="flex items-center gap-1 relative z-10">
-              {messages.length > 0 && (
-                <button
-                  onClick={clearChat}
-                  className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  title="Effacer l'historique"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
@@ -297,42 +381,17 @@ export function ChatAssistant() {
 
           {/* Messages Container */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50/60 via-white to-gray-50/40">
-            {/* Welcome & FAQ Screen when empty */}
+            {/* Simple Welcome Screen when empty */}
             {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center px-3 py-6 space-y-5 animate-in fade-in duration-300">
+              <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8 space-y-4 animate-in fade-in duration-300">
                 <div className="w-14 h-14 rounded-3xl bg-red-50 text-[#b70f30] border border-red-100 flex items-center justify-center shadow-sm">
                   <Sparkles className="w-7 h-7 text-[#b70f30]" />
                 </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold text-base text-gray-900">Comment puis-je vous aider aujourd'hui ?</h4>
-                  <p className="text-xs text-gray-500 max-w-xs mx-auto">
-                    Posez vos questions sur le catalogue de 53 certifications, les priorités de squad, les prix, les formats d'examen ou votre plan de carrière.
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-base text-gray-900">Posez votre question</h4>
+                  <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
+                    Je peux vous renseigner sur les certifications IT, les prérequis, les coûts, les examens, ou analyser les statistiques de vos équipes.
                   </p>
-                </div>
-
-                <div className="w-full space-y-2 pt-2">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block text-left px-1">
-                    Questions fréquentes
-                  </span>
-                  <div className="grid grid-cols-1 gap-2">
-                    {STARTER_FAQS.map((faq, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSend(faq.query)}
-                        className="w-full text-left p-3 rounded-2xl bg-white hover:bg-red-50/70 border border-gray-100 hover:border-red-200 transition-all duration-200 flex items-center justify-between group shadow-2xs hover:shadow-xs"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="material-symbols-outlined text-[#b70f30] text-[18px]">
-                            {faq.icon}
-                          </span>
-                          <span className="text-xs font-semibold text-gray-800 group-hover:text-[#b70f30] transition-colors">
-                            {faq.title}
-                          </span>
-                        </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#b70f30] transform group-hover:translate-x-0.5 transition-all" />
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -343,7 +402,6 @@ export function ChatAssistant() {
                 key={i}
                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
               >
-                {msg.role === 'assistant' && <ResearchTrace trace={msg.trace || []} />}
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-2xs ${
                     msg.role === 'user'
@@ -372,7 +430,7 @@ export function ChatAssistant() {
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-50 border border-gray-200/80 text-[11px] font-medium text-gray-700 hover:bg-gray-100 transition-colors shadow-2xs"
                         >
                           {getSourceIcon(src.type)}
-                          <span className="truncate max-w-[180px] font-semibold">{src.title || 'Source CertificationHub'}</span>
+                          <span className="truncate max-w-[180px] font-semibold">{src.title || 'Source'}</span>
                           {src.url && (
                             <a
                               href={src.url}
@@ -390,27 +448,6 @@ export function ChatAssistant() {
                   </div>
                 )}
 
-                {/* Suggested Actions Chips */}
-                {msg.suggestedActions && msg.suggestedActions.length > 0 && (
-                  <div className="mt-2.5 ml-1 max-w-[95%] space-y-1">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                      Suggestions :
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {msg.suggestedActions.map((action, aIdx) => (
-                        <button
-                          key={aIdx}
-                          onClick={() => handleSend(action)}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-50 hover:bg-red-100/80 text-[#b70f30] border border-red-100 text-xs font-semibold transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                          <span>{action}</span>
-                          <ArrowRight className="w-3 h-3 opacity-70" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Latency badge */}
                 {msg.latencyMs !== undefined && msg.latencyMs > 0 && (
                   <span className="mt-1 ml-1 text-[9px] text-gray-300 flex items-center gap-0.5">
@@ -421,25 +458,13 @@ export function ChatAssistant() {
               </div>
             ))}
 
-            {/* Loading / Typing Animation */}
-            {loading && (
-              <div className="flex items-start gap-2 animate-in fade-in duration-200">
-                <div className="w-7 h-7 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-[#b70f30]">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-xs px-4 py-3 shadow-2xs flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#b70f30] animate-bounce [animation-delay:-0.3s]"></span>
-                  <span className="w-2 h-2 rounded-full bg-[#b70f30] animate-bounce [animation-delay:-0.15s]"></span>
-                  <span className="w-2 h-2 rounded-full bg-[#b70f30] animate-bounce"></span>
-                  <span className="text-xs text-gray-400 font-medium ml-2">Recherche intelligente en cours...</span>
-                </div>
-              </div>
-            )}
+            {/* Modern Thinking Animation — disappears when response is ready */}
+            {loading && <ModernThinkingIndicator />}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input & Footer */}
+          {/* Input & Send Area */}
           <div className="p-3.5 bg-white border-t border-gray-100">
             <div className="relative flex items-center">
               <input
@@ -461,11 +486,6 @@ export function ChatAssistant() {
               >
                 <Send className="w-4 h-4" />
               </button>
-            </div>
-            <div className="mt-2 text-center">
-              <span className="text-[10px] text-gray-400">
-                Alimenté par Groq GPT-OSS • CertifHub AI Engine
-              </span>
             </div>
           </div>
         </div>

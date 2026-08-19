@@ -1,10 +1,5 @@
 """
-Centralised configuration for the Certificate Validation microservice.
-
-Everything that could plausibly change between environments (dev / staging /
-prod) or between deployments lives here, sourced from environment variables
-via pydantic-settings. Nothing else in the codebase should call os.environ
-directly — import `settings` from this module instead.
+Centralised configuration for the Certificate Validation and RAG Chat microservices.
 """
 
 from __future__ import annotations
@@ -33,15 +28,9 @@ class Settings(BaseSettings):
         "used by the Spring Boot gateway to authenticate itself.",
     )
 
-    # --- Groq / LLM ---------------------------------------------------------
-    # NOTE (2026-07): Groq deprecated llama-3.1-8b-instant and
-    # llama-3.3-70b-versatile for free/developer-tier accounts on 2026-06-17.
-    # Recommended replacements at time of writing are openai/gpt-oss-120b
-    # (quality) / openai/gpt-oss-20b (speed) or qwen/qwen3.6-27b (also
-    # vision-capable). Keep this in an env var — don't hardcode a model id
-    # you might have to change again in three months.
+    # --- OpenRouter & Groq LLM Settings ------------------------------------
     GROQ_API_KEY: str = ""
-    GROQ_PARSER_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_PARSER_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
     GROQ_VISION_MODEL: str | None = "qwen/qwen3.6-27b"  # optional VLM fallback path
     GROQ_REQUEST_TIMEOUT_S: float = 30.0
 
@@ -49,8 +38,6 @@ class Settings(BaseSettings):
     OCR_ENGINE: str = "paddleocr"  # "paddleocr" | "tesseract"
     OCR_LANGUAGES: str = "fr+en"
     PDF_RENDER_DPI: int = 300
-    # If native (embedded) PDF text is shorter than this, we treat the file
-    # as a scanned/flattened image and fall back to OCR.
     MIN_NATIVE_TEXT_CHARS: int = 40
 
     # --- Web verification agent ---------------------------------------------
@@ -63,14 +50,8 @@ class Settings(BaseSettings):
     # --- Misc -----------------------------------------------------------------
     MAX_UPLOAD_MB: int = 15
 
-
-    # --- LLM (reuses the same Groq account/client as Module 2 — see
-    # app.services.llm.groq_client — but a separate model id, since
-    # conversational reasoning benefits from a different quality/speed
-    # tradeoff than the strict field-extraction Module 2 does). ---------------
-    # All LLM reasoning uses GPT-OSS. NVIDIA/OpenRouter is reserved for
-    # dense RAG embeddings and reranking below.
-    RAG_LLM_MODEL: str = "openai/gpt-oss-120b"
+    # --- LLM for RAG ----------------------------------------------------------
+    RAG_LLM_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
     # --- Embeddings & reranking (OpenRouter Nemotron API or local) ------------
     OPENROUTER_API_KEY: str = ""
@@ -86,33 +67,32 @@ class Settings(BaseSettings):
     RAG_DB_DSN_WRITE: str = "postgresql://certif_user:certif_password@postgres-db:5432/certifhub_db"
 
     # --- Retrieval -----------------------------------------------------------------
-    VECTOR_TOP_K: int = 15  # candidates pulled from pgvector before reranking
-    RERANK_TOP_N: int = 5  # kept after reranking, sent to the response generator
-    # Below this reranker score, the Retrieval Grader considers the result
-    # insufficient and escalates to the live web-scraping fallback.
+    VECTOR_TOP_K: int = 15
+    RERANK_TOP_N: int = 5
     RETRIEVAL_GRADE_MIN_SCORE: float = 0.40
 
     # --- Topic guardrail --------------------------------------------------------
-    # Reuses EMBEDDING_MODEL — no extra LLM call, no extra model to host.
     GUARDRAIL_SIMILARITY_THRESHOLD: float = 0.45
     GUARDRAIL_REDIRECT_MESSAGE: str = (
         "Je suis votre conseiller IA dédié aux certifications et formations CertificationHub. "
         "Je suis là pour vous aider à explorer le catalogue, comparer les certifications, "
-        "connaître les détails d'examen ou vous guider selon votre squad."
+        "comprendre les prérequis et les formats d'examen, ou analyser les statistiques de vos squads. "
+        "Comment puis-je vous aider sur un sujet lié aux certifications ?"
     )
 
-    # --- SQL guardrail (Agent Text-to-SQL) ---------------------------------------
-    # Table allowlist the generated SQL is validated against
+    # --- Text-to-SQL guardrail -------------------------------------------------
     SQL_ALLOWED_TABLES: list[str] = [
         "certifications",
+        "squads",
         "certification_squads",
         "certification_ratings",
-        "squads",
         "assignments",
         "users",
     ]
+    SQL_MAX_ROWS: int = 50
+    SQL_STATEMENT_TIMEOUT_MS: int = 5000
 
-    # --- Groundedness check --------------------------------------------------------
+    # --- Groundedness & generation --------------------------------------------
     GROUNDEDNESS_MAX_RETRIES: int = 1  # regenerate once if ungrounded, never loop further
 
     # --- Chunking (ingestion) --------------------------------------------------------
@@ -125,10 +105,8 @@ class Settings(BaseSettings):
     INGESTION_REFRESH_INTERVAL_DAYS: int = 90  # periodic re-scrape/re-embed cadence
 
 
-
 @lru_cache
 def get_settings() -> Settings:
-    """Settings is cheap but env parsing isn't free — cache the singleton."""
     return Settings()
 
 

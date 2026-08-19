@@ -6,14 +6,14 @@ from app.core.config import settings
 from app.exceptions import LLMCallError, LLMResponseParsingError
 from app.rag_chat.exceptions import RagChatError
 from app.rag_chat.schemas.enums import Intent
-from app.services.llm.groq_client import GroqChatClient
+from app.rag_chat.services.llm.openrouter_client import OpenRouterChatClient
 
 _SYSTEM_PROMPT = """Classe la question suivante dans l'une de ces deux \
 catégories, en réfléchissant à ce que l'utilisateur veut vraiment savoir :
 
-- "ANALYTIQUE" : une question factuelle sur les données personnelles de \
-l'utilisateur — ses propres certifications, un comptage, un statut, une \
-date d'expiration, une comparaison entre collègues/squad.
+- "ANALYTIQUE" : une question factuelle, un comptage, un regroupement ou un \
+filtre sur les données du catalogue ou de l'utilisateur : catégories, providers, \
+prix, statuts, dates, certifications personnelles ou de squad.
 - "CONSEIL" : une question de conseil ou d'information générale sur les \
 certifications elles-mêmes — laquelle choisir, ce qu'elle couvre, sa \
 difficulté, sa pertinence pour un métier.
@@ -23,8 +23,8 @@ Réponds UNIQUEMENT avec un objet JSON : {"intent": "ANALYTIQUE"|"CONSEIL"}
 
 
 class IntentRouter:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: OpenRouterChatClient | None = None) -> None:
+        self._client = client or OpenRouterChatClient()
 
     def route(self, question: str) -> Intent:
         try:

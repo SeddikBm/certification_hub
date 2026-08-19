@@ -52,8 +52,10 @@ services:
     volumes:
       - ./uploads:/uploads
       - paddlex_cache:/root/.paddlex
+      - huggingface_cache:/root/.cache/huggingface
     environment:
       - PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT=0
+      - HF_TOKEN=${HF_TOKEN}
 
   # 5. Backend Spring Boot Application
   backend-spring:
@@ -101,3 +103,4 @@ services:
 volumes:
   postgres_data:
   paddlex_cache:
+  huggingface_cache:

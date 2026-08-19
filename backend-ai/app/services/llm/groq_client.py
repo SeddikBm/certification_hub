@@ -32,6 +32,8 @@ class GroqChatClient:
 
     def _complete(self, system: str, user: str, model: str, temperature: float, json_mode: bool) -> str:
         kwargs = {"response_format": {"type": "json_object"}} if json_mode else {}
+        if json_mode and "json" not in system.lower() and "json" not in user.lower():
+            system = f"{system}\n\nRespond with a valid JSON object."
         try:
             completion = self._client.chat.completions.create(
                 model=model,

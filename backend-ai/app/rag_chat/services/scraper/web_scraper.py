@@ -2,12 +2,8 @@
 Live web-scraping fallback (Agent Web Scraper — "temps réel").
 
 Only ever called when the Retrieval Grader decides the cached/embedded
-knowledge base is insufficient. Reuses the exact same trust model as
-Module 2's scraper — same TRUSTED_ISSUER_DOMAINS allowlist (an official
-training provider is an official training provider, whether we're
-verifying a certificate against it or fetching its syllabus), same
-robots.txt compliance check (app.utils.robots_utils) — no reason to
-duplicate either.
+knowledge base is insufficient. It uses the trusted issuer-domain allowlist
+shared by the application.
 """
 
 from __future__ import annotations

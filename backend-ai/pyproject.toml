@@ -2,7 +2,7 @@
 testpaths = ["tests"]
 addopts = "-v -m 'not live'"
 markers = [
-    "live: hits real external issuer sites, needs real internet access and a deliberate RESPECT_ROBOTS_TXT choice — never runs by default (see tests/test_live_scraper.py), invoke explicitly with `-m live`",
+    "live: hits real external issuer sites and needs real internet access — never runs by default (see tests/test_live_scraper.py), invoke explicitly with `-m live`",
 ]
 
 [tool.ruff]

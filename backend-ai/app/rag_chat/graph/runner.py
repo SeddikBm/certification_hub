@@ -1,10 +1,13 @@
 import time
 import uuid
+import logging
 
 from app.rag_chat.graph.builder import build_chat_graph
-from app.rag_chat.schemas.chat import ChatRequest, ChatResponse, SourceInfo
+from app.rag_chat.schemas.chat import ChatRequest, ChatResponse, ChatTraceItem, SourceInfo
 from app.rag_chat.schemas.enums import Intent, RetrievalSource
 from app.rag_chat.schemas.state import GraphState
+
+logger = logging.getLogger(__name__)
 
 
 def run_chat(request: ChatRequest) -> ChatResponse:
@@ -74,6 +77,11 @@ def run_chat(request: ChatRequest) -> ChatResponse:
         ]
 
     latency_ms = int((time.time() - start_time) * 1000)
+    trace = _build_trace(final_state, len(chunks))
+    logger.info("[CHAT][TRACE] thread=%s intent=%s trace=%s", thread_id, final_state.get("intent"),
+                [(item.type, item.status) for item in trace])
+    logger.info("[CHAT][RESPONSE] thread=%s source=%s chunks=%d answer_chars=%d latency_ms=%d",
+                thread_id, final_state.get("source", RetrievalSource.NONE), len(chunks), len(answer), latency_ms)
 
     return ChatResponse(
         thread_id=thread_id,
@@ -88,4 +96,40 @@ def run_chat(request: ChatRequest) -> ChatResponse:
         grounded=final_state.get("grounded", False),
         retrieved_chunks=chunks,
         reasons=final_state.get("reasons", []),
+        trace=trace,
     )
+
+
+def _build_trace(final_state: GraphState, chunk_count: int) -> list[ChatTraceItem]:
+    """Expose tools used, not hidden reasoning, so the UI can be transparent."""
+    if final_state.get("intent") == Intent.ANALYTIQUE:
+        sql = final_state.get("sql_query")
+        if sql:
+            rows = len(final_state.get("sql_rows") or [])
+            return [ChatTraceItem(
+                type="sql",
+                label="Requête SQL exécutée",
+                detail=sql,
+                status=f"{rows} résultat(s)",
+            )]
+        return [ChatTraceItem(
+            type="sql",
+            label="Recherche analytique SQL",
+            detail="La requête n'a pas pu être exécutée de façon sûre.",
+            status="indisponible",
+        )]
+
+    trace = [ChatTraceItem(
+        type="vector",
+        label="Recherche vectorielle RAG",
+        detail=f"{chunk_count} extrait(s) pertinents retrouvés dans les certifications indexées.",
+        status="terminée",
+    )]
+    if final_state.get("scraped_content"):
+        trace.append(ChatTraceItem(
+            type="web",
+            label="Complément depuis les sites officiels",
+            detail="La base indexée a été complétée avec les pages officielles disponibles.",
+            status="terminée",
+        ))
+    return trace

@@ -34,6 +34,21 @@ public class ChatMessageResponseDto {
 
     private String error;
 
+    @Builder.Default
+    private List<TraceInfo> trace = new ArrayList<>();
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TraceInfo {
+        private String type;
+        private String label;
+        private String detail;
+        private String status;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor

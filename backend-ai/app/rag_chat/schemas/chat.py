@@ -43,6 +43,14 @@ class SourceInfo(BaseModel):
     score: float = 0.0
 
 
+class ChatTraceItem(BaseModel):
+    """User-visible execution trace, never private chain-of-thought."""
+    type: str
+    label: str
+    detail: str
+    status: str = "complete"
+
+
 class ChatResponse(BaseModel):
     thread_id: str
     on_topic: bool
@@ -56,6 +64,6 @@ class ChatResponse(BaseModel):
     grounded: bool
     retrieved_chunks: list[RetrievedChunk] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list, description="Trace of what happened, for debugging/observability.")
+    trace: list[ChatTraceItem] = Field(default_factory=list)
 
     model_config = ConfigDict(use_enum_values=True)
-

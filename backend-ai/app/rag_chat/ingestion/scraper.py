@@ -1,14 +1,8 @@
-"""
-Ingestion-time scraper — fetches a certification's syllabus page.
+"""Ingestion-time scraper for certification syllabus pages.
 
-Same robots.txt compliance as everywhere else in this service
-(app.utils.robots_utils) — confirmed necessary in practice: Coursera and
-Udemy both disallow automated access to their certificate/course pages via
-robots.txt (see Module 2's README), and the same risk applies to whatever
-official syllabus pages this pipeline targets. Retries with exponential
-backoff handle transient failures (timeouts, 5xx); a robots.txt disallow
-or a domain not on the trusted allowlist is NOT retried — retrying a
-policy decision doesn't make it different the second time.
+Only URLs in the trusted provider allowlist are fetched. Transient network
+errors are retried with exponential backoff; invalid URLs and 4xx responses
+are recorded immediately.
 """
 
 from __future__ import annotations

@@ -1,35 +1,36 @@
 """
 Hybrid retrieval against PostgreSQL + pgvector.
 
-Schema this assumes (adapt to your real one — see notebooks/chunking_and_embedding_experiments.ipynb
-for the exact CREATE TABLE used there):
+Schema this assumes:
 
     CREATE TABLE certification_chunks (
         id SERIAL PRIMARY KEY,
-        certification_id INT NOT NULL,
+        certification_id UUID NOT NULL,
+        certification_code VARCHAR(100),
         certification_title TEXT NOT NULL,
         section TEXT,
         chunk_text TEXT NOT NULL,
-        source_url TEXT,                                          -- official syllabus page, for the live-scrape fallback
-        embedding vector(1024),                                  -- BGE-M3 dense dim
+        source_url TEXT,
+        embedding halfvec(2048),          -- NVIDIA Nemotron dense dim
         text_search tsvector GENERATED ALWAYS AS
             (to_tsvector('french', chunk_text)) STORED,
         created_at TIMESTAMPTZ DEFAULT now()
     );
-    CREATE INDEX ON certification_chunks USING ivfflat (embedding vector_cosine_ops);
-    CREATE INDEX ON certification_chunks USING GIN (text_search);
+    CREATE INDEX IF NOT EXISTS idx_certchunks_embedding_hnsw
+        ON certification_chunks USING hnsw (embedding halfvec_cosine_ops);
+    CREATE INDEX IF NOT EXISTS idx_certchunks_text_search
+        ON certification_chunks USING GIN (text_search);
 
-Honest simplification worth calling out: BGE-M3's actual sparse vectors
-(token -> weight) aren't stored or matched here — that would need a
-dedicated sparse-vector extension/index, real added complexity. Instead,
-PostgreSQL's own full-text search (tsvector/ts_rank_cd) stands in for the
-"lexical" half of hybrid search, which is a well-established, much simpler
-practical substitute. The two ranked lists (dense cosine, full-text) are
-merged with Reciprocal Rank Fusion (RRF) — simple, doesn't require the two
-score scales to be comparable, and is the standard technique for exactly
-this kind of two-index fusion. Swapping in true BGE-M3 sparse vectors later
-is a real upgrade path if RRF-over-full-text turns out not to be precise
-enough in practice — not needed to get a working, genuinely hybrid system today.
+Design note — why no metadata filtering here:
+    All structured/factual queries (by squad, provider, price, level, code, etc.)
+    are handled by the SQL / text-to-sql path (text_to_sql_node → SqlGenerator).
+    The vector/RAG path is for *semantic content* questions ("what topics does CKA
+    cover?", "what are the prerequisites for PSM-I?") where global search is
+    correct: you want to find the best matching content regardless of squad.
+
+    NVIDIA Nemotron supplies dense semantic vectors. PostgreSQL FTS (tsvector)
+    supplies the sparse lexical half. The two ranked lists are merged with
+    Reciprocal Rank Fusion (RRF).
 """
 
 from __future__ import annotations
@@ -51,7 +52,13 @@ class PgVectorStore:
     def __init__(self, dsn: str | None = None) -> None:
         self._dsn = dsn or settings.RAG_DB_DSN
 
-    def hybrid_search(self, query_text: str, query_dense: list[float], top_k: int) -> list[RetrievedChunk]:
+    def hybrid_search(
+        self,
+        query_text: str,
+        query_dense: list[float],
+        top_k: int,
+    ) -> list[RetrievedChunk]:
+        """Hybrid RRF retrieval: dense pgvector cosine + PostgreSQL FTS, merged with RRF."""
         try:
             with psycopg.connect(self._dsn) as conn, conn.cursor() as cur:
                 dense_ranked = self._dense_search(cur, query_dense, top_k)
@@ -61,19 +68,28 @@ class PgVectorStore:
 
         return self._fuse(dense_ranked, lexical_ranked, top_k)
 
+    # ------------------------------------------------------------------ #
+    # Dense (pgvector cosine) arm                                          #
+    # ------------------------------------------------------------------ #
+
     @staticmethod
     def _dense_search(cur, query_dense: list[float], top_k: int) -> list[dict]:
         cur.execute(
             """
             SELECT id, certification_id, certification_title, section, chunk_text, source_url,
-                   1 - (embedding <=> %(qvec)s::vector) AS similarity
+                   1 - (embedding <=> %(qvec)s::halfvec) AS similarity
             FROM certification_chunks
-            ORDER BY embedding <=> %(qvec)s::vector
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> %(qvec)s::halfvec
             LIMIT %(top_k)s
             """,
             {"qvec": query_dense, "top_k": top_k},
         )
         return [_row_to_dict(cur, row) for row in cur.fetchall()]
+
+    # ------------------------------------------------------------------ #
+    # Lexical (PostgreSQL FTS) arm                                         #
+    # ------------------------------------------------------------------ #
 
     @staticmethod
     def _lexical_search(cur, query_text: str, top_k: int) -> list[dict]:
@@ -89,6 +105,10 @@ class PgVectorStore:
             {"q": query_text, "top_k": top_k},
         )
         return [_row_to_dict(cur, row) for row in cur.fetchall()]
+
+    # ------------------------------------------------------------------ #
+    # RRF fusion                                                           #
+    # ------------------------------------------------------------------ #
 
     @staticmethod
     def _fuse(dense_ranked: list[dict], lexical_ranked: list[dict], top_k: int) -> list[RetrievedChunk]:

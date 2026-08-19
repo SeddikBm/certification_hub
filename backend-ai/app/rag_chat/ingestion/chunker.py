@@ -27,6 +27,7 @@ import re
 from dataclasses import dataclass
 
 from app.core.config import settings
+from app.rag_chat.ingestion.summarizer import SyllabusSection
 
 _HEADER_RE = re.compile(r"^(#{1,4})\s+(.+)$", re.MULTILINE)
 _CHARS_PER_TOKEN = 4  # rough heuristic, see module docstring
@@ -48,6 +49,21 @@ def chunk_syllabus(certification_title: str, markdown_text: str) -> list[Chunk]:
             contextualized = _contextualize(certification_title, section_title, piece)
             chunks.append(Chunk(certification_title=certification_title, section=section_title, text=contextualized))
 
+    return chunks
+
+
+def chunk_sections(certification_title: str, sections: list[SyllabusSection]) -> list[Chunk]:
+    """Chunk structured plain text while retaining its section identity."""
+    chunks: list[Chunk] = []
+    for section in sections:
+        for piece in _recursive_split(section.content):
+            chunks.append(
+                Chunk(
+                    certification_title=certification_title,
+                    section=section.title,
+                    text=_contextualize(certification_title, section.title, piece),
+                )
+            )
     return chunks
 
 

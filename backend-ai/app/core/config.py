@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     ENV: str = "dev"  # dev | staging | prod
     LOG_LEVEL: str = "INFO"  # set to DEBUG locally for maximum console detail
     API_KEY: str = Field(
-        default="change-me",
+        default="certifhub-internal-key-2026",
         description="Shared secret expected in the X-API-Key header, "
         "used by the Spring Boot gateway to authenticate itself.",
     )
@@ -56,7 +56,6 @@ class Settings(BaseSettings):
     # --- Web verification agent ---------------------------------------------
     SCRAPER_TIMEOUT_S: float = 10.0
     SCRAPER_MAX_BYTES: int = 3_000_000
-    RESPECT_ROBOTS_TXT: bool = False
 
     # --- Validation thresholds ------------------------------------------------
     NAME_FUZZY_THRESHOLD: float = 0.90  # Nom fuzzy >= 90%
@@ -69,15 +68,18 @@ class Settings(BaseSettings):
     # app.services.llm.groq_client — but a separate model id, since
     # conversational reasoning benefits from a different quality/speed
     # tradeoff than the strict field-extraction Module 2 does). ---------------
-    RAG_LLM_MODEL: str = "openai/gpt-oss-120b"
+    # The RAG path uses NVIDIA Nemotron through OpenRouter.  Certificate
+    # validation continues to use its own Groq configuration above.
+    RAG_LLM_MODEL: str = "nvidia/nemotron-3-super-120b-a12b:free"
 
-    # --- Embeddings & reranking (open-source, self-hosted — no OpenAI) --------
-    # BGE-M3: MIT license, hybrid dense+sparse+multi-vector retrieval in one
-    # model, 100+ languages including French, 1024-dimension embeddings.
-    EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    # --- Embeddings & reranking (OpenRouter Nemotron API or local) ------------
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    EMBEDDING_MODEL: str = "nvidia/nemotron-3-embed-1b:free"
     EMBEDDING_DEVICE: str = "cpu"  # "cpu" | "cuda"
-    RERANKER_MODEL: str = "BAAI/bge-reranker-v2-m3"
+    RERANKER_MODEL: str = "nvidia/llama-nemotron-rerank-vl-1b-v2:free"
     RERANKER_DEVICE: str = "cpu"
+    HF_TOKEN: str = ""
 
     # --- Vector store (PostgreSQL + pgvector) ----------------------------------
     RAG_DB_DSN: str = "postgresql://certif_user:certif_password@postgres-db:5432/certifhub_db"
@@ -115,11 +117,11 @@ class Settings(BaseSettings):
 
     # --- Chunking (ingestion) --------------------------------------------------------
     CHUNK_SIZE_TOKENS: int = 512
-    CHUNK_OVERLAP_RATIO: float = 0.15
+    CHUNK_OVERLAP_RATIO: float = 0.0
 
     # --- Ingestion pipeline retry / dead-letter ----------------------------------
-    INGESTION_MAX_RETRIES: int = 3
-    INGESTION_BACKOFF_BASE_S: float = 30.0  # exponential: base * 2^attempt
+    INGESTION_MAX_RETRIES: int = 1
+    INGESTION_BACKOFF_BASE_S: float = 1.0  # fast retry if transient error
     INGESTION_REFRESH_INTERVAL_DAYS: int = 90  # periodic re-scrape/re-embed cadence
 
 

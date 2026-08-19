@@ -38,10 +38,10 @@ paddlex==3.7.2
 # pytesseract>=0.3.13
 
 # --- RAG, Vector Search & SQL --------------------------------------------
+# NVIDIA Nemotron embeddings and chat are called through OpenRouter. Sparse
+# lexical search is PostgreSQL tsvector; no local embedding model is required.
 psycopg[binary]>=3.2
 sqlglot>=25.0
-sentence-transformers>=3.0
-FlagEmbedding>=1.2.0
 
 # For drawing diagrams
 pygraphviz

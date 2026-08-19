@@ -6,10 +6,17 @@ export interface ChatMessage {
 }
 
 export interface SourceInfo {
-  type: string;
-  title: string;
+  type?: string | null;
+  title?: string | null;
   url?: string;
   score?: number;
+}
+
+export interface ChatTraceItem {
+  type?: string | null;
+  label?: string | null;
+  detail?: string | null;
+  status?: string | null;
 }
 
 export interface ChatResponse {
@@ -17,6 +24,7 @@ export interface ChatResponse {
   suggestedActions: string[];
   sources: SourceInfo[];
   latencyMs: number;
+  trace?: ChatTraceItem[];
   error?: string;
 }
 

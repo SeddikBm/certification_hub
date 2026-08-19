@@ -6,7 +6,7 @@ from __future__ import annotations
 from app.core.config import settings
 from app.exceptions import LLMCallError
 from app.rag_chat.exceptions import RagChatError
-from app.services.llm.groq_client import GroqChatClient
+from app.rag_chat.services.llm.openrouter_client import OpenRouterChatClient
 
 _SYSTEM_PROMPT = """Reformule la question suivante en une requête de \
 recherche autonome et explicite, adaptée à une recherche documentaire sur \
@@ -22,8 +22,8 @@ impliquée par la question.
 
 
 class QueryRewriter:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: OpenRouterChatClient | None = None) -> None:
+        self._client = client or OpenRouterChatClient()
 
     def rewrite(self, question: str) -> str:
         try:

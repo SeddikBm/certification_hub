@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { chatService, type ChatMessage, type SourceInfo } from '../services/chat.service';
+import { chatService, type ChatMessage, type ChatTraceItem, type SourceInfo } from '../services/chat.service';
 import { 
   Bot, 
   Send, 
@@ -19,14 +19,14 @@ import {
 } from 'lucide-react';
 
 interface FormattedMessageProps {
-  content: string;
+  content: string | null | undefined;
 }
 
 // Simple lightweight markdown parser for bold, headers, lists, code, and links
 function MarkdownView({ content }: FormattedMessageProps) {
   const formatText = (text: string) => {
     // Process lines
-    const lines = text.split('\n');
+    const lines = (text || '').split('\n');
     return lines.map((line, idx) => {
       // Heading
       if (line.startsWith('### ')) {
@@ -84,7 +84,33 @@ function MarkdownView({ content }: FormattedMessageProps) {
     });
   };
 
-  return <div className="space-y-0.5">{formatText(content)}</div>;
+  return <div className="space-y-0.5">{formatText(content || '')}</div>;
+}
+
+function ResearchTrace({ trace }: { trace: ChatTraceItem[] }) {
+  if (!trace.length) return null;
+  return (
+    <div className="mb-2 ml-1 max-w-[90%] space-y-1.5">
+      {trace.map((item, index) => {
+        const type = (item.type || '').toLowerCase();
+        const isSql = type === 'sql';
+        return (
+          <div key={`${item.label || 'trace'}-${index}`} className="rounded-xl border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-slate-700">
+            <div className="flex items-center gap-1.5 font-semibold text-indigo-800">
+              {isSql ? <Database className="h-3.5 w-3.5" /> : <Layers className="h-3.5 w-3.5" />}
+              <span>{item.label || 'Recherche effectuée'}</span>
+              {item.status && <span className="ml-auto text-[10px] font-medium text-indigo-500">{item.status}</span>}
+            </div>
+            {isSql ? (
+              <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap rounded-lg bg-slate-950 px-2 py-1.5 font-mono text-[10px] text-slate-100">{item.detail || 'Requête indisponible'}</pre>
+            ) : (
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">{item.detail || 'Recherche terminée.'}</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 const STARTER_FAQS = [
@@ -113,7 +139,7 @@ const STARTER_FAQS = [
 export function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
-  const [messages, setMessages] = useState<Array<ChatMessage & { sources?: SourceInfo[]; suggestedActions?: string[]; latencyMs?: number }>>([]);
+  const [messages, setMessages] = useState<Array<ChatMessage & { sources?: SourceInfo[]; suggestedActions?: string[]; latencyMs?: number; trace?: ChatTraceItem[] }>>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -160,6 +186,7 @@ export function ChatAssistant() {
           sources: res.sources || [],
           suggestedActions: res.suggestedActions || [],
           latencyMs: res.latencyMs,
+          trace: res.trace || [],
         },
       ]);
     } catch (err: any) {
@@ -187,11 +214,12 @@ export function ChatAssistant() {
     setMessages([]);
   };
 
-  const getSourceIcon = (type: string) => {
-    if (type.toLowerCase().includes('sql') || type.toLowerCase().includes('db')) {
+  const getSourceIcon = (type?: string | null) => {
+    const normalizedType = (type || '').toLowerCase();
+    if (normalizedType.includes('sql') || normalizedType.includes('db')) {
       return <Database className="w-3.5 h-3.5 text-indigo-500" />;
     }
-    if (type.toLowerCase().includes('web') || type.toLowerCase().includes('site')) {
+    if (normalizedType.includes('web') || normalizedType.includes('site')) {
       return <Globe className="w-3.5 h-3.5 text-emerald-500" />;
     }
     return <Layers className="w-3.5 h-3.5 text-[#b70f30]" />;
@@ -315,6 +343,7 @@ export function ChatAssistant() {
                 key={i}
                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
               >
+                {msg.role === 'assistant' && <ResearchTrace trace={msg.trace || []} />}
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-2xs ${
                     msg.role === 'user'
@@ -325,7 +354,7 @@ export function ChatAssistant() {
                   {msg.role === 'user' ? (
                     <p className="text-xs sm:text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                   ) : (
-                    <MarkdownView content={msg.content} />
+                    <MarkdownView content={msg.content || ''} />
                   )}
                 </div>
 
@@ -343,7 +372,7 @@ export function ChatAssistant() {
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-50 border border-gray-200/80 text-[11px] font-medium text-gray-700 hover:bg-gray-100 transition-colors shadow-2xs"
                         >
                           {getSourceIcon(src.type)}
-                          <span className="truncate max-w-[180px] font-semibold">{src.title}</span>
+                          <span className="truncate max-w-[180px] font-semibold">{src.title || 'Source CertificationHub'}</span>
                           {src.url && (
                             <a
                               href={src.url}

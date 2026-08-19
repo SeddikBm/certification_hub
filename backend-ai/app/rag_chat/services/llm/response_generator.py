@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.core.config import settings
 from app.exceptions import LLMCallError
 from app.rag_chat.exceptions import ResponseGenerationError
-from app.rag_chat.services.llm.openrouter_client import OpenRouterChatClient
+from app.services.llm.groq_client import GroqChatClient
 
 _SYSTEM_PROMPT = """Tu es l'assistant IA CertificationHub de Devoteam Maroc, spécialisé en certifications informatiques professionnelles.
 
@@ -26,8 +26,8 @@ IMPORTANT — ta réponse précédente contenait des affirmations non soutenues 
 
 
 class ResponseGenerator:
-    def __init__(self, client: OpenRouterChatClient | None = None) -> None:
-        self._client = client or OpenRouterChatClient()
+    def __init__(self, client: GroqChatClient | None = None) -> None:
+        self._client = client or GroqChatClient()
 
     def generate(self, question: str, context: str, strict_retry: bool = False) -> str:
         system = _SYSTEM_PROMPT + (_RETRY_SUFFIX if strict_retry else "")

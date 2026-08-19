@@ -22,7 +22,7 @@ from app.exceptions import LLMCallError
 from app.rag_chat.exceptions import ScrapingError
 from app.rag_chat.schemas.state import GraphState
 from app.rag_chat.services.scraper.web_scraper import fetch_live_content
-from app.rag_chat.services.llm.openrouter_client import OpenRouterChatClient
+from app.services.llm.groq_client import GroqChatClient
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ def _merge_with_llm(cert_title: str, content_a: str, content_b: str) -> str:
         parts.append(f"SOURCE B (portail officiel) :\n{content_b[:6000]}")
 
     try:
-        return OpenRouterChatClient().chat(
+        return GroqChatClient().chat(
             system=_MERGE_SYSTEM_PROMPT,
             user="\n\n".join(parts),
             model=settings.RAG_LLM_MODEL,

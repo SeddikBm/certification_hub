@@ -7,12 +7,15 @@ from app.rag_chat.schemas.chat import ChatRequest, ChatResponse, ChatTraceItem, 
 from app.rag_chat.schemas.enums import Intent, RetrievalSource
 from app.rag_chat.schemas.state import GraphState
 
+from app.rag_chat.services.memory.session_memory import append_thread_message, get_thread_history
+
 logger = logging.getLogger(__name__)
 
 
 def run_chat(request: ChatRequest) -> ChatResponse:
     start_time = time.time()
     thread_id = request.thread_id or uuid.uuid4().hex
+    history = get_thread_history(thread_id)
 
     initial_state: GraphState = {
         "message": request.message,
@@ -21,6 +24,7 @@ def run_chat(request: ChatRequest) -> ChatResponse:
         "user_name": request.user_name,
         "squad_id": request.squad_id,
         "thread_id": thread_id,
+        "history": history,
         "reasons": [],
     }
 
@@ -28,6 +32,8 @@ def run_chat(request: ChatRequest) -> ChatResponse:
     final_state: GraphState = graph.invoke(initial_state)
 
     answer = final_state.get("answer", "Je n'ai pas pu obtenir de réponse.")
+    append_thread_message(thread_id, "user", request.message)
+    append_thread_message(thread_id, "assistant", answer)
     chunks = final_state.get("vector_chunks", [])
     
     # Map sources

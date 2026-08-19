@@ -77,10 +77,10 @@ class PgVectorStore:
         cur.execute(
             """
             SELECT id, certification_id, certification_title, section, chunk_text, source_url,
-                   1 - (embedding <=> %(qvec)s::halfvec) AS similarity
+                   1 - (embedding <=> %(qvec)s::vector) AS similarity
             FROM certification_chunks
             WHERE embedding IS NOT NULL
-            ORDER BY embedding <=> %(qvec)s::halfvec
+            ORDER BY embedding <=> %(qvec)s::vector
             LIMIT %(top_k)s
             """,
             {"qvec": query_dense, "top_k": top_k},

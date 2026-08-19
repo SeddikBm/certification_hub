@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.core.config import settings
 from app.exceptions import LLMCallError
 from app.rag_chat.exceptions import SqlGenerationError
-from app.rag_chat.services.llm.openrouter_client import OpenRouterChatClient
+from app.services.llm.groq_client import GroqChatClient
 
 _SYSTEM_PROMPT = """Tu es un expert SQL PostgreSQL pour CertificationHub (Devoteam Maroc).
 Traduis la question en UNE SEULE requête SQL SELECT en lecture seule.
@@ -107,8 +107,8 @@ RÈGLES :
 
 
 class SqlGenerator:
-    def __init__(self, client: OpenRouterChatClient | None = None) -> None:
-        self._client = client or OpenRouterChatClient()
+    def __init__(self, client: GroqChatClient | None = None) -> None:
+        self._client = client or GroqChatClient()
 
     def generate(self, question: str) -> str:
         try:

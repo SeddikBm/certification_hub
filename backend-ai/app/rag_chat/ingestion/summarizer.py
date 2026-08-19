@@ -8,7 +8,7 @@ from typing import Any
 
 from app.core.config import settings
 from app.exceptions import LLMCallError, LLMResponseParsingError
-from app.rag_chat.services.llm.openrouter_client import OpenRouterChatClient
+from app.services.llm.groq_client import GroqChatClient
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ class SyllabusSection:
 
 
 class SyllabusSummarizer:
-    def __init__(self, client: OpenRouterChatClient | None = None) -> None:
-        self._client = client or OpenRouterChatClient()
+    def __init__(self, client: GroqChatClient | None = None) -> None:
+        self._client = client or GroqChatClient()
 
     def summarize_sections(
         self,

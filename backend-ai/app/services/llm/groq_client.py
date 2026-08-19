@@ -21,14 +21,29 @@ class GroqChatClient:
         return self._complete(system=system, user=user, model=target_model, temperature=temperature, json_mode=False)
 
     def chat_json(self, system: str, user: str, model: str | None = None, temperature: float = 0.0) -> dict:
-        """JSON-mode completion, parsed. Raises LLMResponseParsingError on malformed JSON."""
+        """JSON-mode completion, parsed. Robust against markdown code fences."""
         target_model = model or settings.RAG_LLM_MODEL
-        text = self._complete(system=system, user=user, model=target_model, temperature=temperature, json_mode=True)
+        text = self._complete(system=system, user=user, model=target_model, temperature=temperature, json_mode=True).strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            text = "\n".join(lines).strip()
         try:
             return json.loads(text)
-        except json.JSONDecodeError as exc:
+        except json.JSONDecodeError:
+            start = text.find("{")
+            end = text.rfind("}")
+            if start != -1 and end != -1 and end > start:
+                try:
+                    return json.loads(text[start : end + 1])
+                except json.JSONDecodeError as exc:
+                    logger.error("[LLM] Response substring was not valid JSON: %r", text[start : end + 1])
+                    raise LLMResponseParsingError(f"LLM did not return valid JSON: {exc}") from exc
             logger.error("[LLM] Response was not valid JSON: %r", text[:300])
-            raise LLMResponseParsingError(f"LLM did not return valid JSON: {exc}") from exc
+            raise LLMResponseParsingError(f"LLM did not return valid JSON: {text[:100]}")
 
     def _complete(self, system: str, user: str, model: str, temperature: float, json_mode: bool) -> str:
         kwargs = {"response_format": {"type": "json_object"}} if json_mode else {}

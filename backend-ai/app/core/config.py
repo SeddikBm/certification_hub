@@ -68,9 +68,9 @@ class Settings(BaseSettings):
     # app.services.llm.groq_client — but a separate model id, since
     # conversational reasoning benefits from a different quality/speed
     # tradeoff than the strict field-extraction Module 2 does). ---------------
-    # The RAG path uses NVIDIA Nemotron through OpenRouter.  Certificate
-    # validation continues to use its own Groq configuration above.
-    RAG_LLM_MODEL: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    # All LLM reasoning uses GPT-OSS. NVIDIA/OpenRouter is reserved for
+    # dense RAG embeddings and reranking below.
+    RAG_LLM_MODEL: str = "openai/gpt-oss-120b"
 
     # --- Embeddings & reranking (OpenRouter Nemotron API or local) ------------
     OPENROUTER_API_KEY: str = ""

@@ -71,6 +71,7 @@ def _safe_scrape(url: str, label: str) -> str:
         return ""
 
 
+
 def _store_chunks(certification_id, code, certification_title, source_url, chunks, embeddings) -> None:
     with psycopg.connect(settings.RAG_DB_DSN_WRITE) as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM certification_chunks WHERE certification_id = %s::uuid", (certification_id,))
@@ -78,7 +79,7 @@ def _store_chunks(certification_id, code, certification_title, source_url, chunk
             cur.execute("""
                 INSERT INTO certification_chunks
                     (certification_id, certification_code, certification_title, section, chunk_text, source_url, embedding)
-                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s::halfvec)
+                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s::vector)
             """, (certification_id, code, certification_title, chunk.section, chunk.text, source_url, vector))
         conn.commit()
 

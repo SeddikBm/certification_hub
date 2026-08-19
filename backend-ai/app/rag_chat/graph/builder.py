@@ -1,11 +1,11 @@
 """
 Graph assembly for Module 1 — RAG chat.
 
-Topology:
+Topology (Multi-turn Context Aware):
 
-    guardrail -+-> off_topic_response -> END
-               |
-               +-> rewrite -> route -+-> text_to_sql -----------------+
+    rewrite -> guardrail -+-> off_topic_response -> END
+                          |
+                          +-> route -+-> text_to_sql -----------------+
                                      |                                |
                                      +-> vector_search -> grade -+    |
                                                     (suffisant)  |    |
@@ -14,14 +14,7 @@ Topology:
                                                                  +-> web_scrape ----------+          |
                                                                                                        |
                                                                  regenerate <--(non groundé, 1 essai)-+
-
-Same rationale as app.certification_validation.graph.builder for skipping
-a checkpointer: each chat turn is currently a complete request/response.
-If/when multi-turn memory is wired up (thread_id is already in the state
-and API contract, see README), add a PostgresSaver checkpointer here keyed
-by thread_id — no node needs to change for that.
 """
-
 from __future__ import annotations
 
 from functools import lru_cache
@@ -44,9 +37,9 @@ from app.rag_chat.schemas.state import GraphState
 def build_chat_graph():
     graph = StateGraph(GraphState)
 
+    graph.add_node("rewrite", rewrite_node)
     graph.add_node("guardrail", guardrail_node)
     graph.add_node("off_topic_response", off_topic_response_node)
-    graph.add_node("rewrite", rewrite_node)
     graph.add_node("route", route_node)
     graph.add_node("text_to_sql", text_to_sql_node)
     graph.add_node("vector_search", vector_search_node)
@@ -56,13 +49,17 @@ def build_chat_graph():
     graph.add_node("groundedness", groundedness_node)
     graph.add_node("regenerate", regenerate_node)
 
-    graph.set_entry_point("guardrail")
+    # Rewrite first (resolves multi-turn references e.g. "le plus cher" -> full explicit question)
+    graph.set_entry_point("rewrite")
+    graph.add_edge("rewrite", "guardrail")
+
+    # Guardrail checks the contextualized question
     graph.add_conditional_edges(
-        "guardrail", route_by_guardrail, {"rewrite": "rewrite", "off_topic_response": "off_topic_response"}
+        "guardrail", route_by_guardrail, {"route": "route", "off_topic_response": "off_topic_response"}
     )
     graph.add_edge("off_topic_response", END)
 
-    graph.add_edge("rewrite", "route")
+    # Route by intent (Analytique -> Text-to-SQL, Conseil/Syllabus -> Vector Search)
     graph.add_conditional_edges(
         "route", route_by_intent, {"text_to_sql": "text_to_sql", "vector_search": "vector_search"}
     )
@@ -79,6 +76,6 @@ def build_chat_graph():
     graph.add_conditional_edges(
         "groundedness", route_by_groundedness, {"done": END, "regenerate": "regenerate"}
     )
-    graph.add_edge("regenerate", "groundedness")  # bounded by route_by_groundedness's attempt-count check
+    graph.add_edge("regenerate", "groundedness")
 
     return graph.compile()

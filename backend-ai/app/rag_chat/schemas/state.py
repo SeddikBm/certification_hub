@@ -19,6 +19,7 @@ class GraphState(TypedDict, total=False):
     user_name: str | None
     squad_id: str | None
     thread_id: str
+    history: list[dict]
 
     # --- after guardrail_node ------------------------------------------------
     on_topic: bool

@@ -15,7 +15,7 @@ from __future__ import annotations
 from app.core.config import settings
 from app.exceptions import LLMCallError, LLMResponseParsingError
 from app.rag_chat.exceptions import RagChatError
-from app.services.llm.groq_client import GroqChatClient
+from app.services.llm.nvidia_client import NvidiaChatClient
 
 _SYSTEM_PROMPT = """Tu vérifies si une réponse est entièrement soutenue par \
 un contexte donné.
@@ -31,8 +31,8 @@ acceptable ; une extrapolation ne l'est pas.
 
 
 class GroundednessChecker:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: NvidiaChatClient | None = None) -> None:
+        self._client = client or NvidiaChatClient()
 
     def check(self, answer: str, context: str) -> tuple[bool, str | None]:
         """Returns (grounded, reason_if_not)."""

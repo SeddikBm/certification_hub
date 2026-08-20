@@ -3,6 +3,7 @@ Ingestion pipeline — scrape both official_url + exam_provider_url, merge, chun
 Never raises — failures land in dead_letter.
 """
 from __future__ import annotations
+
 import logging
 import psycopg
 from app.core.config import settings
@@ -23,8 +24,9 @@ def ingest_certification(
     code: str = "",
     metadata_context: str = "",
 ) -> bool:
-    logger.info("[INGESTION] cert_id=%s title=%s official=%s exam=%s",
-                certification_id, certification_title, official_url, exam_provider_url)
+    logger.info("=" * 80)
+    logger.info("[INGESTION][START] Ingesting '%s' (code=%s, id=%s)", certification_title, code, certification_id)
+    logger.info("[INGESTION][INPUTS] official_url=%s | exam_provider_url=%s", official_url or "N/A", exam_provider_url or "N/A")
     try:
         metadata_context = metadata_context.strip() or (
             f"Nom de la certification : {certification_title}\n"
@@ -32,31 +34,58 @@ def ingest_certification(
             f"Lien formation : {official_url or 'Non renseigné'}\n"
             f"Portail officiel examen : {exam_provider_url or 'Non renseigné'}"
         )
+        
+        # --- STEP 1: Web Scraping ---
+        logger.info("[INGESTION][STEP 1/5 - SCRAPE] Scraping official URLs...")
         content_a = _safe_scrape(official_url, "official_url")
         content_b = _safe_scrape(exam_provider_url, "exam_provider_url")
-        logger.info("[INGESTION][SCRAPE] cert_id=%s official_chars=%d exam_chars=%d",
-                    certification_id, len(content_a), len(content_b))
+        logger.info("[INGESTION][SCRAPE-RESULT] official_url chars=%d | exam_provider_url chars=%d",
+                    len(content_a), len(content_b))
+
+        # --- STEP 2: Section Summarization ---
+        logger.info("[INGESTION][STEP 2/5 - SUMMARIZE] Structuring content into canonical RAG sections via LLM...")
         sections = SyllabusSummarizer().summarize_sections(
             certification_title, content_a, content_b, metadata_context=metadata_context
         )
-        logger.info("[INGESTION][SECTIONS] cert_id=%s count=%d names=%s",
-                    certification_id, len(sections), [section.title for section in sections])
+        logger.info("[INGESTION][SECTIONS-RESULT] Extracted %d sections: %s",
+                    len(sections), [s.title for s in sections])
+
+        # --- STEP 3: Chunking ---
+        logger.info("[INGESTION][STEP 3/5 - CHUNKING] Generating contextualized chunks from sections...")
         chunks = chunk_sections(certification_title, sections)
         if not chunks:
             raise RagChatError("Section extraction produced no usable chunks.")
+        
+        logger.info("[INGESTION][CHUNKS-SUMMARY] Generated %d chunk(s) for '%s':", len(chunks), certification_title)
         for number, chunk in enumerate(chunks, 1):
-            logger.info("[INGESTION][CHUNK] cert_id=%s chunk=%d section=%r chars=%d preview=%r",
-                        certification_id, number, chunk.section, len(chunk.text), chunk.text[:180])
+            logger.info("--------------------------------------------------------------------------------")
+            logger.info("[INGESTION][CHUNK %d/%d] Section: '%s' | Size: %d chars",
+                        number, len(chunks), chunk.section, len(chunk.text))
+            logger.info("[INGESTION][CHUNK %d/%d TEXT]:\n%s", number, len(chunks), chunk.text)
+        logger.info("--------------------------------------------------------------------------------")
+
+        # --- STEP 4: Embedding ---
+        logger.info("[INGESTION][STEP 4/5 - EMBEDDING] Computing dense vector embeddings via OpenRouter (%s)...",
+                    settings.EMBEDDING_MODEL)
         embeddings = get_embedding_engine().embed_dense([c.text for c in chunks])
-        logger.info("[INGESTION][EMBED] cert_id=%s vectors=%d dimensions=%d",
-                    certification_id, len(embeddings), len(embeddings[0]) if embeddings else 0)
+        dim = len(embeddings[0]) if embeddings else 0
+        logger.info("[INGESTION][EMBED-RESULT] Successfully computed %d dense vectors (dim=%d)", len(embeddings), dim)
+
+        # --- STEP 5: Database Storage ---
         primary_url = exam_provider_url or official_url
+        logger.info("[INGESTION][STEP 5/5 - STORAGE] Persisting %d chunks in PostgreSQL 'certification_chunks'...", len(chunks))
         _store_chunks(certification_id, code, certification_title, primary_url, chunks, embeddings)
+        logger.info("[INGESTION][STORAGE-RESULT] Saved %d chunk(s) to DB for '%s' (id=%s).",
+                    len(chunks), certification_title, certification_id)
+
     except Exception as exc:  # noqa: BLE001
-        logger.error("[INGESTION] Failed cert_id=%s: %s", certification_id, exc)
+        logger.error("[INGESTION][FAILED] cert_id=%s title='%s': %s", certification_id, certification_title, exc, exc_info=True)
         _mark_dead_letter(certification_id, official_url or exam_provider_url, f"{type(exc).__name__}: {exc}")
+        logger.info("=" * 80)
         return False
-    logger.info("[INGESTION] Success cert_id=%s, %d chunk(s)", certification_id, len(chunks))
+
+    logger.info("[INGESTION][SUCCESS] Completed '%s' (%d chunks indexed)", certification_title, len(chunks))
+    logger.info("=" * 80)
     _mark_success(certification_id, official_url or exam_provider_url)
     return True
 
@@ -71,17 +100,19 @@ def _safe_scrape(url: str, label: str) -> str:
         return ""
 
 
-
 def _store_chunks(certification_id, code, certification_title, source_url, chunks, embeddings) -> None:
+    logger.debug("[INGESTION][DB] Connecting to DB to store chunks...")
     with psycopg.connect(settings.RAG_DB_DSN_WRITE) as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM certification_chunks WHERE certification_id = %s::uuid", (certification_id,))
-        for chunk, vector in zip(chunks, embeddings, strict=True):
+        for i, (chunk, vector) in enumerate(zip(chunks, embeddings, strict=True)):
+            logger.debug("[INGESTION][DB] Inserting chunk %d", i + 1)
             cur.execute("""
                 INSERT INTO certification_chunks
                     (certification_id, certification_code, certification_title, section, chunk_text, source_url, embedding)
                 VALUES (%s::uuid, %s, %s, %s, %s, %s, %s::vector)
             """, (certification_id, code, certification_title, chunk.section, chunk.text, source_url, vector))
         conn.commit()
+    logger.debug("[INGESTION][DB] Transaction committed successfully.")
 
 
 def _mark_success(certification_id: str, source_url: str) -> None:

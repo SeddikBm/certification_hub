@@ -72,7 +72,11 @@ def _build_context(state: GraphState) -> tuple[str, RetrievalSource]:
     parts: list[str] = []
 
     if state.get("sql_rows"):
-        parts.append("Données de la base :\n" + "\n".join(str(row) for row in state["sql_rows"]))
+        formatted_rows = []
+        for idx, row in enumerate(state["sql_rows"], 1):
+            row_items = [f"  - {k}: {v}" for k, v in row.items() if v is not None]
+            formatted_rows.append(f"Résultat {idx} :\n" + "\n".join(row_items))
+        parts.append("Données structurées extraites de la base :\n" + "\n\n".join(formatted_rows))
 
     chunks = state.get("vector_chunks") or []
     if chunks:

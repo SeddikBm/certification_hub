@@ -57,11 +57,23 @@ def _check_and_seed() -> None:
     try:
         import psycopg
         with psycopg.connect(settings.RAG_DB_DSN) as conn, conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM certification_chunks")
-            if cur.fetchone()[0] == 0:
-                logger.info("certification_chunks is empty. Seeding...")
+            cur.execute("SELECT count(*) FROM certifications WHERE deleted_at IS NULL")
+            total_certs = cur.fetchone()[0]
+            cur.execute("SELECT count(DISTINCT certification_id) FROM certification_chunks")
+            chunked_certs = cur.fetchone()[0]
+
+            if chunked_certs < total_certs:
+                logger.info(
+                    "[SEED] Catalogue index incomplete: %d/%d certifications indexed in chunks. Starting seeding...",
+                    chunked_certs, total_certs,
+                )
                 from app.rag_chat.ingestion.seed_chunks import seed_certification_chunks
                 seed_certification_chunks()
+            else:
+                logger.info(
+                    "[SEED] Catalogue index complete: %d/%d certifications indexed.",
+                    chunked_certs, total_certs,
+                )
     except Exception as exc:
         logger.warning("Could not auto-seed on startup: %s", exc)
     finally:
@@ -113,30 +125,10 @@ def _reingest_one(cert_id: str) -> None:
         logger.error("[NOTIFY] Re-ingestion failed cert_id=%s: %s", cert_id, exc)
 
 
-def _warmup_models() -> None:
-    """Preload embedding & reranker models in background at startup so first request isn't blocked."""
-    try:
-        logger.info("[WARMUP] Preloading embedding model (%s)...", settings.EMBEDDING_MODEL)
-        from app.rag_chat.services.embeddings.factory import get_embedding_engine
-        get_embedding_engine().embed_dense(["warmup query"])
-        logger.info("[WARMUP] Embedding model ready.")
-    except Exception as exc:
-        logger.warning("[WARMUP] Embedding model warmup failed: %s", exc)
-
-    try:
-        logger.info("[WARMUP] Preloading reranker model (%s)...", settings.RERANKER_MODEL)
-        from app.rag_chat.services.reranker.bge_reranker import get_reranker_engine
-        get_reranker_engine().score("warmup", ["candidate"])
-        logger.info("[WARMUP] Reranker model ready.")
-    except Exception as exc:
-        logger.warning("[WARMUP] Reranker model warmup failed: %s", exc)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s (env=%s, ocr=%s, model=%s)",
                 settings.APP_NAME, settings.ENV, settings.OCR_ENGINE, settings.GROQ_PARSER_MODEL)
-    threading.Thread(target=_warmup_models, daemon=True).start()
     threading.Thread(target=_check_and_seed, daemon=True).start()
     threading.Thread(target=_listen_for_changes, daemon=True).start()
     yield

@@ -5,38 +5,35 @@ import logging
 import re
 from app.core.config import settings
 from app.rag_chat.schemas.enums import Intent
-from app.services.llm.groq_client import GroqChatClient
+from app.services.llm.nvidia_client import NvidiaChatClient
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = """Classe la question suivante dans l'une de ces deux catégories :
+_SYSTEM_PROMPT = """Tu es le superviseur IA chargé de router la question de l'utilisateur vers la bonne modalité de traitement.
+Classe la question suivante dans l'une de ces deux catégories :
 
-- "ANALYTIQUE" : une question factuelle, un comptage, un classement (le plus cher, le moins cher, le plus long), un regroupement ou un filtre sur les données de la base : nombre de certifications, prix, coûts, durées, providers, catégories, squads, statuts, assignations ou validations.
-- "CONSEIL" : une question de contenu, de syllabus ou de recommandation générale sur les certifications : prérequis, compétences évaluées, format d'examen, conseils d'orientation, préparation.
+- "ANALYTIQUE" : La question porte sur des données directes, précises ou structurées stockées dans la base de données SQL. 
+  Exemples :
+  * Filtrage précis / clause WHERE sur les attributs : fournisseur/provider (Oracle, Microsoft, AWS...), prix/coût en MAD ou USD, catégorie, niveau de difficulté (FOUNDATIONAL, INTERMEDIATE, ADVANCED, EXPERT), priorité (MANDATORY, HIGH, NORMAL), code certification, lien officiel, validité.
+  * Jointure ou filtrage par Squad affectée (ex: certifications recommandées pour la squad Java, Cloud, etc.).
+  * Statuts ou assignations d'utilisateurs (mes certifications, certifications validées, assignations).
+  * Agrégations, comptages ou classements directs (combien de certifications, liste par provider, la plus chère, total).
+
+- "CONSEIL" : La question porte sur le contenu sémantique, la pédagogie, le syllabus, la compréhension ou des recommandations générales.
+  Exemples :
+  * Explications de concepts ou compétences évaluées ("que contient le module X ?", "qu'est-ce qu'on apprend dans CKA ?").
+  * Prérequis généraux, conseils de préparation, astuces pour réussir l'examen, format des questions.
+  * Orientation professionnelle ou choix d'une certification selon un profil de carrière sans filtre SQL strict.
 
 Réponds UNIQUEMENT avec un objet JSON : {"intent": "ANALYTIQUE"} ou {"intent": "CONSEIL"}"""
 
-_ANALYTICAL_KEYWORDS = [
-    r"\bcombien\b", r"\bnombre\b", r"\bplus cher\b", r"\bplus ch[eè]re\b", r"\bmoins cher\b",
-    r"\bco[uû]t\b", r"\bprix\b", r"\btotal\b", r"\bmoyenne\b", r"\bcombien de\b",
-    r"\bliste des\b", r"\btoutes les\b", r"\btous les\b", r"\bstatut\b", r"\bvalid[eé]e?s?\b",
-    r"\bassign\b", r"\bqui a\b", r"\bmes certif\b", r"\bma squad\b", r"\bnotre squad\b",
-]
-
 
 class IntentRouter:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: NvidiaChatClient | None = None) -> None:
+        self._client = client or NvidiaChatClient()
 
     def route(self, question: str) -> Intent:
-        # 1. Quick regex heuristics for obvious analytical questions
-        q_lower = question.lower()
-        for pattern in _ANALYTICAL_KEYWORDS:
-            if re.search(pattern, q_lower):
-                logger.info("[ROUTER] Analytical keyword pattern %r matched -> ANALYTIQUE", pattern)
-                return Intent.ANALYTIQUE
-
-        # 2. LLM classification
+        # LLM intent classification
         try:
             data = self._client.chat_json(
                 system=_SYSTEM_PROMPT,
@@ -45,9 +42,10 @@ class IntentRouter:
             )
             raw_intent = str(data.get("intent", "")).upper()
             if raw_intent in (Intent.ANALYTIQUE.value, Intent.CONSEIL.value):
+                logger.info("[ROUTER] LLM classified intent: %s for query: %r", raw_intent, question)
                 return Intent(raw_intent)
         except Exception as exc:
-            logger.warning("[ROUTER] LLM call failed (%s). Defaulting based on context.", exc)
+            logger.warning("[ROUTER] LLM call failed (%s). Defaulting to CONSEIL.", exc)
 
-        # 3. Fallback: if questions contains "quel" / "qu'est-ce", usually CONSEIL
+        # Fallback default
         return Intent.CONSEIL

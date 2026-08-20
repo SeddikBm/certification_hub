@@ -23,77 +23,8 @@ interface FormattedMessageProps {
 
 // Simple lightweight markdown parser for bold, headers, tables, lists, code, and links
 function MarkdownView({ content }: FormattedMessageProps) {
-  const formatText = (text: string) => {
-    const lines = (text || '').split('\n');
-    return lines.map((line, idx) => {
-      // Heading
-      if (line.startsWith('### ')) {
-        return <h4 key={idx} className="text-sm font-bold text-gray-900 mt-2 mb-1">{line.replace('### ', '')}</h4>;
-      }
-      if (line.startsWith('## ')) {
-        return <h3 key={idx} className="text-base font-bold text-gray-900 mt-2.5 mb-1">{line.replace('## ', '')}</h3>;
-      }
-      if (line.startsWith('# ')) {
-        return <h2 key={idx} className="text-lg font-extrabold text-gray-900 mt-3 mb-1.5">{line.replace('# ', '')}</h2>;
-      }
-      // Bullet list
-      if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-        const itemText = line.trim().substring(2);
-        return (
-          <li key={idx} className="ml-4 list-disc text-xs sm:text-sm text-gray-700 my-0.5 leading-relaxed">
-            {renderInlineMarkdown(itemText)}
-          </li>
-        );
-      }
-      // Numbered list
-      const numMatch = line.trim().match(/^(\d+)\.\s+(.*)/);
-      if (numMatch) {
-        return (
-          <div key={idx} className="flex items-start gap-1.5 ml-1 text-xs sm:text-sm text-gray-700 my-0.5 leading-relaxed">
-            <span className="font-bold text-[#b70f30] text-xs">{numMatch[1]}.</span>
-            <span>{renderInlineMarkdown(numMatch[2])}</span>
-          </div>
-        );
-      }
-      // Quote
-      if (line.trim().startsWith('>')) {
-        return (
-          <div key={idx} className="border-l-2 border-[#b70f30]/40 pl-2.5 py-0.5 my-1 text-xs text-gray-600 italic bg-gray-50/50 rounded-r">
-            {renderInlineMarkdown(line.trim().substring(1).trim())}
-          </div>
-        );
-      }
-      // Table row (simple display)
-      if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-        const cells = line.split('|').filter(c => c.trim() !== '');
-        if (cells.every(c => c.includes('---'))) {
-          return null; // separator
-        }
-        return (
-          <div key={idx} className="flex items-center gap-2 py-0.5 text-xs text-gray-800 font-mono bg-gray-50/70 px-2 rounded my-0.5 overflow-x-auto">
-            {cells.map((cell, cIdx) => (
-              <span key={cIdx} className="min-w-[80px] flex-1 truncate">
-                {renderInlineMarkdown(cell.trim())}
-              </span>
-            ))}
-          </div>
-        );
-      }
-      // Empty line
-      if (!line.trim()) {
-        return <div key={idx} className="h-1.5" />;
-      }
-      // Normal paragraph
-      return (
-        <p key={idx} className="text-xs sm:text-sm text-gray-800 my-0.5 leading-relaxed">
-          {renderInlineMarkdown(line)}
-        </p>
-      );
-    });
-  };
-
-  const renderInlineMarkdown = (text: string) => {
-    // Links: [label](url)
+  const parseInlineElements = (text: string) => {
+    // 1. Matches markdown links: [label](url)
     const linkRegex = /\[(.*?)\]\((.*?)\)/g;
     const parts: (string | React.ReactNode)[] = [];
     let lastIndex = 0;
@@ -101,45 +32,206 @@ function MarkdownView({ content }: FormattedMessageProps) {
 
     while ((match = linkRegex.exec(text)) !== null) {
       if (match.index > lastIndex) {
-        parts.push(parseBoldAndCode(text.substring(lastIndex, match.index)));
+        parts.push(...parseRawUrlsAndFormatting(text.substring(lastIndex, match.index)));
       }
       const label = match[1];
       const url = match[2];
       parts.push(
         <a
-          key={match.index}
+          key={`link-${match.index}`}
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="text-[#b70f30] hover:underline font-semibold inline-flex items-center gap-0.5"
+          className="text-[#b70f30] hover:underline font-semibold inline-flex items-center gap-0.5 break-all [overflow-wrap:anywhere] max-w-full"
         >
-          {label}
-          <ExternalLink className="w-2.5 h-2.5 ml-0.5 inline opacity-80" />
+          <span>{label}</span>
+          <ExternalLink className="w-3 h-3 ml-0.5 inline shrink-0 opacity-80" />
         </a>
       );
       lastIndex = linkRegex.lastIndex;
     }
     if (lastIndex < text.length) {
-      parts.push(parseBoldAndCode(text.substring(lastIndex)));
+      parts.push(...parseRawUrlsAndFormatting(text.substring(lastIndex)));
     }
 
     return parts;
   };
 
-  const parseBoldAndCode = (segment: string) => {
-    const rawParts = segment.split(/(\*\*.*?\*\*|`.*?`)/g);
+  const parseRawUrlsAndFormatting = (segment: string): (string | React.ReactNode)[] => {
+    // Check for raw URLs (http, https, or devoteamlearning.udemy.com...)
+    const urlRegex = /(https?:\/\/[^\s]+|(?:devoteamlearning\.udemy\.com|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,})\/[^\s]*)/g;
+    const parts: (string | React.ReactNode)[] = [];
+    let lastIdx = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = urlRegex.exec(segment)) !== null) {
+      if (match.index > lastIdx) {
+        parts.push(...parseBoldAndCode(segment.substring(lastIdx, match.index)));
+      }
+      const rawUrl = match[1];
+      const href = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+      parts.push(
+        <a
+          key={`raw-url-${match.index}`}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="text-[#b70f30] hover:underline font-semibold inline-flex items-center gap-0.5 break-all [overflow-wrap:anywhere] max-w-full"
+        >
+          <span>{rawUrl}</span>
+          <ExternalLink className="w-3 h-3 ml-0.5 inline shrink-0 opacity-80" />
+        </a>
+      );
+      lastIdx = urlRegex.lastIndex;
+    }
+    if (lastIdx < segment.length) {
+      parts.push(...parseBoldAndCode(segment.substring(lastIdx)));
+    }
+    return parts;
+  };
+
+  const parseBoldAndCode = (text: string): (string | React.ReactNode)[] => {
+    const rawParts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
     return rawParts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <strong key={i} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>;
       }
       if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={i} className="bg-red-50 text-[#b70f30] px-1.5 py-0.5 rounded text-xs font-mono font-medium border border-red-100">{part.slice(1, -1)}</code>;
+        return <code key={i} className="bg-red-50 text-[#b70f30] px-1.5 py-0.5 rounded text-xs font-mono font-medium border border-red-100 break-all">{part.slice(1, -1)}</code>;
       }
       return part;
     });
   };
 
-  return <div className="space-y-0.5">{formatText(content || '')}</div>;
+  const formatContent = (text: string) => {
+    const lines = (text || '').split('\n');
+    const elements: React.ReactNode[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // Heading 3
+      if (trimmed.startsWith('### ')) {
+        elements.push(<h4 key={i} className="text-sm font-bold text-gray-900 mt-2 mb-1 break-words">{trimmed.replace('### ', '')}</h4>);
+        i++;
+        continue;
+      }
+      // Heading 2
+      if (trimmed.startsWith('## ')) {
+        elements.push(<h3 key={i} className="text-base font-bold text-gray-900 mt-2.5 mb-1 break-words">{trimmed.replace('## ', '')}</h3>);
+        i++;
+        continue;
+      }
+      // Heading 1
+      if (trimmed.startsWith('# ')) {
+        elements.push(<h2 key={i} className="text-lg font-extrabold text-gray-900 mt-3 mb-1.5 break-words">{trimmed.replace('# ', '')}</h2>);
+        i++;
+        continue;
+      }
+
+      // Markdown Table grouping
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        const tableLines: string[] = [];
+        while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+          tableLines.push(lines[i].trim());
+          i++;
+        }
+
+        const rows = tableLines
+          .map(tl => tl.split('|').slice(1, -1).map(c => c.trim()))
+          .filter(r => !r.every(c => c.includes('---')));
+
+        if (rows.length > 0) {
+          const header = rows[0];
+          const body = rows.slice(1);
+          elements.push(
+            <div key={`table-${i}`} className="my-2.5 max-w-full overflow-x-auto rounded-xl border border-gray-200/90 bg-white shadow-2xs">
+              <table className="w-full text-left text-xs border-collapse divide-y divide-gray-200">
+                <thead className="bg-gray-50/80">
+                  <tr>
+                    {header.map((col, cIdx) => (
+                      <th key={cIdx} className="px-3 py-2 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                        {parseInlineElements(col)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {body.map((row, rIdx) => (
+                    <tr key={rIdx} className="hover:bg-gray-50/50 transition-colors">
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="px-3 py-2 text-xs text-gray-700 whitespace-nowrap">
+                          {parseInlineElements(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+        continue;
+      }
+
+      // Bullet list
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const itemText = trimmed.substring(2);
+        elements.push(
+          <li key={i} className="ml-4 list-disc text-xs sm:text-sm text-gray-700 my-0.5 leading-relaxed break-words [overflow-wrap:anywhere]">
+            {parseInlineElements(itemText)}
+          </li>
+        );
+        i++;
+        continue;
+      }
+
+      // Numbered list
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+      if (numMatch) {
+        elements.push(
+          <div key={i} className="flex items-start gap-1.5 ml-1 text-xs sm:text-sm text-gray-700 my-0.5 leading-relaxed break-words [overflow-wrap:anywhere]">
+            <span className="font-bold text-[#b70f30] text-xs shrink-0">{numMatch[1]}.</span>
+            <span className="break-words [overflow-wrap:anywhere]">{parseInlineElements(numMatch[2])}</span>
+          </div>
+        );
+        i++;
+        continue;
+      }
+
+      // Quote
+      if (trimmed.startsWith('>')) {
+        elements.push(
+          <div key={i} className="border-l-2 border-[#b70f30]/40 pl-2.5 py-0.5 my-1 text-xs text-gray-600 italic bg-gray-50/50 rounded-r break-words [overflow-wrap:anywhere]">
+            {parseInlineElements(trimmed.substring(1).trim())}
+          </div>
+        );
+        i++;
+        continue;
+      }
+
+      // Empty line
+      if (!trimmed) {
+        elements.push(<div key={i} className="h-1.5" />);
+        i++;
+        continue;
+      }
+
+      // Normal paragraph
+      elements.push(
+        <p key={i} className="text-xs sm:text-sm text-gray-800 my-0.5 leading-relaxed break-words [overflow-wrap:anywhere]">
+          {parseInlineElements(line)}
+        </p>
+      );
+      i++;
+    }
+
+    return elements;
+  };
+
+  return <div className="space-y-0.5 break-words [overflow-wrap:anywhere] w-full">{formatContent(content || '')}</div>;
 }
 
 function ResearchTrace({ trace }: { trace: ChatTraceItem[] }) {
@@ -332,13 +424,13 @@ export function ChatAssistant() {
           {/* Subtle Tooltip Label */}
           <div className="hidden md:flex items-center gap-1.5 mr-3 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg border border-red-100 text-xs font-semibold text-gray-800 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100">
             <Sparkles className="w-3.5 h-3.5 text-[#b70f30] animate-pulse" />
-            <span>Assistant IA</span>
+            <span>Assistant IA CertifHub</span>
           </div>
 
           <button
             onClick={() => setIsOpen(true)}
             className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-[#b70f30] via-[#c9184a] to-[#ff4d6d] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-white/60 focus:outline-none focus:ring-4 focus:ring-[#b70f30]/20"
-            title="Ouvrir l'assistant intelligent"
+            title="Ouvrir l'assistant intelligent CertifHub"
           >
             <div className="absolute -top-1 -right-1 flex h-4 w-4">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -351,7 +443,7 @@ export function ChatAssistant() {
 
       {/* Floating Assistant Modal Panel */}
       {isOpen && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[95vw] sm:w-[450px] max-w-[460px] h-[620px] max-h-[88vh] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-300">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[95vw] sm:w-[440px] md:w-[460px] max-w-[460px] h-[580px] sm:h-[600px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-300">
           {/* Header */}
           <div className="bg-gradient-to-r from-[#8a0b24] via-[#b70f30] to-[#c9184a] text-white px-5 py-4 flex items-center justify-between shadow-md relative overflow-hidden">
             {/* Background decoration */}
@@ -362,9 +454,15 @@ export function ChatAssistant() {
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-white tracking-tight">
-                  {userNameDisplay}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-sm text-white tracking-tight">Assistant CertifHub</h3>
+                  <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
+                    RAG IA
+                  </span>
+                </div>
+                <p className="text-[11px] text-white/80 font-medium">
+                  {user?.firstName ? `Bonjour ${user.firstName}` : 'Guide Certifications & Squads'}
+                </p>
               </div>
             </div>
 
@@ -400,17 +498,17 @@ export function ChatAssistant() {
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-full`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-2xs ${
+                  className={`max-w-[92%] sm:max-w-[90%] rounded-2xl px-4 py-3 text-sm shadow-2xs break-words [overflow-wrap:anywhere] overflow-hidden ${
                     msg.role === 'user'
                       ? 'bg-[#b70f30] text-white rounded-br-xs'
                       : 'bg-white border border-gray-100 text-gray-800 rounded-bl-xs'
                   }`}
                 >
                   {msg.role === 'user' ? (
-                    <p className="text-xs sm:text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-xs sm:text-sm font-medium leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
                   ) : (
                     <MarkdownView content={msg.content || ''} />
                   )}

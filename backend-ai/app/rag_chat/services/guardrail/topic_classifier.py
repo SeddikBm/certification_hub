@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 
 from app.core.config import settings
-from app.services.llm.groq_client import GroqChatClient
+from app.services.llm.nvidia_client import NvidiaChatClient
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +28,15 @@ Réponds UNIQUEMENT avec un objet JSON : {"on_topic": true} ou {"on_topic": fals
 
 
 class TopicClassifier:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: NvidiaChatClient | None = None) -> None:
+        self._client = client or NvidiaChatClient()
 
-    def classify(self, question: str, history: list[dict] | None = None) -> tuple[bool, float]:
-        """Returns (on_topic, score). Score is 1.0/0.0 (binary LLM decision)."""
+    def classify(self, question: str, history: list[dict] | None = None) -> bool:
+        """Returns True if on_topic, False otherwise (binary LLM decision)."""
         # Fast rule: if follow-up and history exists
         if history and len(question.strip().split()) <= 6:
             logger.info("[GUARDRAIL] Short follow-up in active session -> on_topic=True")
-            return True, 1.0
+            return True
 
         user_content = question
         if history:
@@ -51,6 +51,5 @@ class TopicClassifier:
         except Exception as exc:
             logger.warning("[GUARDRAIL] LLM failed (%s). Defaulting on_topic=True.", exc)
             on_topic = True
-        score = 1.0 if on_topic else 0.0
         logger.info("[GUARDRAIL] on_topic=%s (LLM)", on_topic)
-        return on_topic, score
+        return on_topic

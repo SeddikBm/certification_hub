@@ -10,7 +10,7 @@ langgraph>=0.2.60
 langgraph-cli[inmem]
 
 # --- LLM client -----------------------------------------------------------
-groq>=0.11
+openai>=1.50.0
 
 # --- Document extraction --------------------------------------------------
 pymupdf>=1.24                      # PDF native-text extraction + rasterization

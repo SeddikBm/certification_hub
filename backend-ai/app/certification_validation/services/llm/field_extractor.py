@@ -1,6 +1,6 @@
 """
 Certificate field extraction — the module-specific prompt/logic layer on
-top of the shared GroqChatClient (app.services.llm.groq_client).
+top of the shared NvidiaChatClient (app.services.llm.nvidia_client).
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from app.certification_validation.exceptions import LLMParsingError
 from app.certification_validation.schemas.validation import ParsedCertificate
 from app.core.config import settings
 from app.exceptions import LLMCallError, LLMResponseParsingError
-from app.services.llm.groq_client import GroqChatClient
+from app.services.llm.nvidia_client import NvidiaChatClient
 
 _SYSTEM_PROMPT = """You are a strict information-extraction engine for IT \
 certification documents (Credly, Coursera, AWS, Microsoft, CompTIA, PMI, etc.).
@@ -31,8 +31,8 @@ use the first day of that month.
 
 
 class CertificateFieldExtractor:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: NvidiaChatClient | None = None) -> None:
+        self._client = client or NvidiaChatClient()
 
     def extract_fields(self, raw_text: str) -> ParsedCertificate:
         if not raw_text.strip():

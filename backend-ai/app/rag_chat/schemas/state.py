@@ -23,7 +23,6 @@ class GraphState(TypedDict, total=False):
 
     # --- after guardrail_node ------------------------------------------------
     on_topic: bool
-    guardrail_score: float
 
     # --- after rewrite_node --------------------------------------------------
     rewritten_query: str

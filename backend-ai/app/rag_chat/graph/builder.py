@@ -79,3 +79,7 @@ def build_chat_graph():
     graph.add_edge("regenerate", "groundedness")
 
     return graph.compile()
+
+
+graph = build_chat_graph()
+

@@ -6,7 +6,7 @@ from __future__ import annotations
 from app.core.config import settings
 from app.exceptions import LLMCallError
 from app.rag_chat.exceptions import RagChatError
-from app.services.llm.groq_client import GroqChatClient
+from app.services.llm.nvidia_client import NvidiaChatClient
 
 import logging
 
@@ -22,15 +22,16 @@ Règles :
 
 
 class QueryRewriter:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: NvidiaChatClient | None = None) -> None:
+        self._client = client or NvidiaChatClient()
 
     def rewrite(self, question: str, history: list[dict] | None = None) -> str:
+        # If there is no previous conversation history, the question needs no anaphora resolution
         if not history:
-            user_msg = question
-        else:
-            hist_str = "\n".join(f"{h.get('role', 'user')}: {h.get('content', '')}" for h in history[-4:])
-            user_msg = f"Historique de la conversation :\n{hist_str}\n\nQuestion à reformuler de façon autonome :\n{question}"
+            return question.strip()
+
+        hist_str = "\n".join(f"{h.get('role', 'user')}: {h.get('content', '')}" for h in history[-4:])
+        user_msg = f"Historique de la conversation :\n{hist_str}\n\nQuestion à reformuler de façon autonome :\n{question}"
         try:
             rewritten = self._client.chat(
                 system=_SYSTEM_PROMPT,

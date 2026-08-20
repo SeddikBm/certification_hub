@@ -3,7 +3,8 @@
         "."
     ],
     "graphs": {
-        "validation_workflow": "./app/graph/builder.py:graph"
+        "validation_workflow": "./app/certification_validation/graph/builder.py:graph",
+        "rag_chat": "./app/rag_chat/graph/builder.py:graph"
     },
     "env": ".env"
 }

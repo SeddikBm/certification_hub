@@ -10,7 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 def seed_certification_chunks() -> None:
-    logger.info("[SEED] Starting full scraping & ingestion pipeline for all certifications...")
+    import time
+    start_time = time.time()
+    logger.info("=" * 80)
+    logger.info("[SEED] Starting complete catalogue scraping & ingestion pipeline...")
     with psycopg.connect(settings.RAG_DB_DSN) as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -22,10 +25,12 @@ def seed_certification_chunks() -> None:
             """)
             certs = cur.fetchall()
 
-    logger.info("[SEED] Found %d certifications to ingest.", len(certs))
+    logger.info("[SEED] Found %d active certifications to ingest from database.", len(certs))
     if len(certs) != 53:
-        logger.warning("[SEED] Expected the initial 53 certifications, found %d active rows.", len(certs))
+        logger.warning("[SEED] Notice: Expected 53 catalogue certifications, found %d rows.", len(certs))
+
     success_count = 0
+    failure_count = 0
 
     for idx, row in enumerate(certs, 1):
         (cid, code, name, provider, diff, prio,
@@ -51,19 +56,42 @@ def seed_certification_chunks() -> None:
             f"Portail officiel examen : {exam_url or 'N/A'}"
         )
 
-        logger.info("[SEED] [%d/%d] Ingesting %s (%s)...", idx, len(certs), name, code)
-        ok = ingest_certification(
-            certification_id=str(cid),
-            certification_title=name,
-            official_url=official_url or "",
-            exam_provider_url=exam_url or "",
-            code=code or "",
-            metadata_context=metadata_context,
-        )
-        if ok:
-            success_count += 1
+        logger.info("\n>>> [SEED PROGRESS: %d/%d (%.1f%%)] Processing: '%s' (Code: %s, Provider: %s) <<<",
+                    idx, len(certs), (idx / len(certs)) * 100, name, code, provider)
 
-    logger.info("[SEED] Ingestion completed: %d/%d certifications successfully ingested.", success_count, len(certs))
+        try:
+            ok = ingest_certification(
+                certification_id=str(cid),
+                certification_title=name,
+                official_url=official_url or "",
+                exam_provider_url=exam_url or "",
+                code=code or "",
+                metadata_context=metadata_context,
+            )
+            if ok:
+                success_count += 1
+            else:
+                failure_count += 1
+        except Exception as exc:
+            logger.error("[SEED] Error ingesting '%s' (%s): %s", name, cid, exc, exc_info=True)
+            failure_count += 1
+
+    elapsed_s = time.time() - start_time
+    # Get total chunk count from DB
+    total_chunks = 0
+    try:
+        with psycopg.connect(settings.RAG_DB_DSN) as conn, conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM certification_chunks")
+            total_chunks = cur.fetchone()[0]
+    except Exception as exc:
+        logger.warning("[SEED] Could not count total chunks: %s", exc)
+
+    logger.info("=" * 80)
+    logger.info("[SEED FINISHED] Ingested %d/%d certifications successfully (%d failed).",
+                success_count, len(certs), failure_count)
+    logger.info("[SEED FINISHED] Total chunks in 'certification_chunks': %d chunks.", total_chunks)
+    logger.info("[SEED FINISHED] Total ingestion time: %.1fs (%.1fs/cert).", elapsed_s, elapsed_s / max(1, len(certs)))
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":

@@ -21,15 +21,15 @@ logger = logging.getLogger(__name__)
 def guardrail_node(state: GraphState) -> dict:
     query_to_check = state.get("rewritten_query") or state["message"]
     history = state.get("history", [])
-    on_topic, score = TopicClassifier().classify(query_to_check, history=history)
+    on_topic = TopicClassifier().classify(query_to_check, history=history)
 
     reasons = state.get("reasons", [])
     if not on_topic:
-        reasons = [*reasons, f"[GUARDRAIL] Off-topic (score={score:.2f}) — question: {query_to_check!r}"]
+        reasons = [*reasons, f"[GUARDRAIL] Off-topic — question: {query_to_check!r}"]
     else:
-        reasons = [*reasons, f"[GUARDRAIL] On-topic (score={score:.2f})."]
+        reasons = [*reasons, "[GUARDRAIL] On-topic."]
 
-    return {"on_topic": on_topic, "guardrail_score": score, "reasons": reasons}
+    return {"on_topic": on_topic, "reasons": reasons}
 
 
 def route_by_guardrail(state: GraphState):

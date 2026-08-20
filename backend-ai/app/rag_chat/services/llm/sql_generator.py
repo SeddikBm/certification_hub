@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.core.config import settings
 from app.exceptions import LLMCallError
 from app.rag_chat.exceptions import SqlGenerationError
-from app.services.llm.groq_client import GroqChatClient
+from app.services.llm.nvidia_client import NvidiaChatClient
 
 _SYSTEM_PROMPT = """Tu es un expert SQL PostgreSQL pour CertificationHub (Devoteam Maroc).
 Traduis la question en UNE SEULE requête SQL SELECT en lecture seule.
@@ -100,8 +100,8 @@ RÈGLES STRICTES :
 
 
 class SqlGenerator:
-    def __init__(self, client: GroqChatClient | None = None) -> None:
-        self._client = client or GroqChatClient()
+    def __init__(self, client: NvidiaChatClient | None = None) -> None:
+        self._client = client or NvidiaChatClient()
 
     def generate(self, question: str) -> str:
         try:

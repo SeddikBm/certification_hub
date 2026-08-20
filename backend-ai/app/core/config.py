@@ -28,11 +28,13 @@ class Settings(BaseSettings):
         "used by the Spring Boot gateway to authenticate itself.",
     )
 
-    # --- OpenRouter & Groq LLM Settings ------------------------------------
+    # --- NVIDIA NIM & LLM Settings ------------------------------------------
+    NVIDIA_API_KEY: str = "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"
+    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     GROQ_API_KEY: str = ""
-    GROQ_PARSER_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    GROQ_PARSER_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
     GROQ_VISION_MODEL: str | None = "qwen/qwen3.6-27b"  # optional VLM fallback path
-    GROQ_REQUEST_TIMEOUT_S: float = 30.0
+    GROQ_REQUEST_TIMEOUT_S: float = 45.0
 
     # --- Document extraction ------------------------------------------------
     OCR_ENGINE: str = "paddleocr"  # "paddleocr" | "tesseract"
@@ -51,7 +53,7 @@ class Settings(BaseSettings):
     MAX_UPLOAD_MB: int = 15
 
     # --- LLM for RAG ----------------------------------------------------------
-    RAG_LLM_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    RAG_LLM_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
 
     # --- Embeddings & reranking (OpenRouter Nemotron API or local) ------------
     OPENROUTER_API_KEY: str = ""
@@ -71,8 +73,7 @@ class Settings(BaseSettings):
     RERANK_TOP_N: int = 5
     RETRIEVAL_GRADE_MIN_SCORE: float = 0.40
 
-    # --- Topic guardrail --------------------------------------------------------
-    GUARDRAIL_SIMILARITY_THRESHOLD: float = 0.45
+    # --- Topic guardrail (LLM binary classifier) --------------------------------
     GUARDRAIL_REDIRECT_MESSAGE: str = (
         "Je suis votre conseiller IA dédié aux certifications et formations CertificationHub. "
         "Je suis là pour vous aider à explorer le catalogue, comparer les certifications, "
@@ -100,7 +101,7 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP_RATIO: float = 0.0
 
     # --- Ingestion pipeline retry / dead-letter ----------------------------------
-    INGESTION_MAX_RETRIES: int = 1
+    INGESTION_MAX_RETRIES: int = 3
     INGESTION_BACKOFF_BASE_S: float = 1.0  # fast retry if transient error
     INGESTION_REFRESH_INTERVAL_DAYS: int = 90  # periodic re-scrape/re-embed cadence
 

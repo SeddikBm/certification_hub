@@ -47,10 +47,7 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
             answer=fallback_msg,
             response=fallback_msg,
             sources=[],
-            suggestedActions=[
-                "Quel est le format de l'examen PSM I ?",
-                "Quelles sont les certifications prioritaires pour ma squad ?",
-            ],
+            suggestedActions=[],
             latencyMs=0,
             grounded=False,
             retrieved_chunks=[],

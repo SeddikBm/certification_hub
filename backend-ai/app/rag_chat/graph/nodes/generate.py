@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 def generate_node(state: GraphState) -> dict:
     reasons = state.get("reasons", [])
     context, source = _build_context(state)
+    history = state.get("history")
 
     try:
-        answer = ResponseGenerator().generate(state["message"], context)
+        answer = ResponseGenerator().generate(state["message"], context, history=history)
     except ResponseGenerationError as exc:
         logger.error("[GENERATE] Failed: %s", exc)
         return {
@@ -44,9 +45,10 @@ def regenerate_node(state: GraphState) -> dict:
     """
     reasons = state.get("reasons", [])
     context, source = _build_context(state)
+    history = state.get("history")
 
     try:
-        answer = ResponseGenerator().generate(state["message"], context, strict_retry=True)
+        answer = ResponseGenerator().generate(state["message"], context, history=history, strict_retry=True)
     except ResponseGenerationError as exc:
         logger.error("[GENERATE] Retry failed: %s", exc)
         return {
@@ -71,12 +73,25 @@ def _build_context(state: GraphState) -> tuple[str, RetrievalSource]:
     live-scraped content aren't mutually exclusive at this point."""
     parts: list[str] = []
 
-    if state.get("sql_rows"):
-        formatted_rows = []
-        for idx, row in enumerate(state["sql_rows"], 1):
-            row_items = [f"  - {k}: {v}" for k, v in row.items() if v is not None]
-            formatted_rows.append(f"Résultat {idx} :\n" + "\n".join(row_items))
-        parts.append("Données structurées extraites de la base :\n" + "\n\n".join(formatted_rows))
+    user_role = state.get("user_role") or "COLLABORATEUR"
+    user_name = state.get("user_name")
+    squad_id = state.get("squad_id")
+
+    user_profile = f"Profil de l'utilisateur connecté : Nom = {user_name or 'Non spécifié'}, Rôle = {user_role}, Squad = {squad_id or 'Non assignée'}."
+    parts.append(user_profile)
+
+    sql_rows = state.get("sql_rows")
+    if sql_rows is not None:
+        if len(sql_rows) > 0:
+            formatted_rows = []
+            for idx, row in enumerate(sql_rows, 1):
+                row_items = [f"  - {k}: {v}" for k, v in row.items() if v is not None]
+                formatted_rows.append(f"Résultat {idx} :\n" + "\n".join(row_items))
+            parts.append("Données structurées extraites de la base SQL :\n" + "\n\n".join(formatted_rows))
+        else:
+            parts.append(
+                "Résultat de la requête SQL : La requête a été exécutée avec succès dans la base de données mais a retourné 0 enregistrement (aucun résultat trouvé correspondant aux critères)."
+            )
 
     chunks = state.get("vector_chunks") or []
     if chunks:
@@ -92,7 +107,7 @@ def _build_context(state: GraphState) -> tuple[str, RetrievalSource]:
         source = RetrievalSource.VECTOR_STORE_PLUS_LIVE_SCRAPE
     elif chunks:
         source = RetrievalSource.VECTOR_STORE
-    elif state.get("sql_rows") is not None:
+    elif sql_rows is not None:
         source = RetrievalSource.SQL
     else:
         source = RetrievalSource.NONE

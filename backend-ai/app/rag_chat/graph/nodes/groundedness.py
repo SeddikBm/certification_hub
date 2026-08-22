@@ -55,14 +55,32 @@ def route_by_groundedness(state: GraphState) -> Literal["regenerate", "done"]:
 
 
 def _reconstruct_context_text(state: GraphState) -> str:
-    # Mirrors generate_node._build_context but only needs the text, not the
-    # source classification — kept separate rather than importing a private
-    # helper across node modules.
+    # Mirrors generate_node._build_context so GroundednessChecker has
+    # the exact same facts that were given to the generation prompt.
     parts: list[str] = []
-    if state.get("sql_rows"):
-        parts.append("\n".join(str(row) for row in state["sql_rows"]))
+
+    user_role = state.get("user_role") or "COLLABORATEUR"
+    user_name = state.get("user_name")
+    squad_id = state.get("squad_id")
+    parts.append(f"Profil de l'utilisateur connecté : Nom = {user_name or 'Non spécifié'}, Rôle = {user_role}, Squad = {squad_id or 'Non assignée'}.")
+
+    sql_rows = state.get("sql_rows")
+    if sql_rows is not None:
+        if len(sql_rows) > 0:
+            formatted_rows = []
+            for idx, row in enumerate(sql_rows, 1):
+                row_items = [f"  - {k}: {v}" for k, v in row.items() if v is not None]
+                formatted_rows.append(f"Résultat {idx} :\n" + "\n".join(row_items))
+            parts.append("Données structurées extraites de la base SQL :\n" + "\n\n".join(formatted_rows))
+        else:
+            parts.append(
+                "Résultat de la requête SQL : La requête a été exécutée avec succès dans la base de données mais a retourné 0 enregistrement (aucun résultat trouvé correspondant aux critères)."
+            )
+
     for chunk in state.get("vector_chunks") or []:
-        parts.append(chunk.text)
+        parts.append(f"[{chunk.certification_title} — {chunk.section or 'général'}]\n{chunk.text}")
+
     if state.get("scraped_content"):
-        parts.append(state["scraped_content"])
+        parts.append("Contenu récupéré en direct :\n" + state["scraped_content"])
+
     return "\n\n".join(parts)

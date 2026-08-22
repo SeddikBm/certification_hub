@@ -14,7 +14,11 @@ import {
   Clock, 
   Cpu,
   Search,
-  Check
+  Check,
+  ChevronDown,
+  ChevronUp,
+  BrainCircuit,
+  Terminal
 } from 'lucide-react';
 
 interface FormattedMessageProps {
@@ -58,7 +62,6 @@ function MarkdownView({ content }: FormattedMessageProps) {
   };
 
   const parseRawUrlsAndFormatting = (segment: string): (string | React.ReactNode)[] => {
-    // Check for raw URLs (http, https, or devoteamlearning.udemy.com...)
     const urlRegex = /(https?:\/\/[^\s]+|(?:devoteamlearning\.udemy\.com|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,})\/[^\s]*)/g;
     const parts: (string | React.ReactNode)[] = [];
     let lastIdx = 0;
@@ -234,97 +237,133 @@ function MarkdownView({ content }: FormattedMessageProps) {
   return <div className="space-y-0.5 break-words [overflow-wrap:anywhere] w-full">{formatContent(content || '')}</div>;
 }
 
-function ResearchTrace({ trace }: { trace: ChatTraceItem[] }) {
-  if (!trace.length) return null;
+// DeepSeek / ChatGPT Style Thought (Pensée) Component in subtle gray
+function DeepSeekThoughtBlock({ trace, latencyMs }: { trace: ChatTraceItem[]; latencyMs?: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!trace || trace.length === 0) return null;
+
+  const latencyStr = latencyMs ? ` (${(latencyMs / 1000).toFixed(1)}s)` : '';
+
   return (
-    <div className="mb-2 ml-1 max-w-[90%] space-y-1.5">
-      {trace.map((item, index) => {
-        const type = (item.type || '').toLowerCase();
-        const isSql = type === 'sql';
-        return (
-          <div key={`${item.label || 'trace'}-${index}`} className="rounded-xl border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-slate-700">
-            <div className="flex items-center gap-1.5 font-semibold text-indigo-800">
-              {isSql ? <Database className="h-3.5 w-3.5" /> : <Layers className="h-3.5 w-3.5" />}
-              <span>{item.label || 'Recherche effectuée'}</span>
-              {item.status && <span className="ml-auto text-[10px] font-medium text-indigo-500">{item.status}</span>}
-            </div>
-            {isSql ? (
-              <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap rounded-lg bg-slate-950 px-2 py-1.5 font-mono text-[10px] text-slate-100">{item.detail || 'Requête indisponible'}</pre>
-            ) : (
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">{item.detail || 'Recherche terminée.'}</p>
-            )}
-          </div>
-        );
-      })}
+    <div className="mb-2.5 w-full rounded-2xl border border-gray-200/75 bg-gray-50/90 text-gray-600 overflow-hidden shadow-2xs transition-all">
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100/60 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <BrainCircuit className="w-3.5 h-3.5 text-gray-500" />
+          <span className="text-[11px] font-medium text-gray-700">Pensée & Raisonnement{latencyStr}</span>
+        </div>
+        <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
+          <span>{isExpanded ? 'Masquer' : 'Afficher'}</span>
+          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="px-3.5 pb-3 pt-1 border-t border-gray-200/60 space-y-2 text-[11px] leading-relaxed text-gray-600 animate-in fade-in duration-200">
+          {trace.map((item, idx) => {
+            const type = (item.type || '').toLowerCase();
+            const isSql = type === 'sql';
+            const isVector = type === 'vector';
+            const isGrounded = type === 'groundedness';
+
+            return (
+              <div key={idx} className="space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-gray-800">
+                  {isSql ? (
+                    <Terminal className="w-3 h-3 text-indigo-500" />
+                  ) : isVector ? (
+                    <Search className="w-3 h-3 text-blue-500" />
+                  ) : isGrounded ? (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                  ) : (
+                    <Cpu className="w-3 h-3 text-gray-500" />
+                  )}
+                  <span>{item.label}</span>
+                  {item.status && (
+                    <span className="ml-auto text-[10px] font-normal text-gray-400">
+                      {item.status}
+                    </span>
+                  )}
+                </div>
+
+                {isSql && item.detail && item.detail.toLowerCase().includes('select') ? (
+                  <pre className="p-2 rounded-lg bg-gray-900 text-gray-100 font-mono text-[10px] overflow-x-auto whitespace-pre-wrap">
+                    {item.detail}
+                  </pre>
+                ) : (
+                  <p className="text-[11px] text-gray-500 pl-4 border-l border-gray-200">
+                    {item.detail}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
-// Modern live Thinking / Reflection component shown during generation
-function ModernThinkingIndicator() {
-  const [activeStep, setActiveStep] = useState(0);
-
-  const steps = [
-    { label: "Analyse de la question & reformulation...", icon: Search },
-    { label: "Routage d'intention (SQL analytique / RAG hybride)...", icon: Cpu },
-    { label: "Interrogation de la base de données & index pgvector...", icon: Database },
-    { label: "Vérification d'ancrage & synthèse de la réponse...", icon: Sparkles },
-  ];
+// Streaming Typewriter Text Component
+function StreamingMessageContent({ fullText, isLive }: { fullText: string; isLive?: boolean }) {
+  const [displayedText, setDisplayedText] = useState(isLive ? '' : fullText);
+  const [isTyping, setIsTyping] = useState(isLive);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveStep((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
-    }, 1100);
-    return () => clearInterval(timer);
-  }, [steps.length]);
+    if (!isLive) {
+      setDisplayedText(fullText);
+      setIsTyping(false);
+      return;
+    }
 
+    let currentIndex = 0;
+    const length = fullText.length;
+    const stepSize = Math.max(1, Math.floor(length / 50)); // smooth typing speed
+
+    const interval = setInterval(() => {
+      currentIndex += stepSize;
+      if (currentIndex >= length) {
+        setDisplayedText(fullText);
+        setIsTyping(false);
+        clearInterval(interval);
+      } else {
+        setDisplayedText(fullText.slice(0, currentIndex));
+      }
+    }, 16);
+
+    return () => clearInterval(interval);
+  }, [fullText, isLive]);
+
+  return (
+    <div className="relative">
+      <MarkdownView content={displayedText} />
+      {isTyping && (
+        <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-[#b70f30] animate-pulse align-middle" />
+      )}
+    </div>
+  );
+}
+
+// Modern live Thinking / Reflection indicator during backend generation
+function DeepSeekLiveThinking() {
   return (
     <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#b70f30] to-[#ff4d6d] text-white flex items-center justify-center shadow-xs shrink-0 mt-0.5">
         <Bot className="w-4 h-4 animate-pulse" />
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-xs p-3.5 shadow-xs max-w-[90%] w-full space-y-2.5">
-        <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b70f30] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#b70f30]"></span>
-            </span>
-            <span>Réflexion en cours...</span>
-          </div>
-          <span className="text-[10px] font-mono text-gray-400">LangGraph Agent</span>
+      <div className="bg-gray-50/90 border border-gray-200/80 rounded-2xl rounded-tl-xs p-3 shadow-2xs max-w-[85%] w-full space-y-1.5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+          <BrainCircuit className="w-3.5 h-3.5 text-[#b70f30] animate-spin" />
+          <span>Réflexion en cours...</span>
         </div>
-
-        <div className="space-y-1.5">
-          {steps.map((step, idx) => {
-            const Icon = step.icon;
-            const isCompleted = idx < activeStep;
-            const isCurrent = idx === activeStep;
-
-            return (
-              <div 
-                key={idx} 
-                className={`flex items-center gap-2 text-[11px] transition-all duration-300 ${
-                  isCurrent 
-                    ? 'text-gray-900 font-semibold translate-x-1' 
-                    : isCompleted 
-                    ? 'text-gray-400' 
-                    : 'text-gray-300 opacity-60'
-                }`}
-              >
-                {isCompleted ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                ) : isCurrent ? (
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-[#b70f30] border-t-transparent animate-spin shrink-0" />
-                ) : (
-                  <Icon className="w-3.5 h-3.5 shrink-0 opacity-40" />
-                )}
-                <span className="truncate">{step.label}</span>
-              </div>
-            );
-          })}
-        </div>
+        <p className="text-[11px] text-gray-400 italic">
+          Analyse de l'intention, exploration de la base et structuration de la réponse...
+        </p>
       </div>
     </div>
   );
@@ -355,17 +394,16 @@ export function ChatAssistant() {
     if (!text || loading) return;
 
     const userMsg: ChatMessage = { role: 'user', content: text };
+    const historyPayload: ChatMessage[] = messages.map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
     const newHistory = [...messages, userMsg];
     setMessages(newHistory);
     setInputMessage('');
     setLoading(true);
 
     try {
-      const historyPayload: ChatMessage[] = newHistory.map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
-
       const res = await chatService.sendMessage({
         message: text,
         history: historyPayload,
@@ -495,69 +533,81 @@ export function ChatAssistant() {
             )}
 
             {/* Message List */}
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-full`}
-              >
+            {messages.map((msg, i) => {
+              const isAssistant = msg.role === 'assistant';
+              const isLatest = i === messages.length - 1;
+
+              return (
                 <div
-                  className={`max-w-[92%] sm:max-w-[90%] rounded-2xl px-4 py-3 text-sm shadow-2xs break-words [overflow-wrap:anywhere] overflow-hidden ${
-                    msg.role === 'user'
-                      ? 'bg-[#b70f30] text-white rounded-br-xs'
-                      : 'bg-white border border-gray-100 text-gray-800 rounded-bl-xs'
-                  }`}
+                  key={i}
+                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-full`}
                 >
-                  {msg.role === 'user' ? (
-                    <p className="text-xs sm:text-sm font-medium leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
-                  ) : (
-                    <MarkdownView content={msg.content || ''} />
+                  <div
+                    className={`max-w-[92%] sm:max-w-[90%] rounded-2xl px-4 py-3 text-sm shadow-2xs break-words [overflow-wrap:anywhere] overflow-hidden ${
+                      msg.role === 'user'
+                        ? 'bg-[#b70f30] text-white rounded-br-xs'
+                        : 'bg-white border border-gray-100 text-gray-800 rounded-bl-xs w-full'
+                    }`}
+                  >
+                    {msg.role === 'user' ? (
+                      <p className="text-xs sm:text-sm font-medium leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
+                    ) : (
+                      <>
+                        {/* DeepSeek / ChatGPT Style Thought Box */}
+                        {msg.trace && msg.trace.length > 0 && (
+                          <DeepSeekThoughtBlock trace={msg.trace} latencyMs={msg.latencyMs} />
+                        )}
+                        {/* Streamed or Formatted Markdown Content */}
+                        <StreamingMessageContent fullText={msg.content || ''} isLive={isAssistant && isLatest} />
+                      </>
+                    )}
+                  </div>
+
+                  {/* Sources & Citations if available */}
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div className="mt-2 ml-1 max-w-[90%] space-y-1">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        Sources vérifiées
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.sources.map((src, idx) => (
+                          <div
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-50 border border-gray-200/80 text-[11px] font-medium text-gray-700 hover:bg-gray-100 transition-colors shadow-2xs"
+                          >
+                            {getSourceIcon(src.type)}
+                            <span className="truncate max-w-[180px] font-semibold">{src.title || 'Source'}</span>
+                            {src.url && (
+                              <a
+                                href={src.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-gray-400 hover:text-[#b70f30]"
+                                title="Consulter le lien officiel"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Latency badge */}
+                  {msg.latencyMs !== undefined && msg.latencyMs > 0 && (
+                    <span className="mt-1 ml-1 text-[9px] text-gray-300 flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {msg.latencyMs}ms
+                    </span>
                   )}
                 </div>
+              );
+            })}
 
-                {/* Sources & Citations if available */}
-                {msg.sources && msg.sources.length > 0 && (
-                  <div className="mt-2 ml-1 max-w-[90%] space-y-1">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                      Sources vérifiées
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {msg.sources.map((src, idx) => (
-                        <div
-                          key={idx}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-50 border border-gray-200/80 text-[11px] font-medium text-gray-700 hover:bg-gray-100 transition-colors shadow-2xs"
-                        >
-                          {getSourceIcon(src.type)}
-                          <span className="truncate max-w-[180px] font-semibold">{src.title || 'Source'}</span>
-                          {src.url && (
-                            <a
-                              href={src.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-gray-400 hover:text-[#b70f30]"
-                              title="Consulter le lien officiel"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Latency badge */}
-                {msg.latencyMs !== undefined && msg.latencyMs > 0 && (
-                  <span className="mt-1 ml-1 text-[9px] text-gray-300 flex items-center gap-0.5">
-                    <Clock className="w-2.5 h-2.5" />
-                    {msg.latencyMs}ms
-                  </span>
-                )}
-              </div>
-            ))}
-
-            {/* Modern Thinking Animation — disappears when response is ready */}
-            {loading && <ModernThinkingIndicator />}
+            {/* DeepSeek Live Thinking Animation while waiting for backend response */}
+            {loading && <DeepSeekLiveThinking />}
 
             <div ref={messagesEndRef} />
           </div>

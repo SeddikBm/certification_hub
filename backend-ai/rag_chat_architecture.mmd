@@ -1,0 +1,95 @@
+flowchart TD
+    %% ==========================================
+    %% 1. ENTRÉE UTILISATEUR & MULTI-TURN REWRITE
+    %% ==========================================
+    subgraph S1["💬 1. Réception & Contextualisation Multi-Tours"]
+        UserMsg["Question Utilisateur<br/>+ Historique de session (thread_id)"] --> RewriteNode["Node: rewrite (Query Rewriter)<br/>Résout les pronoms et références<br/>Ex: 'le plus cher' ➔ 'Quel est l'examen le plus cher ?'"]
+    end
+
+    %% ==========================================
+    %% 2. TOPIC GUARDRAIL
+    %% ==========================================
+    subgraph S2["🛡️ 2. Garde-Fou Thématique (Topic Guardrail)"]
+        RewriteNode --> GuardrailNode["Node: guardrail (LLM Binary Classifier)<br/>Évalue si la question concerne les certifications IT"]
+        GuardrailNode --> RouteGuard{"on_topic == true ?"}
+        
+        RouteGuard -->|Non : Hors Périmètre| OffTopicNode["Node: off_topic_response<br/>Message de redirection bienveillant"]
+        OffTopicNode --> EndOffTopic["🏁 END (Court-circuit immédiat)"]
+    end
+
+    %% ==========================================
+    %% 3. ROUTEUR D'INTENTION
+    %% ==========================================
+    subgraph S3["🔀 3. Routage d'Intention (Intent Router)"]
+        RouteGuard -->|Oui : Dans le Périmètre| RouteNode["Node: route (Intent Classifier)"]
+        RouteNode --> IntentCheck{"Type d'Intention ?"}
+    end
+
+    %% ==========================================
+    %% 4. BRANCHE TEXT-TO-SQL (ANALYTIQUE)
+    %% ==========================================
+    subgraph S4["📊 4. Branche Analytique (Text-to-SQL Sécurisé)"]
+        IntentCheck -->|ANALYTIQUE / STATS| TextToSQLNode["Node: text_to_sql"]
+        TextToSQLNode --> GenSQL["1. Génération SQL PostgreSQL (LLM)"]
+        GenSQL --> GuardSQL{"2. Guardrail SQL (sqlglot)<br/>- SELECT unique uniquement ?<br/>- Tables autorisées uniquement ?<br/>- Bloque DROP/INSERT/UPDATE ?"}
+        
+        GuardSQL -->|Rejeté| FallbackSQL["sql_error = 'Violation Guardrail SQL'"]
+        GuardSQL -->|Validé| ExecSQL["3. Exécution SQL READ-ONLY sur base certifhub_db"]
+        
+        ExecSQL --> SQLContext["sql_rows (Résultats tabulaires)"]
+        FallbackSQL --> SQLContext
+    end
+
+    %% ==========================================
+    %% 5. BRANCHE RAG HYBRIDE (CONSEIL / CONTENU)
+    %% ==========================================
+    subgraph S5["🔍 5. Branche Recherche Hybride & Reranking"]
+        IntentCheck -->|CONSEIL / SYLLABUS / PRIX| VectorSearchNode["Node: vector_search"]
+        
+        VectorSearchNode --> DenseSearch["Recherche Dense 2048d (pgvector Cosine)"]
+        VectorSearchNode --> LexicalSearch["Recherche Lexicale FTS (tsvector French)"]
+        
+        DenseSearch --> RRF["Fusion RRF (Reciprocal Rank Fusion)"]
+        LexicalSearch --> RRF
+        
+        RRF --> Rerank["Reranker Cosinus OpenRouter (Top-5 chunks pertinents)"]
+        Rerank --> GradeNode["Node: grade_retrieval (Évaluateur de Contexte)"]
+        
+        GradeNode --> GradeCheck{"Contexte RAG suffisant<br/>pour répondre ?"}
+        
+        GradeCheck -->|Oui| RAGContext["vector_chunks (Top-5 Chunks)"]
+        GradeCheck -->|Non : Données manquantes| WebScrapeNode["Node: web_scrape<br/>(Scraping live officiel / Udemy)"]
+        WebScrapeNode --> RAGContext
+    end
+
+    %% ==========================================
+    %% 6. GÉNÉRATION DE RÉPONSE
+    %% ==========================================
+    subgraph S6["🧠 6. Synthèse & Ancrage (Generation)"]
+        SQLContext --> GenerateNode["Node: generate (Response Generator)<br/>Synthèse avec ton expert, Markdown, tableaux et URLs"]
+        RAGContext --> GenerateNode
+        
+        GenerateNode --> GroundednessNode["Node: groundedness (Contrôle d'Hallucination)"]
+        GroundednessNode --> GroundCheck{"Réponse 100% ancrée<br/>dans les faits ?"}
+        
+        GroundCheck -->|Non & essai 1| RegenerateNode["Node: regenerate<br/>(Régénération stricte anti-hallucination)"]
+        RegenerateNode --> GroundednessNode
+    end
+
+    %% ==========================================
+    %% 7. SORTIE & UI
+    %% ==========================================
+    subgraph S7["🚀 7. Réponse Finale & Métadonnées UI"]
+        GroundCheck -->|Oui (ou après 1 essai)| FinalOutput["ChatResponse :<br/>- answer (Markdown enrichi)<br/>- sources (Badges SQL / Vector / Web)<br/>- trace (Outils exécutés visibles)<br/>- latencyMs"]
+        FinalOutput --> EndSuccess["🏁 END"]
+    end
+
+    classDef primary fill:#b70f30,stroke:#8a0b24,stroke-width:2px,color:#fff;
+    classDef success fill:#2d6a4f,stroke:#1b4332,stroke-width:2px,color:#fff;
+    classDef warning fill:#d97706,stroke:#b45309,stroke-width:2px,color:#fff;
+    classDef danger fill:#991b1b,stroke:#7f1d1d,stroke-width:2px,color:#fff;
+    
+    class S1,S2,S3,S4,S5,S6 primary;
+    class S7,FinalOutput,EndSuccess success;
+    class WebScrapeNode,RegenerateNode warning;
+    class OffTopicNode,EndOffTopic,FallbackSQL danger;

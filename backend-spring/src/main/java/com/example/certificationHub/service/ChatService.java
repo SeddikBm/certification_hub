@@ -85,7 +85,7 @@ public class ChatService {
                     .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(ChatMessageResponseDto.class)
-                    .timeout(Duration.ofSeconds(60))
+                    .timeout(Duration.ofSeconds(120))
                     .block();
 
             if (result != null) {

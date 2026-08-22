@@ -12,13 +12,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = """Tu es un expert en reformulation de requêtes pour un système RAG sur les certifications informatiques.
-À partir de l'historique récent de la conversation (s'il existe) et de la dernière question de l'utilisateur, reformule la dernière question en une requête AUTONOME, EXPLICITE et COMPLÈTE.
+_SYSTEM_PROMPT = """Tu es un expert en reformulation de requêtes pour un assistant intelligent sur les certifications informatiques.
+À partir de l'historique de la conversation et de la dernière question de l'utilisateur, reformule la question en une requête TOTALEMENT AUTONOME, EXPLICITE et PRÉCISE.
 
-Règles :
-- Résous toute référence contextuelle ou anaphore ("le plus cher", "celle-là", "et pour AWS ?", "pourquoi ?", "combien ?") en utilisant l'historique.
-- Si la question est déjà autonome ou qu'il n'y a pas d'historique, conserve son sens exact.
-- Réponds UNIQUEMENT avec la requête reformulée en français, sans explication, sans préambule ni guillemets."""
+RÈGLES :
+1. Résous toutes les références contextuelles, pronoms et anaphores ("ces derniers", "celle-là", "combien ça coûte ?", "le total de leur prix", "et pour AWS ?") en insérant les noms exacts des certifications, squads ou providers mentionnés dans l'historique.
+2. Si la question est déjà autonome ou si l'historique est vide, conserve fidèlement son sens.
+3. Ne réponds JAMAIS à la question, reformule-la uniquement.
+4. Réponds UNIQUEMENT avec la requête reformulée en français, sans aucun préambule, sans guillemets ni explications.
+
+EXEMPLES :
+Historique :
+user: Donne-moi les certifications de la squad Data
+assistant: Voici les certifications de la squad Data : AWS Certified Data Engineer (DEA-C01), Databricks Certified Data Engineer Associate, Confluent Certified Developer.
+Question : Quel est le prix total de ces derniers ?
+Reformulation : Quel est le prix total en MAD des certifications de la squad Data (AWS Certified Data Engineer DEA-C01, Databricks Certified Data Engineer Associate, Confluent Certified Developer) ?
+
+Historique :
+user: Parle-moi de la certification AZ-204
+assistant: La certification Developing Solutions for Microsoft Azure (AZ-204) est destinée aux développeurs cloud.
+Question : Combien coûte l'examen ?
+Reformulation : Combien coûte l'examen de la certification Microsoft Azure AZ-204 en MAD ?"""
 
 
 class QueryRewriter:
@@ -30,8 +44,19 @@ class QueryRewriter:
         if not history:
             return question.strip()
 
-        hist_str = "\n".join(f"{h.get('role', 'user')}: {h.get('content', '')}" for h in history[-4:])
-        user_msg = f"Historique de la conversation :\n{hist_str}\n\nQuestion à reformuler de façon autonome :\n{question}"
+        # Format up to the last 20 conversation turns (user & assistant) without artificial truncation
+        hist_lines = []
+        for h in history[-20:]:
+            role = h.get("role", "user")
+            content = (h.get("content") or "").strip()
+            if content:
+                hist_lines.append(f"{role}: {content}")
+
+        if not hist_lines:
+            return question.strip()
+
+        hist_str = "\n".join(hist_lines)
+        user_msg = f"Historique de la conversation :\n{hist_str}\n\nQuestion de l'utilisateur à reformuler de façon autonome :\n{question}"
         try:
             rewritten = self._client.chat(
                 system=_SYSTEM_PROMPT,
@@ -43,4 +68,5 @@ class QueryRewriter:
             return question
 
         rewritten = rewritten.strip().strip('"').strip("'")
+        logger.info("[REWRITE] '%s' -> '%s'", question, rewritten)
         return rewritten or question

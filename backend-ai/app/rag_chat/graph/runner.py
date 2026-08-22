@@ -69,19 +69,6 @@ def run_chat(request: ChatRequest) -> ChatResponse:
             )
         )
 
-    # Dynamic suggestions
-    suggestions = [
-        "Quelles certifications sont prioritaires pour ma squad ?",
-        "Quel est le format de l'examen PSM I ?",
-        "Combien coûte la certification AZ-204 ?",
-    ]
-    if final_state.get("intent") == Intent.ANALYTIQUE:
-        suggestions = [
-            "Combien de certifications ai-je validées ?",
-            "Quelles certifications en cours dans ma squad ?",
-            "Quels sont les examens planifiés ?",
-        ]
-
     latency_ms = int((time.time() - start_time) * 1000)
     trace = _build_trace(final_state, len(chunks))
     logger.info("[CHAT][TRACE] thread=%s intent=%s trace=%s", thread_id, final_state.get("intent"),
@@ -97,7 +84,7 @@ def run_chat(request: ChatRequest) -> ChatResponse:
         answer=answer,
         response=answer,
         sources=sources,
-        suggestedActions=suggestions,
+        suggestedActions=[],
         latencyMs=latency_ms,
         grounded=final_state.get("grounded", False),
         retrieved_chunks=chunks,
@@ -107,35 +94,79 @@ def run_chat(request: ChatRequest) -> ChatResponse:
 
 
 def _build_trace(final_state: GraphState, chunk_count: int) -> list[ChatTraceItem]:
-    """Expose tools used, not hidden reasoning, so the UI can be transparent."""
-    if final_state.get("intent") == Intent.ANALYTIQUE:
-        sql = final_state.get("sql_query")
-        if sql:
-            rows = len(final_state.get("sql_rows") or [])
-            return [ChatTraceItem(
-                type="sql",
-                label="Requête SQL exécutée",
-                detail=sql,
-                status=f"{rows} résultat(s)",
-            )]
-        return [ChatTraceItem(
-            type="sql",
-            label="Recherche analytique SQL",
-            detail="La requête n'a pas pu être exécutée de façon sûre.",
-            status="indisponible",
-        )]
+    """Expose transparent thought steps and tools used like DeepSeek / ChatGPT."""
+    trace: list[ChatTraceItem] = []
 
-    trace = [ChatTraceItem(
-        type="vector",
-        label="Recherche vectorielle RAG",
-        detail=f"{chunk_count} extrait(s) pertinents retrouvés dans les certifications indexées.",
-        status="terminée",
-    )]
-    if final_state.get("scraped_content"):
+    # If Off-topic or Greeting (Guardrail direct response)
+    if not final_state.get("on_topic", True):
+        return [
+            ChatTraceItem(
+                type="guardrail",
+                label="Garde-Fou Thématique & Salutation",
+                detail="Message d'accueil ou question générale / hors périmètre des certifications IT. Prise en charge et orientation directe.",
+                status="salutation / orientation",
+            )
+        ]
+
+    intent = final_state.get("intent")
+
+    # Step 1: Intent & Routing
+    if intent == Intent.ANALYTIQUE:
         trace.append(ChatTraceItem(
-            type="web",
-            label="Complément depuis les sites officiels",
-            detail="La base indexée a été complétée avec les pages officielles disponibles.",
-            status="terminée",
+            type="intent",
+            label="Intention détectée : Analytique & Données",
+            detail="La question porte sur des données précises (statistiques, affectations, prix ou catalogue). Routage vers le moteur Text-to-SQL.",
+            status="validé",
         ))
+        sql = final_state.get("sql_query")
+        rows = len(final_state.get("sql_rows") or [])
+        if sql:
+            trace.append(ChatTraceItem(
+                type="sql",
+                label="Requête SQL générée & vérifiée (sqlglot)",
+                detail=sql,
+                status=f"{rows} ligne(s) trouvée(s)",
+            ))
+        else:
+            trace.append(ChatTraceItem(
+                type="sql",
+                label="Requête SQL",
+                detail=final_state.get("sql_error") or "Requête non exécutée.",
+                status="erreur",
+            ))
+    else:
+        best_score = 0.0
+        chunks = final_state.get("vector_chunks") or []
+        if chunks:
+            best_score = chunks[0].score
+
+        trace.append(ChatTraceItem(
+            type="intent",
+            label="Intention détectée : Conseil & Contenu Sémantique",
+            detail="La question porte sur le syllabus, les compétences, la préparation ou les conseils de certification. Routage vers la recherche RAG hybride.",
+            status="validé",
+        ))
+        trace.append(ChatTraceItem(
+            type="vector",
+            label="Recherche Vectorielle (pgvector 2048d) & Reranking",
+            detail=f"Recherche dense + lexicale FTS. Extraction et reranking des Top-{chunk_count} chunks les plus pertinents (Score max: {best_score:.2f}).",
+            status="pertinence validée",
+        ))
+        if final_state.get("scraped_content"):
+            trace.append(ChatTraceItem(
+                type="web",
+                label="Recherche Web live complémentaire",
+                detail="Extraction en direct sur les portails officiels de certification pour enrichir le contexte.",
+                status="terminée",
+            ))
+
+    # Step: Groundedness
+    grounded = final_state.get("grounded", True)
+    trace.append(ChatTraceItem(
+        type="groundedness",
+        label="Vérification d'ancrage factuel (Groundedness Check)",
+        detail="Contrôle de conformité de la synthèse pour garantir l'absence d'hallucinations.",
+        status="conforme" if grounded else "ajusté",
+    ))
+
     return trace

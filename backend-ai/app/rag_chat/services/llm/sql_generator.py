@@ -63,26 +63,26 @@ SELECT count(*) AS total_certifications FROM certifications WHERE deleted_at IS 
 -- Certifications par provider :
 SELECT provider, count(*) AS nb FROM certifications WHERE deleted_at IS NULL GROUP BY provider ORDER BY nb DESC;
 
--- Pour le squad Java :
-SELECT c.code, c.name, c.difficulty, cs.priority AS squad_priority
+-- Pour la squad Java ou Data :
+SELECT c.code, c.name, c.provider, c.difficulty, cs.priority AS squad_priority, c.metadata->>'price_mad' AS price_mad, c.official_url
 FROM certifications c JOIN certification_squads cs ON cs.certification_id=c.id
 JOIN squads s ON s.id=cs.squad_id
 WHERE s.name ILIKE '%Java%' AND c.deleted_at IS NULL ORDER BY cs.priority, c.difficulty;
 
 -- Coût d'une certification (sélectionner price_mad en priorité) :
-SELECT name, metadata->>'price_mad' AS price_mad, exam_provider_url
+SELECT name, provider, metadata->>'price_mad' AS price_mad, exam_provider_url, official_url
 FROM certifications WHERE code ILIKE '%AZ-204%' AND deleted_at IS NULL;
 
 -- Les certifications les plus chères :
-SELECT code, name, provider, metadata->>'price_mad' AS price_mad, exam_cost_usd
+SELECT code, name, provider, metadata->>'price_mad' AS price_mad, exam_cost_usd, official_url
 FROM certifications WHERE deleted_at IS NULL
 ORDER BY exam_cost_usd DESC NULLS LAST LIMIT 10;
 
 -- Certifications obligatoires :
-SELECT code, name, provider, difficulty FROM certifications WHERE priority='MANDATORY' AND deleted_at IS NULL;
+SELECT code, name, provider, difficulty, metadata->>'price_mad' AS price_mad, official_url FROM certifications WHERE priority='MANDATORY' AND deleted_at IS NULL;
 
 -- Mes certifications en cours :
-SELECT c.code, c.name, a.status_certification, a.assigned_at
+SELECT c.code, c.name, c.provider, a.status_certification, a.assigned_at
 FROM certifications c JOIN assignments a ON a.item_id=c.id AND a.item_type='CERTIFICATION'
 WHERE a.user_id=:user_id AND a.status_certification NOT IN ('COMPLETED','FAILED') ORDER BY a.assigned_at DESC;
 
@@ -94,6 +94,7 @@ RÈGLES STRICTES :
 - SQL brut uniquement, sans balises markdown ni explication.
 - Exactement 1 SELECT. Aucun INSERT/UPDATE/DELETE/DROP/ALTER.
 - Toujours filtrer deleted_at IS NULL sur certifications et squads.
+- Quand tu listes des certifications, inclus TOUJOURS `c.code, c.name, c.provider, c.difficulty, c.metadata->>'price_mad' AS price_mad, c.official_url`.
 - ILIKE pour les recherches textuelles insensibles à la casse.
 - Placeholder :user_id pour les questions personnelles.
 - Si la question est hors périmètre DB : répondre exactement NOT_ANSWERABLE."""

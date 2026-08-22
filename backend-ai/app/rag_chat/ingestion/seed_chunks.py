@@ -9,25 +9,41 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def seed_certification_chunks() -> None:
+def seed_certification_chunks(force_all: bool = False) -> None:
     import time
     start_time = time.time()
     logger.info("=" * 80)
-    logger.info("[SEED] Starting complete catalogue scraping & ingestion pipeline...")
+    logger.info("[SEED] Checking catalogue ingestion status (force_all=%s)...", force_all)
     with psycopg.connect(settings.RAG_DB_DSN) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, code, name, provider, difficulty, priority,
-                       exam_cost_usd, training_cost_usd, validity_months,
-                       official_url, exam_provider_url, metadata
-                FROM certifications WHERE deleted_at IS NULL
-                ORDER BY name
-            """)
+            cur.execute("SELECT count(DISTINCT certification_id) FROM certification_chunks")
+            already_indexed = cur.fetchone()[0]
+
+            if force_all:
+                cur.execute("""
+                    SELECT id, code, name, provider, difficulty, priority,
+                           exam_cost_usd, training_cost_usd, validity_months,
+                           official_url, exam_provider_url, metadata
+                    FROM certifications WHERE deleted_at IS NULL
+                    ORDER BY name
+                """)
+            else:
+                cur.execute("""
+                    SELECT id, code, name, provider, difficulty, priority,
+                           exam_cost_usd, training_cost_usd, validity_months,
+                           official_url, exam_provider_url, metadata
+                    FROM certifications 
+                    WHERE deleted_at IS NULL
+                      AND id NOT IN (SELECT DISTINCT certification_id FROM certification_chunks)
+                    ORDER BY name
+                """)
             certs = cur.fetchall()
 
-    logger.info("[SEED] Found %d active certifications to ingest from database.", len(certs))
-    if len(certs) != 53:
-        logger.warning("[SEED] Notice: Expected 53 catalogue certifications, found %d rows.", len(certs))
+    if not certs:
+        logger.info("[SEED] All certifications are already indexed in certification_chunks (%d distinct certs). Nothing to do.", already_indexed)
+        return
+
+    logger.info("[SEED] Found %d missing certifications to ingest (%d already indexed).", len(certs), already_indexed)
 
     success_count = 0
     failure_count = 0
